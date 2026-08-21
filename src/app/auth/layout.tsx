@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { LogoLarge } from '@/components/svg/LogoLarge';
+import { LogoLarge } from '@/components/svg/logo-large';
 
 interface AuthLayoutProps {
   children?: ReactNode;
