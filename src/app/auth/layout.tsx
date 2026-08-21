@@ -17,13 +17,7 @@ function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className='flex min-h-dvh'>
       <aside className='hidden lg:flex lg:w-2/5 relative bg-neutral-900'>
-        <picture>
-          <img
-            src='/assets/bg-auth.webp'
-            alt='Fondo Inicio de sesión'
-            className='object-cover opacity-40 w-full h-full'
-          />
-        </picture>
+        <div className='grow bg-[url(/assets/bg-auth.webp)] opacity-40 bg-cover bg-center' />
 
         <div className='absolute inset-0 bg-linear-to-t from-neutral-900 via-neutral-900/30 to-transparent' />
 
