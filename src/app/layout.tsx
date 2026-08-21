@@ -211,7 +211,7 @@ interface RootLayoutProps {
 
 function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang='es'>
+    <html lang='es' className='overscroll-y-none'>
       <body className={`${montserrat.className} antialiased`}>
         {children}
         <Toaster closeButton richColors position='top-right' />
