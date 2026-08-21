@@ -1,200 +1,200 @@
-import "@/styles/globals.css";
-import type { Metadata, Viewport } from "next";
-import { Montserrat } from "next/font/google";
-import type { ReactNode } from "react";
-import { Toaster } from "sonner";
+import '@/styles/globals.css';
+import type { Metadata, Viewport } from 'next';
+import { Montserrat } from 'next/font/google';
+import type { ReactNode } from 'react';
+import { Toaster } from 'sonner';
 
-const montserrat = Montserrat({ subsets: ["latin"] });
+const montserrat = Montserrat({ subsets: ['latin'] });
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+  : 'http://localhost:3000';
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: {
-    default: "Boya | Materiales de construcción al por mayor",
-    template: "%s | Boya",
+    default: 'Boya | Materiales de construcción al por mayor',
+    template: '%s | Boya',
   },
   description:
-    "Somos los mayores Importadores de gerflor en mexico. estamos presentes en toda la republica mexicana, con mas de 70,000 metros cuadrados en recubrimientos especializados.",
-  manifest: "/manifest.webmanifest",
+    'Somos los mayores Importadores de gerflor en mexico. estamos presentes en toda la republica mexicana, con mas de 70,000 metros cuadrados en recubrimientos especializados.',
+  manifest: '/manifest.webmanifest',
   icons: {
-    icon: [{ url: "/favicon.svg" }],
-    apple: [{ url: "/apple-icon-180.png" }],
+    icon: [{ url: '/favicon.svg' }],
+    apple: [{ url: '/apple-icon-180.png' }],
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: 'black-translucent',
     startupImage: [
       {
-        url: "/apple-splash-2048-2732.jpg",
+        url: '/apple-splash-2048-2732.jpg',
         media:
-          "(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2732-2048.jpg",
+        url: '/apple-splash-2732-2048.jpg',
         media:
-          "(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1668-2388.jpg",
+        url: '/apple-splash-1668-2388.jpg',
         media:
-          "(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2388-1668.jpg",
+        url: '/apple-splash-2388-1668.jpg',
         media:
-          "(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1536-2048.jpg",
+        url: '/apple-splash-1536-2048.jpg',
         media:
-          "(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2048-1536.jpg",
+        url: '/apple-splash-2048-1536.jpg',
         media:
-          "(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1488-2266.jpg",
+        url: '/apple-splash-1488-2266.jpg',
         media:
-          "(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2266-1488.jpg",
+        url: '/apple-splash-2266-1488.jpg',
         media:
-          "(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1640-2360.jpg",
+        url: '/apple-splash-1640-2360.jpg',
         media:
-          "(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2360-1640.jpg",
+        url: '/apple-splash-2360-1640.jpg',
         media:
-          "(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1668-2224.jpg",
+        url: '/apple-splash-1668-2224.jpg',
         media:
-          "(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2224-1668.jpg",
+        url: '/apple-splash-2224-1668.jpg',
         media:
-          "(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1620-2160.jpg",
+        url: '/apple-splash-1620-2160.jpg',
         media:
-          "(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2160-1620.jpg",
+        url: '/apple-splash-2160-1620.jpg',
         media:
-          "(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1290-2796.jpg",
+        url: '/apple-splash-1290-2796.jpg',
         media:
-          "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2796-1290.jpg",
+        url: '/apple-splash-2796-1290.jpg',
         media:
-          "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1179-2556.jpg",
+        url: '/apple-splash-1179-2556.jpg',
         media:
-          "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2556-1179.jpg",
+        url: '/apple-splash-2556-1179.jpg',
         media:
-          "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1284-2778.jpg",
+        url: '/apple-splash-1284-2778.jpg',
         media:
-          "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2778-1284.jpg",
+        url: '/apple-splash-2778-1284.jpg',
         media:
-          "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1170-2532.jpg",
+        url: '/apple-splash-1170-2532.jpg',
         media:
-          "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2532-1170.jpg",
+        url: '/apple-splash-2532-1170.jpg',
         media:
-          "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1125-2436.jpg",
+        url: '/apple-splash-1125-2436.jpg',
         media:
-          "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2436-1125.jpg",
+        url: '/apple-splash-2436-1125.jpg',
         media:
-          "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1242-2688.jpg",
+        url: '/apple-splash-1242-2688.jpg',
         media:
-          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2688-1242.jpg",
+        url: '/apple-splash-2688-1242.jpg',
         media:
-          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-828-1792.jpg",
+        url: '/apple-splash-828-1792.jpg',
         media:
-          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-1792-828.jpg",
+        url: '/apple-splash-1792-828.jpg',
         media:
-          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-1242-2208.jpg",
+        url: '/apple-splash-1242-2208.jpg',
         media:
-          "(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+          '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-2208-1242.jpg",
+        url: '/apple-splash-2208-1242.jpg',
         media:
-          "(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)",
+          '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-750-1334.jpg",
+        url: '/apple-splash-750-1334.jpg',
         media:
-          "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-1334-750.jpg",
+        url: '/apple-splash-1334-750.jpg',
         media:
-          "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
       {
-        url: "/apple-splash-640-1136.jpg",
+        url: '/apple-splash-640-1136.jpg',
         media:
-          "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+          '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)',
       },
       {
-        url: "/apple-splash-1136-640.jpg",
+        url: '/apple-splash-1136-640.jpg',
         media:
-          "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)",
+          '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)',
       },
     ],
   },
@@ -211,9 +211,9 @@ interface RootLayoutProps {
 
 function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="es">
+    <html lang='es'>
       <body className={`${montserrat.className} antialiased`}>{children}</body>
-      <Toaster closeButton richColors position="top-right" />
+      <Toaster closeButton richColors position='top-right' />
     </html>
   );
 }
