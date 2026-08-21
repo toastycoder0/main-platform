@@ -7,7 +7,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db:/docker-entrypoint-initdb.d
     env_file:
       - .env
     environment:
