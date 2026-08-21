@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Montserrat } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const montserrat = Montserrat({ subsets: ['latin'] });
 const defaultUrl = process.env.VERCEL_URL
@@ -213,7 +214,7 @@ function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang='es' className='overscroll-y-none'>
       <body className={`${montserrat.className} antialiased`}>
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
         <Toaster closeButton richColors position='top-right' />
       </body>
     </html>
