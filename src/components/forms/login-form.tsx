@@ -1,8 +1,13 @@
+'use client';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Field,
-  FieldContent,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
   FieldSet,
@@ -10,24 +15,66 @@ import {
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 
+const loginSchema = z.object({
+  email: z.email('El correo electrónico no es válido').min(1, 'El correo electrónico es requerido'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+});
+
 export function LoginForm() {
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  function onSubmit(data: z.infer<typeof loginSchema>) {
+    toast.success('Valores', {
+      description: (
+        <pre className='mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground'>
+          <code>{JSON.stringify(data, null, 2)}</code>
+        </pre>
+      ),
+    });
+  }
+
   return (
-    <form>
+    <form id='login-form' onSubmit={form.handleSubmit(onSubmit)}>
       <FieldSet>
         <FieldGroup>
-          <Field orientation='vertical'>
-            <FieldLabel>Correo electrónico</FieldLabel>
-            <FieldContent>
-              <Input type='email' placeholder='tu@correo.com' />
-            </FieldContent>
-            <FieldDescription>Ingresa el correo asociado a tu cuenta.</FieldDescription>
-          </Field>
-          <Field orientation='vertical'>
-            <FieldLabel>Contraseña</FieldLabel>
-            <FieldContent>
-              <PasswordInput placeholder='Ingresa tu contraseña' />
-            </FieldContent>
-          </Field>
+          <Controller
+            name='email'
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor='form-email'>Correo electrónico</FieldLabel>
+                <Input
+                  {...field}
+                  id='form-email'
+                  aria-invalid={fieldState.invalid}
+                  type='email'
+                  placeholder='tu@correo.com'
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                <FieldDescription>Ingresa el correo asociado a tu cuenta.</FieldDescription>
+              </Field>
+            )}
+          />
+
+          <Controller
+            name='password'
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor='form-password'>Contraseña</FieldLabel>
+                <PasswordInput
+                  {...field}
+                  id='form-password'
+                  aria-invalid={fieldState.invalid}
+                  placeholder='Ingresa tu contraseña'
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
         </FieldGroup>
         <Button type='submit' className='w-full'>
           Iniciar sesión
