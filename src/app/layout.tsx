@@ -212,8 +212,10 @@ interface RootLayoutProps {
 function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang='es'>
-      <body className={`${montserrat.className} antialiased`}>{children}</body>
-      <Toaster closeButton richColors position='top-right' />
+      <body className={`${montserrat.className} antialiased`}>
+        {children}
+        <Toaster closeButton richColors position='top-right' />
+      </body>
     </html>
   );
 }
