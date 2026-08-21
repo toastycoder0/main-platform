@@ -2,7 +2,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Field,
@@ -14,19 +13,15 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
-
-const loginSchema = z.object({
-  email: z.email('El correo electrónico no es válido').min(1, 'El correo electrónico es requerido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
-});
+import { type LoginSchema, loginSchema } from '@/lib/validations/auth';
 
 export function LoginForm() {
-  const form = useForm<z.infer<typeof loginSchema>>({
+  const form = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  function onSubmit(data: z.infer<typeof loginSchema>) {
+  function onSubmit(data: LoginSchema) {
     toast.success('Valores', {
       description: (
         <pre className='mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground'>
