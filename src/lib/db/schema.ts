@@ -1,9 +1,7 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, integer, pgEnum, snakeCase, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core';
 import { generateId } from './id';
 import { timestamps } from './time';
-
-export const userStatusEnum = pgEnum('user_status', ['pending_approval', 'active', 'suspended']);
 
 export const user = snakeCase.table(
   'user',
@@ -11,15 +9,17 @@ export const user = snakeCase.table(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => generateId('user')),
-    name: text().notNull(),
     firstName: text().notNull(),
     lastName: text().notNull(),
     email: text().unique().notNull(),
     emailVerified: boolean().default(true),
     image: text(),
-    status: userStatusEnum().default('pending_approval').notNull(),
     sortOrder: integer().notNull().default(0),
     deletedAt: timestamp({ withTimezone: true }),
+    role: text(),
+    banned: boolean(),
+    banReason: text(),
+    banExpires: timestamp({ precision: 6, withTimezone: true }),
     ...timestamps,
   },
   (table) => [
@@ -40,6 +40,7 @@ export const session = snakeCase.table(
     expiresAt: timestamp({ withTimezone: true }).notNull(),
     ipAddress: text(),
     userAgent: text(),
+    impersonatedBy: text(),
     ...timestamps,
   },
   (table) => [index('session_user_id_idx').on(table.userId)],
