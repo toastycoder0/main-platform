@@ -1,6 +1,30 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import * as z from 'zod';
 
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      NEXT_PUBLIC_CLOUD_URL?: string;
+      NEXT_PUBLIC_PHONE?: string;
+      NEXT_PUBLIC_EMAIL?: string;
+      NEXT_PUBLIC_CALCULATOR_SOURCE?: string;
+      DATABASE_URL?: string;
+      CLOUD_ACCOUNT_ID?: string;
+      CLOUD_ENDPOINT?: string;
+      CLOUD_SECRET_ACCESS_KEY?: string;
+      CLOUD_ACCESS_KEY_ID?: string;
+      CLOUD_BUCKET?: string;
+      EXCHANGE_TOKEN?: string;
+      CRON_SECRET?: string;
+      BILLING_API_URL?: string;
+      BILLING_USERNAME?: string;
+      BILLING_PASSWORD?: string;
+      BETTER_AUTH_SECRET?: string;
+      VERCEL_URL?: string;
+    }
+  }
+}
+
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
