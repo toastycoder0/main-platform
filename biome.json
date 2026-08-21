@@ -72,12 +72,6 @@
           "level": "error",
           "options": { "syntax": "shorthand" }
         },
-        "useNamingConvention": {
-          "level": "error",
-          "options": {
-            "strictCase": true
-          }
-        },
         "useBlockStatements": "error",
         "useFragmentSyntax": "error"
       },

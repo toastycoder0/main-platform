@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/style/useNamingConvention: Environment variables must use UPPER_CASE by system convention. */
 import { createEnv } from '@t3-oss/env-nextjs';
 import * as z from 'zod';
 
