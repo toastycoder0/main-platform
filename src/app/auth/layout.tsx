@@ -49,7 +49,7 @@ function AuthLayout({ children }: AuthLayoutProps) {
           </Link>
         </section>
 
-        <section className='px-6 m-auto'>{children}</section>
+        <section className='px-6 pt-6 pb-8 m-auto w-full max-w-112.5'>{children}</section>
       </main>
     </div>
   );
