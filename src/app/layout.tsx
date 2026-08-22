@@ -1,4 +1,4 @@
-import '@/styles/globals.css';
+import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Montserrat } from 'next/font/google';
 import type { ReactNode } from 'react';
