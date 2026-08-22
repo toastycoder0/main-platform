@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Montserrat } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/shared/components/tooltip';
 
 const montserrat = Montserrat({ subsets: ['latin'] });
 const defaultUrl = process.env.VERCEL_URL

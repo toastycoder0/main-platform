@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LoginForm } from '@/components/forms/login-form';
-import { env } from '@/env';
+import { env } from '@/config/env';
+import { LoginForm } from '@/modules/auth/components/login-form';
 
 export const metadata: Metadata = {
   title: 'Iniciar sesión',
