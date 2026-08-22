@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
-import { loginSchema } from './auth.validation';
+import { loginSchema } from './auth.schema';
 
 describe('loginSchema', () => {
   it('successfully validates a correct email and password', () => {

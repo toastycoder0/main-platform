@@ -2,7 +2,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { type LoginSchema, loginSchema } from '@/modules/auth/validations/auth.validation';
+import { type LoginSchema, loginSchema } from '@/modules/auth/application/auth.schema';
 import { Button } from '@/shared/components/button';
 import {
   Field,
