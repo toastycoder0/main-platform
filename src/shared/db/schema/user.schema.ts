@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { boolean, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core';
-import { generateId } from '@/shared/db/id';
-import { timestamps } from '@/shared/db/time';
+import { generateId } from '../id';
+import { timestamps } from '../time';
 
 export const user = snakeCase.table(
   'user',
