@@ -16,7 +16,7 @@ import {
 } from '@/shared/components/sheet';
 import { Skeleton } from '@/shared/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/tooltip';
-import { useIsMobile } from '@/shared/hooks/use-mobile';
+import { useIsMobile } from '@/shared/hooks/use-is-mobile';
 import { cn } from '@/shared/utils/cn';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
