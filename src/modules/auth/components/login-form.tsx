@@ -1,8 +1,10 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { type LoginSchema, loginSchema } from '@/modules/auth/application/auth.validation';
+import { login } from '@/modules/auth/infrastructure/login.action';
 import { Button } from '@/shared/components/button';
 import {
   Field,
@@ -16,28 +18,35 @@ import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
 
 export function LoginForm() {
-  const form = useForm<LoginSchema>({
+  const router = useRouter();
+
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting },
+  } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  function onSubmit(data: LoginSchema) {
-    toast.success('Valores', {
-      description: (
-        <pre className='mt-2 w-[320px] overflow-x-auto rounded-md bg-code p-4 text-code-foreground'>
-          <code>{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+  async function onSubmit(data: LoginSchema) {
+    const result = await login(data);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    router.push('/');
   }
 
   return (
-    <form id='login-form' onSubmit={form.handleSubmit(onSubmit)}>
+    <form id='login-form' onSubmit={handleSubmit(onSubmit)}>
       <FieldSet>
         <FieldGroup>
           <Controller
             name='email'
-            control={form.control}
+            control={control}
             render={({ field, fieldState }) => (
               <Field orientation='vertical' data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor='form-email'>Correo electrónico</FieldLabel>
@@ -56,7 +65,7 @@ export function LoginForm() {
 
           <Controller
             name='password'
-            control={form.control}
+            control={control}
             render={({ field, fieldState }) => (
               <Field orientation='vertical' data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor='form-password'>Contraseña</FieldLabel>
@@ -71,7 +80,7 @@ export function LoginForm() {
             )}
           />
         </FieldGroup>
-        <Button type='submit' className='w-full'>
+        <Button type='submit' className='w-full' disabled={isSubmitting}>
           Iniciar sesión
         </Button>
       </FieldSet>
