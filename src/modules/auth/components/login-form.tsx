@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { type LoginSchema, loginSchema } from '@/modules/auth/application/auth.validation';
-import { login } from '@/modules/auth/infrastructure/login.action';
+import { login } from '@/modules/auth/infrastructure/auth.action';
 import { Button } from '@/shared/components/button';
 import {
   Field,

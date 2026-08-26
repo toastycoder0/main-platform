@@ -1,6 +1,7 @@
 'use server';
 
 import { isAPIError } from 'better-auth/api';
+import { redirect } from 'next/dist/client/components/redirect';
 import { headers } from 'next/headers';
 import { loginSchema } from '@/modules/auth/application/auth.validation';
 import { auth } from '@/shared/auth';
@@ -27,4 +28,10 @@ export async function login(data: unknown): Promise<LoginResult> {
     }
     return { success: false, error: 'Error al iniciar sesión' };
   }
+}
+
+export async function logout() {
+  await auth.api.signOut({ headers: await headers() });
+
+  redirect('/auth/login');
 }
