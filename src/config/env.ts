@@ -20,8 +20,8 @@ declare global {
       BILLING_USERNAME?: string;
       BILLING_PASSWORD?: string;
       BETTER_AUTH_SECRET?: string;
-      AUTH_EMAIL?: string;
-      AUTH_PASSWORD?: string;
+      ADMIN_SEED_EMAIL: string;
+      ADMIN_SEED_PASSWORD: string;
       VERCEL_URL?: string;
     }
   }
@@ -41,8 +41,8 @@ export const env = createEnv({
     BILLING_USERNAME: z.string().min(1),
     BILLING_PASSWORD: z.string().min(1),
     BETTER_AUTH_SECRET: z.string().min(1),
-    AUTH_EMAIL: z.string().email().optional(),
-    AUTH_PASSWORD: z.string().min(8).optional(),
+    ADMIN_SEED_EMAIL: z.email(),
+    ADMIN_SEED_PASSWORD: z.string().min(8),
   },
   client: {
     NEXT_PUBLIC_CLOUD_URL: z.url(),
@@ -67,7 +67,7 @@ export const env = createEnv({
     BILLING_USERNAME: process.env.BILLING_USERNAME,
     BILLING_PASSWORD: process.env.BILLING_PASSWORD,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    AUTH_EMAIL: process.env.AUTH_EMAIL,
-    AUTH_PASSWORD: process.env.AUTH_PASSWORD,
+    ADMIN_SEED_EMAIL: process.env.ADMIN_SEED_EMAIL,
+    ADMIN_SEED_PASSWORD: process.env.ADMIN_SEED_PASSWORD,
   },
 });
