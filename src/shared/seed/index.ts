@@ -1,20 +1,27 @@
-import { env } from '@/config/env';
-import { auth } from '@/shared/auth';
+import { env } from "@/config/env";
+import { auth } from "@/shared/auth";
+import { logger } from "@/shared/logger";
 
 async function seed() {
-  const { ADMIN_SEED_EMAIL: email, ADMIN_SEED_PASSWORD: password } = env;
-
   const newUser = await auth.api.createUser({
     body: {
-      email,
-      password,
-      role: 'admin',
-      name: 'John',
-      data: {
-        lastName: 'Doe',
-      },
+      email: env.ADMIN_SEED_EMAIL,
+      password: env.ADMIN_SEED_PASSWORD,
+      role: "admin",
+      name: "John",
+      data: { lastName: "Doe" },
     },
   });
+
+  logger.info(newUser);
 }
 
-await seed();
+seed()
+  .then(() => {
+    logger.info("Admin user seeded successfully");
+    process.exit(0);
+  })
+  .catch((error) => {
+    logger.error("Seeding process failed:", error);
+    process.exit(1);
+  });

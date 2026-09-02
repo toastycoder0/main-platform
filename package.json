@@ -13,7 +13,7 @@
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/shared/seed/index.ts"
+    "db:seed": "tsx --env-file=.env src/shared/seed/index.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -32,6 +32,7 @@
     "lucide-react": "^1.33.0",
     "next": "16.3.1",
     "pg": "^8.23.0",
+    "pino": "^10.3.1",
     "postgres": "^3.4.9",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",
