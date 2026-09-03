@@ -29,11 +29,11 @@ export function LoginForm() {
     defaultValues: { email: '', password: '' },
   });
 
-  async function onSubmit(data: LoginSchema) {
-    const result = await login(data);
+  async function onSubmit(values: LoginSchema) {
+    const { success, error } = await login(values);
 
-    if (!result.success) {
-      toast.error(result.error);
+    if (!success) {
+      toast.error(error);
       return;
     }
 
