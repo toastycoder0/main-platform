@@ -1,8 +1,8 @@
 'use server';
 
 import { isAPIError } from 'better-auth/api';
-import { redirect } from 'next/dist/client/components/redirect';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { loginSchema } from '@/modules/auth/application/auth.validation';
 import { auth } from '@/shared/auth';
 
@@ -15,9 +15,11 @@ export async function login(data: unknown): Promise<LoginResult> {
     return { success: false, error: 'Datos inválidos' };
   }
 
+  const { email, password } = parsed.data;
+
   try {
     await auth.api.signInEmail({
-      body: { email: parsed.data.email, password: parsed.data.password },
+      body: { email, password, rememberMe: true },
       headers: await headers(),
     });
 
