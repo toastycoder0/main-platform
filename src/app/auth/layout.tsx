@@ -1,5 +1,8 @@
+import { headers } from 'next/headers';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { auth } from '@/shared/auth';
 import { LogoLarge } from '@/shared/components/logo-large';
 
 interface AuthLayoutProps {
@@ -13,7 +16,13 @@ const TESTIMONIAL = {
   role: 'Gerente de Compras, Constructora MR',
 };
 
-function AuthLayout({ children }: AuthLayoutProps) {
+async function AuthLayout({ children }: AuthLayoutProps) {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (session) {
+    redirect('/');
+  }
+
   return (
     <div className='flex min-h-dvh'>
       <aside className='hidden lg:flex lg:w-2/5 relative bg-neutral-900'>
