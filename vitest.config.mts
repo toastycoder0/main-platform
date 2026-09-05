@@ -14,6 +14,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
-    globalSetup: ['./src/shared/db/integration/setup.ts'],
+    globalSetup: ['./src/shared/db/test/setup.ts'],
   },
 });
