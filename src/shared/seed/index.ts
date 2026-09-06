@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { env } from '@/config/env';
-import { auth } from '@/shared/auth';
+import { auth } from '@/modules/auth/infrastructure/auth.config';
 import { db } from '@/shared/db';
 import { user } from '@/shared/db/schema';
 import { logger } from '@/shared/logger';

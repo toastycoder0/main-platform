@@ -4,8 +4,8 @@ import { isAPIError } from 'better-auth/api';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { loginSchema } from '@/modules/auth/application/auth.validation';
-import { auth } from '@/shared/auth';
 import type { user } from '@/shared/db/schema';
+import { auth } from './auth.config';
 
 type SessionUser = Pick<
   typeof user.$inferSelect,
