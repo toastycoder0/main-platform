@@ -1,11 +1,9 @@
-import { headers } from 'next/headers';
 import Link from 'next/link';
-import { logout } from '@/modules/auth/infrastructure/auth.action';
-import { auth } from '@/shared/auth';
+import { getSession, logout } from '@/modules/auth/infrastructure/auth.action';
 import { Button, buttonVariants } from '@/shared/components/button';
 
 async function Home() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   return (
     <div className='p-8'>

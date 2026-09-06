@@ -1,8 +1,7 @@
-import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { auth } from '@/shared/auth';
+import { getSession } from '@/modules/auth/infrastructure/auth.action';
 import { LogoLarge } from '@/shared/components/logo-large';
 
 interface AuthLayoutProps {
@@ -17,7 +16,7 @@ const TESTIMONIAL = {
 };
 
 async function AuthLayout({ children }: AuthLayoutProps) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
 
   if (session) {
     redirect('/');
