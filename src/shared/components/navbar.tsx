@@ -1,0 +1,395 @@
+'use client';
+
+import { Menu, Search, ShoppingCart } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { type KeyboardEvent, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { SignOutButton } from '@/modules/auth/components/sign-out-button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/shared/components/accordion';
+import { Avatar, AvatarFallback } from '@/shared/components/avatar';
+import { buttonVariants } from '@/shared/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/dropdown-menu';
+import { Input } from '@/shared/components/input';
+import { LogoLarge } from '@/shared/components/logo-large';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from '@/shared/components/navigation-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/shared/components/sheet';
+import { cn } from '@/shared/utils/cn';
+
+export interface NavLink {
+  label: string;
+  href: string;
+  children?: NavLink[];
+  icon?: ReactNode;
+}
+
+export interface NavbarProps {
+  isAuthenticated: boolean;
+  userName?: string;
+  userLinks?: NavLink[];
+  cartItemCount?: number;
+  showCart?: boolean;
+  navLinks?: NavLink[];
+  onSearch?: (query: string) => void;
+}
+
+const DEPTH_CLASSES: Record<number, string> = {
+  0: 'font-medium',
+  1: 'ml-3',
+  2: 'ml-6',
+  3: 'ml-9',
+  4: 'ml-12',
+  5: 'ml-16',
+  6: 'ml-20',
+};
+
+function renderSubLinks(links: NavLink[], depth = 0) {
+  const indent = DEPTH_CLASSES[depth] ?? 'ml-20';
+
+  return links.map((link) => (
+    <li key={link.href} className='break-inside-avoid'>
+      <NavigationMenuLink href={link.href} className={indent}>
+        {link.label}
+      </NavigationMenuLink>
+      {link.children?.length && (
+        <ul className='mt-1'>{renderSubLinks(link.children, depth + 1)}</ul>
+      )}
+    </li>
+  ));
+}
+
+function CategoryDropdownContent({ links }: { links: NavLink[] }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const [cols, setCols] = useState(1);
+  const MAX_COLS = 2;
+
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (!el) {
+      return;
+    }
+    if (el.scrollHeight > el.clientHeight && cols < MAX_COLS) {
+      setCols(cols + 1);
+    }
+  }, [cols]);
+
+  useLayoutEffect(() => {
+    const onResize = () => setCols(1);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const COL_CLASS: Record<number, string> = {
+    1: '',
+    2: 'columns-2',
+  };
+
+  return (
+    <ul
+      ref={listRef}
+      className={cn(
+        'w-max min-w-56 max-w-2xl p-2 max-h-[calc(100dvh-8rem)] overflow-y-auto space-y-1 rounded-xl',
+        cols > 1 && 'gap-8',
+        COL_CLASS[cols],
+      )}
+    >
+      {renderSubLinks(links)}
+    </ul>
+  );
+}
+
+function renderNavLinks(links: NavLink[]) {
+  return links.map((link) =>
+    link.children?.length ? (
+      <NavigationMenuItem key={link.href}>
+        <NavigationMenuTrigger>{link.label}</NavigationMenuTrigger>
+        <NavigationMenuContent>
+          <CategoryDropdownContent links={link.children} />
+        </NavigationMenuContent>
+      </NavigationMenuItem>
+    ) : (
+      <NavigationMenuItem key={link.href}>
+        <NavigationMenuLink href={link.href} className={navigationMenuTriggerStyle()}>
+          {link.label}
+        </NavigationMenuLink>
+      </NavigationMenuItem>
+    ),
+  );
+}
+
+function renderMobileLinks(links: NavLink[], onNavigate: () => void) {
+  return links.map((link) =>
+    link.children?.length ? (
+      <AccordionItem key={link.href} value={link.href}>
+        <AccordionTrigger className='text-sm text-neutral-700'>{link.label}</AccordionTrigger>
+        <AccordionContent>
+          <div className='ml-3 flex flex-col gap-1 border-l border-neutral-100 pl-3'>
+            {renderMobileSubLinks(link.children, onNavigate)}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    ) : (
+      <Link
+        key={link.href}
+        href={link.href}
+        onClick={onNavigate}
+        className='block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
+      >
+        {link.label}
+      </Link>
+    ),
+  );
+}
+
+function renderMobileSubLinks(links: NavLink[], onNavigate: () => void) {
+  return links.map((link) =>
+    link.children?.length ? (
+      <Accordion key={link.href} type='multiple' className='w-full'>
+        <AccordionItem value={link.href}>
+          <AccordionTrigger className='text-sm text-neutral-700 py-2'>
+            {link.label}
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className='ml-3 flex flex-col gap-1 border-l border-neutral-100 pl-3'>
+              {renderMobileSubLinks(link.children, onNavigate)}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    ) : (
+      <Link
+        key={link.href}
+        href={link.href}
+        onClick={onNavigate}
+        className='block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
+      >
+        {link.label}
+      </Link>
+    ),
+  );
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: acceptable for a layout component with auth branching
+export function Navbar({
+  isAuthenticated,
+  userName,
+  userLinks,
+  cartItemCount = 0,
+  showCart = true,
+  navLinks,
+  onSearch,
+}: NavbarProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const submitSearch = () => {
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      if (onSearch) {
+        onSearch(trimmed);
+      } else {
+        router.push(`/products?q=${encodeURIComponent(trimmed)}`);
+      }
+    }
+  };
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      submitSearch();
+    }
+  };
+
+  const searchBar = (
+    <div className='relative w-full'>
+      <Input
+        type='text'
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={handleSearchKeyDown}
+        placeholder='Buscar productos, categorías o marcas…'
+        className='w-full bg-[#ECECED] pr-8'
+        aria-label='Buscar productos'
+      />
+      <button
+        type='button'
+        onClick={submitSearch}
+        className='absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-neutral-400 transition-colors hover:text-neutral-600'
+        aria-label='Ejecutar búsqueda'
+      >
+        <Search className='size-4' />
+      </button>
+    </div>
+  );
+
+  const logo = (
+    <Link href='/' aria-label='Ir al inicio' className='shrink-0'>
+      <LogoLarge className='h-8 w-auto' />
+    </Link>
+  );
+
+  const cartButton = (
+    <Link
+      href='/cart'
+      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+      aria-label={`Carrito${cartItemCount > 0 ? `, ${cartItemCount} producto${cartItemCount !== 1 ? 's' : ''}` : ''}`}
+    >
+      <ShoppingCart className='size-5' />
+      {cartItemCount > 0 && (
+        <span className='absolute -right-1 -top-1 flex min-w-4.5 items-center justify-center rounded-full bg-neutral-900 px-1 text-[10px] font-bold leading-tight text-white'>
+          {cartItemCount > 99 ? '99+' : cartItemCount}
+        </span>
+      )}
+    </Link>
+  );
+
+  const userInitial = userName?.charAt(0).toUpperCase() || 'U';
+
+  const desktopUserArea = isAuthenticated ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type='button'
+          className='flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-muted'
+          aria-label='Menú de usuario'
+        >
+          <Avatar size='sm'>
+            <AvatarFallback>{userInitial}</AvatarFallback>
+          </Avatar>
+          <span className='text-sm font-medium'>{userName || 'Usuario'}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-40'>
+        {userLinks?.map((link) => (
+          <DropdownMenuItem key={link.href} asChild>
+            <Link href={link.href} className='flex items-center gap-2'>
+              {link.icon}
+              {link.label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuItem asChild>
+          <SignOutButton />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : (
+    <Link href='/auth/login' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+      Iniciar sesión
+    </Link>
+  );
+
+  const mobileAuthSection = isAuthenticated ? (
+    <>
+      {userLinks?.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          onClick={() => setMobileMenuOpen(false)}
+          className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100'
+        >
+          {link.icon}
+          {link.label}
+        </Link>
+      ))}
+      <SignOutButton
+        afterSignOut={() => setMobileMenuOpen(false)}
+        className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
+      />
+    </>
+  ) : (
+    <Link
+      href='/auth/login'
+      onClick={() => setMobileMenuOpen(false)}
+      className={buttonVariants({ variant: 'outline' })}
+    >
+      Iniciar sesión
+    </Link>
+  );
+
+  return (
+    <>
+      <header className='sticky top-0 z-40 border-b border-neutral-200 bg-white'>
+        <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-1.5 md:flex'>
+          <div className='flex-1'>{logo}</div>
+          <div className='w-72 lg:w-xl shrink-0'>{searchBar}</div>
+
+          <div className='flex flex-1 items-center justify-end gap-3'>
+            {desktopUserArea}
+            {showCart && cartButton}
+          </div>
+        </div>
+
+        {navLinks?.length && (
+          <div className='mx-auto hidden max-w-7xl flex-wrap justify-center px-4 pb-1.5 md:flex'>
+            <NavigationMenu className='max-w-max'>
+              <NavigationMenuList>{renderNavLinks(navLinks)}</NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        )}
+
+        <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
+          {showCart && cartButton}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <button
+                type='button'
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                aria-label='Abrir menú'
+              >
+                <Menu className='size-5' />
+              </button>
+            </SheetTrigger>
+            <SheetContent side='left' className='flex w-full max-w-full flex-col p-0'>
+              <SheetHeader className='px-4 pt-4 pb-0'>
+                <SheetTitle className='sr-only'>Menú de navegación</SheetTitle>
+                {logo}
+              </SheetHeader>
+
+              <div className='flex-1 overflow-y-auto px-4 pt-4'>
+                {searchBar}
+
+                {navLinks?.length ? (
+                  <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1'>
+                    <Accordion type='multiple'>
+                      {renderMobileLinks(navLinks, () => setMobileMenuOpen(false))}
+                    </Accordion>
+                  </nav>
+                ) : null}
+              </div>
+
+              <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
+                {mobileAuthSection}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </header>
+
+      <div className='fixed top-3 left-4 z-60 md:hidden'>{logo}</div>
+    </>
+  );
+}
