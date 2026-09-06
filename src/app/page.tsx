@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { getSession, logout } from '@/modules/auth/infrastructure/auth.action';
+import { logout } from '@/modules/auth/infrastructure/auth.action';
+import { getSession } from '@/modules/auth/infrastructure/auth.query';
 import { Button, buttonVariants } from '@/shared/components/button';
 
 async function Home() {

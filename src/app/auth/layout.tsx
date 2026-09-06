@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { getSession } from '@/modules/auth/infrastructure/auth.action';
+import { getSession } from '@/modules/auth/infrastructure/auth.query';
 import { LogoLarge } from '@/shared/components/logo-large';
 
 interface AuthLayoutProps {
