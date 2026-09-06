@@ -12,8 +12,11 @@ export default defineConfig({
     },
   },
   test: {
+    include: ['./e2e/**/*.e2e.test.ts'],
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
-    globalSetup: ['./src/shared/db/test/setup.ts'],
+    setupFiles: [],
+    globalSetup: ['./e2e/setup.ts'],
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
   },
 });
