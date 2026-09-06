@@ -3,8 +3,8 @@
 import { isAPIError } from 'better-auth/api';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { loginSchema } from '@/modules/auth/application/auth.validation';
 import type { LoginResult } from '../application/auth.dto';
+import { loginSchema } from '../application/auth.validation';
 import { auth } from './auth.config';
 
 export async function login(data: unknown): Promise<LoginResult> {
