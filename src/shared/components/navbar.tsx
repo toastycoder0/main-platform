@@ -376,44 +376,45 @@ export function Navbar({
         )}
 
         <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
-          {showCart && cartButton}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <button
-                type='button'
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                aria-label='Abrir menú'
-              >
-                <Menu className='size-5' />
-              </button>
-            </SheetTrigger>
-            <SheetContent side='left' className='flex w-full max-w-full flex-col p-0'>
-              <SheetHeader className='px-4 pt-4 pb-0'>
-                <SheetTitle className='sr-only'>Menú de navegación</SheetTitle>
-                {logo}
-              </SheetHeader>
+          <div className='flex items-center gap-1'>
+            {showCart && cartButton}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type='button'
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  aria-label='Abrir menú'
+                >
+                  <Menu className='size-5' />
+                </button>
+              </SheetTrigger>
+              <SheetContent side='left' className='flex w-full max-w-full flex-col p-0'>
+                <SheetHeader className='sr-only'>
+                  <SheetTitle>Menú de navegación</SheetTitle>
+                </SheetHeader>
 
-              <div className='flex-1 overflow-y-auto px-4 pt-4'>
-                {searchBar}
+                <div className='flex-1 overflow-y-auto px-4 pt-16'>
+                  {searchBar}
 
-                {navLinks?.length ? (
-                  <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1'>
-                    <Accordion type='multiple'>
-                      {renderMobileLinks(navLinks, () => setMobileMenuOpen(false))}
-                    </Accordion>
-                  </nav>
-                ) : null}
-              </div>
+                  {navLinks?.length ? (
+                    <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1'>
+                      <Accordion type='multiple'>
+                        {renderMobileLinks(navLinks, () => setMobileMenuOpen(false))}
+                      </Accordion>
+                    </nav>
+                  ) : null}
+                </div>
 
-              <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                <MobileAuthArea
-                  isAuthenticated={isAuthenticated}
-                  userLinks={userLinks}
-                  onClose={() => setMobileMenuOpen(false)}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+                <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
+                  <MobileAuthArea
+                    isAuthenticated={isAuthenticated}
+                    userLinks={userLinks}
+                    onClose={() => setMobileMenuOpen(false)}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
