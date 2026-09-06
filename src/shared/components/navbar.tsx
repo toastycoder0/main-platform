@@ -48,12 +48,12 @@ export interface NavLink {
 
 export interface NavbarProps {
   isAuthenticated: boolean;
-  userName?: string;
-  userLinks?: NavLink[];
+  userName: string | undefined;
+  userLinks: NavLink[] | undefined;
   cartItemCount?: number;
   showCart?: boolean;
-  navLinks?: NavLink[];
-  onSearch?: (query: string) => void;
+  navLinks: NavLink[] | undefined;
+  onSearch: ((query: string) => void) | undefined;
 }
 
 const DEPTH_CLASSES: Record<number, string> = {
@@ -192,7 +192,90 @@ function renderMobileSubLinks(links: NavLink[], onNavigate: () => void) {
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: acceptable for a layout component with auth branching
+interface DesktopUserAreaProps {
+  isAuthenticated: boolean;
+  userName: string | undefined;
+  userLinks: NavLink[] | undefined;
+}
+
+function DesktopUserArea({ isAuthenticated, userName, userLinks }: DesktopUserAreaProps) {
+  if (!isAuthenticated) {
+    return (
+      <Link href='/auth/login' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+        Iniciar sesión
+      </Link>
+    );
+  }
+
+  const userInitial = userName?.charAt(0).toUpperCase() || 'U';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type='button'
+          className='flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-muted'
+          aria-label='Menú de usuario'
+        >
+          <Avatar size='sm'>
+            <AvatarFallback>{userInitial}</AvatarFallback>
+          </Avatar>
+          <span className='text-sm font-medium'>{userName || 'Usuario'}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-40'>
+        {userLinks?.map((link) => (
+          <DropdownMenuItem key={link.href} asChild>
+            <Link href={link.href} className='flex items-center gap-2'>
+              {link.icon}
+              {link.label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuItem asChild>
+          <SignOutButton />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+interface MobileAuthAreaProps {
+  isAuthenticated: boolean;
+  userLinks: NavLink[] | undefined;
+  onClose: () => void;
+}
+
+function MobileAuthArea({ isAuthenticated, userLinks, onClose }: MobileAuthAreaProps) {
+  if (!isAuthenticated) {
+    return (
+      <Link href='/auth/login' onClick={onClose} className={buttonVariants({ variant: 'outline' })}>
+        Iniciar sesión
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      {userLinks?.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          onClick={onClose}
+          className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100'
+        >
+          {link.icon}
+          {link.label}
+        </Link>
+      ))}
+      <SignOutButton
+        afterSignOut={onClose}
+        className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
+      />
+    </>
+  );
+}
+
 export function Navbar({
   isAuthenticated,
   userName,
@@ -208,12 +291,13 @@ export function Navbar({
 
   const submitSearch = () => {
     const trimmed = searchQuery.trim();
-    if (trimmed) {
-      if (onSearch) {
-        onSearch(trimmed);
-      } else {
-        router.push(`/products?q=${encodeURIComponent(trimmed)}`);
-      }
+    if (!trimmed) {
+      return;
+    }
+    if (onSearch) {
+      onSearch(trimmed);
+    } else {
+      router.push(`/products?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
@@ -266,70 +350,6 @@ export function Navbar({
     </Link>
   );
 
-  const userInitial = userName?.charAt(0).toUpperCase() || 'U';
-
-  const desktopUserArea = isAuthenticated ? (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type='button'
-          className='flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-muted'
-          aria-label='Menú de usuario'
-        >
-          <Avatar size='sm'>
-            <AvatarFallback>{userInitial}</AvatarFallback>
-          </Avatar>
-          <span className='text-sm font-medium'>{userName || 'Usuario'}</span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-40'>
-        {userLinks?.map((link) => (
-          <DropdownMenuItem key={link.href} asChild>
-            <Link href={link.href} className='flex items-center gap-2'>
-              {link.icon}
-              {link.label}
-            </Link>
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuItem asChild>
-          <SignOutButton />
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ) : (
-    <Link href='/auth/login' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-      Iniciar sesión
-    </Link>
-  );
-
-  const mobileAuthSection = isAuthenticated ? (
-    <>
-      {userLinks?.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          onClick={() => setMobileMenuOpen(false)}
-          className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100'
-        >
-          {link.icon}
-          {link.label}
-        </Link>
-      ))}
-      <SignOutButton
-        afterSignOut={() => setMobileMenuOpen(false)}
-        className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
-      />
-    </>
-  ) : (
-    <Link
-      href='/auth/login'
-      onClick={() => setMobileMenuOpen(false)}
-      className={buttonVariants({ variant: 'outline' })}
-    >
-      Iniciar sesión
-    </Link>
-  );
-
   return (
     <>
       <header className='sticky top-0 z-40 border-b border-neutral-200 bg-white'>
@@ -338,7 +358,11 @@ export function Navbar({
           <div className='w-72 lg:w-xl shrink-0'>{searchBar}</div>
 
           <div className='flex flex-1 items-center justify-end gap-3'>
-            {desktopUserArea}
+            <DesktopUserArea
+              isAuthenticated={isAuthenticated}
+              userName={userName}
+              userLinks={userLinks}
+            />
             {showCart && cartButton}
           </div>
         </div>
@@ -382,7 +406,11 @@ export function Navbar({
               </div>
 
               <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                {mobileAuthSection}
+                <MobileAuthArea
+                  isAuthenticated={isAuthenticated}
+                  userLinks={userLinks}
+                  onClose={() => setMobileMenuOpen(false)}
+                />
               </div>
             </SheetContent>
           </Sheet>
