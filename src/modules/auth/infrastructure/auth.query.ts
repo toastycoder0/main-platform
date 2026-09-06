@@ -16,6 +16,7 @@ export async function getSession(): Promise<SessionDTO | null> {
       firstName: session.user.name,
       lastName: session.user.lastName,
       role: session.user.role ?? null,
+      name: `${session.user.name} ${session.user.lastName}`.trim(),
     },
   };
 }
