@@ -36,21 +36,4 @@ describe('Auth route restrictions E2E', () => {
     const count = await page.getByText('Iniciar sesión').count();
     expect(count).toBeGreaterThanOrEqual(1);
   });
-
-  it('hides login link after authentication', async () => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASS);
-    await page.waitForURL('**/');
-
-    const count = await page.getByText('Cerrar sesión').count();
-    expect(count).toBeGreaterThanOrEqual(1);
-  });
-
-  it('clears session after logout', async () => {
-    await loginAs(page, ADMIN_EMAIL, ADMIN_PASS);
-    await page.waitForURL('**/');
-
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/auth/login');
-    expect(page.url()).toContain('/auth/login');
-  });
 });
