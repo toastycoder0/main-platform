@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['./e2e/**/*.e2e.test.ts'],
+    include: ['./e2e/**/*.spec.ts'],
     environment: 'node',
     setupFiles: [],
     globalSetup: ['./e2e/global-setup.ts', './e2e/global-teardown.ts'],
