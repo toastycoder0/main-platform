@@ -140,14 +140,14 @@ function renderNavLinks(links: NavLink[]) {
   );
 }
 
-function renderMobileLinks(links: NavLink[], onNavigate: () => void) {
+function renderMobileLinks(links: NavLink[]) {
   return links.map((link) =>
     link.children?.length ? (
       <AccordionItem key={link.href} value={link.href}>
         <AccordionTrigger className='text-sm text-neutral-700'>{link.label}</AccordionTrigger>
         <AccordionContent>
           <div className='ml-3 flex flex-col gap-1 border-l border-neutral-100 pl-3'>
-            {renderMobileSubLinks(link.children, onNavigate)}
+            {renderMobileSubLinks(link.children)}
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -155,7 +155,6 @@ function renderMobileLinks(links: NavLink[], onNavigate: () => void) {
       <Link
         key={link.href}
         href={link.href}
-        onClick={onNavigate}
         className='block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
       >
         {link.label}
@@ -164,7 +163,7 @@ function renderMobileLinks(links: NavLink[], onNavigate: () => void) {
   );
 }
 
-function renderMobileSubLinks(links: NavLink[], onNavigate: () => void) {
+function renderMobileSubLinks(links: NavLink[]) {
   return links.map((link) =>
     link.children?.length ? (
       <Accordion key={link.href} type='multiple' className='w-full'>
@@ -174,7 +173,7 @@ function renderMobileSubLinks(links: NavLink[], onNavigate: () => void) {
           </AccordionTrigger>
           <AccordionContent>
             <div className='ml-3 flex flex-col gap-1 border-l border-neutral-100 pl-3'>
-              {renderMobileSubLinks(link.children, onNavigate)}
+              {renderMobileSubLinks(link.children)}
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -183,7 +182,6 @@ function renderMobileSubLinks(links: NavLink[], onNavigate: () => void) {
       <Link
         key={link.href}
         href={link.href}
-        onClick={onNavigate}
         className='block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
       >
         {link.label}
@@ -243,13 +241,12 @@ function DesktopUserArea({ isAuthenticated, userName, userLinks }: DesktopUserAr
 interface MobileAuthAreaProps {
   isAuthenticated: boolean;
   userLinks: NavLink[] | undefined;
-  onClose: () => void;
 }
 
-function MobileAuthArea({ isAuthenticated, userLinks, onClose }: MobileAuthAreaProps) {
+function MobileAuthArea({ isAuthenticated, userLinks }: MobileAuthAreaProps) {
   if (!isAuthenticated) {
     return (
-      <Link href='/auth/login' onClick={onClose} className={buttonVariants({ variant: 'outline' })}>
+      <Link href='/auth/login' className={buttonVariants({ variant: 'outline' })}>
         Iniciar sesión
       </Link>
     );
@@ -261,7 +258,6 @@ function MobileAuthArea({ isAuthenticated, userLinks, onClose }: MobileAuthAreaP
         <Link
           key={link.href}
           href={link.href}
-          onClick={onClose}
           className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100'
         >
           {link.icon}
@@ -269,7 +265,6 @@ function MobileAuthArea({ isAuthenticated, userLinks, onClose }: MobileAuthAreaP
         </Link>
       ))}
       <SignOutButton
-        afterSignOut={onClose}
         className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
       />
     </>
@@ -286,7 +281,6 @@ export function Navbar({
   onSearch,
 }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const submitSearch = () => {
@@ -378,7 +372,7 @@ export function Navbar({
         <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
           <div className='flex items-center gap-1'>
             {showCart && cartButton}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <Sheet>
               <SheetTrigger asChild>
                 <button
                   type='button'
@@ -399,7 +393,7 @@ export function Navbar({
                   {navLinks?.length ? (
                     <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1'>
                       <Accordion type='multiple'>
-                        {renderMobileLinks(navLinks, () => setMobileMenuOpen(false))}
+                        {renderMobileLinks(navLinks)}
                       </Accordion>
                     </nav>
                   ) : null}
@@ -409,7 +403,6 @@ export function Navbar({
                   <MobileAuthArea
                     isAuthenticated={isAuthenticated}
                     userLinks={userLinks}
-                    onClose={() => setMobileMenuOpen(false)}
                   />
                 </div>
               </SheetContent>
