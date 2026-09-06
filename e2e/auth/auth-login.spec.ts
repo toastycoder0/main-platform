@@ -11,7 +11,10 @@ const fieldError = (page: Page) => page.locator('[data-slot="field-error"]');
 
 async function getSession(page: Page) {
   const res = await page.request.get(`${BASE}/api/auth/get-session`);
-  return res.ok ? await res.json() : null;
+  if (res.ok()) {
+    return res.json();
+  }
+  return null;
 }
 
 describe('Login E2E', () => {
