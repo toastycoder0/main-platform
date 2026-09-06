@@ -1,6 +1,7 @@
-import { type Browser, chromium, type Page } from 'playwright';
+import type { Browser, Page } from 'playwright';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { createUser, loginAs } from '../helpers';
+import { createUser } from '../test-utils/api';
+import { createBrowser, createPage, loginAs } from '../test-utils/browser';
 
 const BASE = 'http://localhost:3001';
 
@@ -9,11 +10,11 @@ describe('Auth route restrictions E2E', () => {
   let page: Page;
 
   beforeAll(async () => {
-    browser = await chromium.launch({ headless: true });
+    browser = await createBrowser();
   });
 
   beforeEach(async () => {
-    page = await browser.newPage();
+    page = await createPage(browser);
   });
 
   afterAll(async () => {

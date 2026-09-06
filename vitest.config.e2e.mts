@@ -15,7 +15,7 @@ export default defineConfig({
     include: ['./e2e/**/*.e2e.test.ts'],
     environment: 'node',
     setupFiles: [],
-    globalSetup: ['./e2e/setup.ts'],
+    globalSetup: ['./e2e/global-setup.ts', './e2e/global-teardown.ts'],
     testTimeout: 60_000,
     hookTimeout: 60_000,
   },
