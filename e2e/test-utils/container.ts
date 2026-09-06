@@ -56,13 +56,11 @@ async function waitForServer(url: string, timeout: number): Promise<void> {
   const start = Date.now();
 
   while (Date.now() - start < timeout) {
-    try {
-      const res = await fetch(url);
-      if (res.status < 500) {
-        return;
-      }
-    } catch {
-      /* server not ready yet */
+    const ok = await fetch(url)
+      .then((res) => res.status < 500)
+      .catch(() => false);
+    if (ok) {
+      return;
     }
     await new Promise((r) => setTimeout(r, 1_000));
   }
