@@ -3,7 +3,7 @@
 import { isAPIError } from 'better-auth/api';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { LoginResult } from '../application/auth.dto';
+import type { LoginResult } from '../application/auth.types';
 import { loginSchema } from '../application/auth.validation';
 import { auth } from './auth.config';
 

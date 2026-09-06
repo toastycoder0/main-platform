@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import type { SessionDTO } from '../application/auth.dto';
+import type { SessionDTO } from '../application/auth.types';
 import { auth } from './auth.config';
 
 export async function getSession(): Promise<SessionDTO | null> {
