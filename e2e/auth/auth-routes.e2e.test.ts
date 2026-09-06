@@ -1,9 +1,10 @@
 import type { Browser, Page } from 'playwright';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { createUser } from '../test-utils/api';
 import { createBrowser, createPage, loginAs } from '../test-utils/browser';
 
 const BASE = 'http://localhost:3001';
+const ADMIN_EMAIL = 'admin@e2e.test';
+const ADMIN_PASS = 'Pass1234';
 
 describe('Auth route restrictions E2E', () => {
   let browser: Browser;
@@ -22,10 +23,7 @@ describe('Auth route restrictions E2E', () => {
   });
 
   it('redirects authenticated user away from /auth/login', async () => {
-    const email = `route-redirect-${Date.now()}@test.com`;
-    await createUser(email, 'Pass1234');
-
-    await loginAs(page, email, 'Pass1234');
+    await loginAs(page, ADMIN_EMAIL, ADMIN_PASS);
     await page.waitForURL('**/');
 
     await page.goto(`${BASE}/auth/login`);
@@ -40,10 +38,7 @@ describe('Auth route restrictions E2E', () => {
   });
 
   it('hides login link after authentication', async () => {
-    const email = `route-authed-${Date.now()}@test.com`;
-    await createUser(email, 'Pass1234');
-
-    await loginAs(page, email, 'Pass1234');
+    await loginAs(page, ADMIN_EMAIL, ADMIN_PASS);
     await page.waitForURL('**/');
 
     const count = await page.getByText('Cerrar sesión').count();
@@ -51,10 +46,7 @@ describe('Auth route restrictions E2E', () => {
   });
 
   it('clears session after logout', async () => {
-    const email = `route-logout-${Date.now()}@test.com`;
-    await createUser(email, 'Pass1234');
-
-    await loginAs(page, email, 'Pass1234');
+    await loginAs(page, ADMIN_EMAIL, ADMIN_PASS);
     await page.waitForURL('**/');
 
     await page.click('button[type="submit"]');
