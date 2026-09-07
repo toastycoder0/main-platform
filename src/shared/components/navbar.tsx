@@ -1,16 +1,10 @@
 'use client';
 
-import { Menu, Search, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu, Search, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { SignOutButton } from '@/modules/auth/components/sign-out-button';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/shared/components/accordion';
 import { Avatar, AvatarFallback } from '@/shared/components/avatar';
 import { buttonVariants } from '@/shared/components/button';
 import {
@@ -32,6 +26,7 @@ import {
 } from '@/shared/components/navigation-menu';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -70,7 +65,7 @@ function renderSubLinks(links: NavLink[], depth = 0) {
 
   return links.map((link) => (
     <li key={link.href} className='break-inside-avoid'>
-      <NavigationMenuLink href={link.href} className={indent}>
+      <NavigationMenuLink href={link.href} className={cn(indent, depth === 0 && 'font-semibold')}>
         {link.label}
       </NavigationMenuLink>
       {link.children?.length && (
@@ -139,56 +134,6 @@ function renderNavLinks(links: NavLink[]) {
   );
 }
 
-function renderMobileLinks(links: NavLink[]) {
-  return links.map((link) =>
-    link.children?.length ? (
-      <AccordionItem key={link.href} value={link.href}>
-        <AccordionTrigger className='text-sm text-neutral-700'>{link.label}</AccordionTrigger>
-        <AccordionContent>
-          <div className='ml-3 flex flex-col gap-1 border-l border-neutral-100 pl-3'>
-            {renderMobileSubLinks(link.children)}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    ) : (
-      <Link
-        key={link.href}
-        href={link.href}
-        className='block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
-      >
-        {link.label}
-      </Link>
-    ),
-  );
-}
-
-function renderMobileSubLinks(links: NavLink[]) {
-  return links.map((link) =>
-    link.children?.length ? (
-      <Accordion key={link.href} type='multiple' className='w-full'>
-        <AccordionItem value={link.href}>
-          <AccordionTrigger className='text-sm text-neutral-700 py-2'>
-            {link.label}
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className='ml-3 flex flex-col gap-1 border-l border-neutral-100 pl-3'>
-              {renderMobileSubLinks(link.children)}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    ) : (
-      <Link
-        key={link.href}
-        href={link.href}
-        className='block rounded-md px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
-      >
-        {link.label}
-      </Link>
-    ),
-  );
-}
-
 interface DesktopUserAreaProps {
   isAuthenticated: boolean;
   userName: string | undefined;
@@ -249,11 +194,104 @@ function MobileAuthArea({ isAuthenticated }: MobileAuthAreaProps) {
 
   return (
     <>
-      <Link href='/profile' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+      <Link
+        href='/profile'
+        className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+      >
         Perfil
       </Link>
-      <SignOutButton className={buttonVariants()}>Cerrar sesión</SignOutButton>
+      <SignOutButton className='flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-muted'>
+        Cerrar sesión
+      </SignOutButton>
     </>
+  );
+}
+
+interface MobileNavLinkProps {
+  link: NavLink;
+  onNavigate: (link: NavLink) => void;
+}
+
+function MobileNavLink({ link, onNavigate }: MobileNavLinkProps) {
+  const hasChildren = Boolean(link.children?.length);
+
+  if (!hasChildren) {
+    return (
+      <SheetClose asChild>
+        <Link
+          href={link.href}
+          className='block rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted'
+        >
+          {link.label}
+        </Link>
+      </SheetClose>
+    );
+  }
+
+  return (
+    <button
+      type='button'
+      onClick={() => onNavigate(link)}
+      className='flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+    >
+      {link.label}
+      <ChevronRight className='size-4 text-muted-foreground shrink-0' />
+    </button>
+  );
+}
+
+interface MobileNavPanelProps {
+  navLinks: NavLink[];
+}
+
+function MobileNavPanel({ navLinks }: MobileNavPanelProps) {
+  const [navStack, setNavStack] = useState<NavLink[]>([]);
+  const [slideDir, setSlideDir] = useState<'forward' | 'backward'>('forward');
+
+  const pushLevel = (link: NavLink) => {
+    setSlideDir('forward');
+    setNavStack((prev) => [...prev, link]);
+  };
+
+  const popLevel = () => {
+    setSlideDir('backward');
+    setNavStack((prev) => prev.slice(0, -1));
+  };
+
+  const lastNavItem = navStack.at(-1);
+  const currentLevelLabel = lastNavItem?.label;
+  const currentLinks: NavLink[] = lastNavItem?.children ?? navLinks;
+
+  if (!navLinks.length) {
+    return null;
+  }
+
+  return (
+    <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1 overflow-hidden'>
+      <div
+        key={navStack.length}
+        className={cn(
+          'flex flex-col gap-1 transition-all duration-200',
+          slideDir === 'forward' && 'animate-in slide-in-from-right-4',
+          slideDir === 'backward' && 'animate-in slide-in-from-left-4',
+        )}
+      >
+        {navStack.length > 0 && (
+          <button
+            type='button'
+            onClick={popLevel}
+            className='flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted'
+          >
+            <ChevronLeft className='size-4 shrink-0' />
+            {currentLevelLabel}
+          </button>
+        )}
+
+        {currentLinks.map((link) => (
+          <MobileNavLink key={link.href} link={link} onNavigate={pushLevel} />
+        ))}
+      </div>
+    </nav>
   );
 }
 
@@ -362,11 +400,7 @@ export function Navbar({
                 <div className='flex-1 overflow-y-auto px-4 pt-16'>
                   {searchBar}
 
-                  {navLinks?.length ? (
-                    <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1'>
-                      <Accordion type='multiple'>{renderMobileLinks(navLinks)}</Accordion>
-                    </nav>
-                  ) : null}
+                  <MobileNavPanel navLinks={navLinks ?? []} />
                 </div>
 
                 <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
