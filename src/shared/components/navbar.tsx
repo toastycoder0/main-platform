@@ -3,7 +3,7 @@
 import { Menu, Search, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type KeyboardEvent, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { SignOutButton } from '@/modules/auth/components/sign-out-button';
 import {
   Accordion,
@@ -53,7 +53,6 @@ export interface NavbarProps {
   cartItemCount?: number;
   showCart?: boolean;
   navLinks: NavLink[] | undefined;
-  onSearch: ((query: string) => void) | undefined;
 }
 
 const DEPTH_CLASSES: Record<number, string> = {
@@ -264,9 +263,7 @@ function MobileAuthArea({ isAuthenticated, userLinks }: MobileAuthAreaProps) {
           {link.label}
         </Link>
       ))}
-      <SignOutButton
-        className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100'
-      />
+      <SignOutButton className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100' />
     </>
   );
 }
@@ -278,49 +275,40 @@ export function Navbar({
   cartItemCount = 0,
   showCart = true,
   navLinks,
-  onSearch,
 }: NavbarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const submitSearch = () => {
-    const trimmed = searchQuery.trim();
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = searchRef.current?.value.trim();
     if (!trimmed) {
       return;
     }
-    if (onSearch) {
-      onSearch(trimmed);
-    } else {
-      router.push(`/products?q=${encodeURIComponent(trimmed)}`);
-    }
-  };
-
-  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      submitSearch();
-    }
+    router.push(`/products?q=${encodeURIComponent(trimmed)}`);
   };
 
   const searchBar = (
-    <div className='relative w-full'>
+    <form
+      onSubmit={submitSearch}
+      className='group flex w-full rounded-md focus-within:ring-2 focus-within:ring-ring/50'
+    >
       <Input
+        ref={searchRef}
         type='text'
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        onKeyDown={handleSearchKeyDown}
         placeholder='Buscar productos, categorías o marcas…'
-        className='w-full bg-[#ECECED] pr-8'
+        className='w-full bg-[#ECECED] rounded-r-none focus-visible:ring-0'
         aria-label='Buscar productos'
       />
       <button
-        type='button'
-        onClick={submitSearch}
-        className='absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-neutral-400 transition-colors hover:text-neutral-600'
+        type='submit'
+        tabIndex={-1}
+        className='shrink-0 rounded-r-md border border-l-0 border-input bg-[#ECECED] px-3 text-neutral-400 group-focus-within:border-ring'
         aria-label='Ejecutar búsqueda'
       >
         <Search className='size-4' />
       </button>
-    </div>
+    </form>
   );
 
   const logo = (
@@ -392,18 +380,13 @@ export function Navbar({
 
                   {navLinks?.length ? (
                     <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1'>
-                      <Accordion type='multiple'>
-                        {renderMobileLinks(navLinks)}
-                      </Accordion>
+                      <Accordion type='multiple'>{renderMobileLinks(navLinks)}</Accordion>
                     </nav>
                   ) : null}
                 </div>
 
                 <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                  <MobileAuthArea
-                    isAuthenticated={isAuthenticated}
-                    userLinks={userLinks}
-                  />
+                  <MobileAuthArea isAuthenticated={isAuthenticated} userLinks={userLinks} />
                 </div>
               </SheetContent>
             </Sheet>
