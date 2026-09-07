@@ -23,7 +23,6 @@ async function PublicLayout({ children }: PublicLayoutProps) {
         userName={session?.user.name}
         userLinks={undefined}
         navLinks={companyLinks}
-        onSearch={undefined}
       />
       {children}
     </>
