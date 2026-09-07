@@ -192,13 +192,12 @@ function renderMobileSubLinks(links: NavLink[]) {
 interface DesktopUserAreaProps {
   isAuthenticated: boolean;
   userName: string | undefined;
-  userLinks: NavLink[] | undefined;
 }
 
-function DesktopUserArea({ isAuthenticated, userName, userLinks }: DesktopUserAreaProps) {
+function DesktopUserArea({ isAuthenticated, userName }: DesktopUserAreaProps) {
   if (!isAuthenticated) {
     return (
-      <Link href='/auth/login' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+      <Link href='/auth/login' className={navigationMenuTriggerStyle()}>
         Iniciar sesión
       </Link>
     );
@@ -211,7 +210,7 @@ function DesktopUserArea({ isAuthenticated, userName, userLinks }: DesktopUserAr
       <DropdownMenuTrigger asChild>
         <button
           type='button'
-          className='flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-muted'
+          className='flex items-center gap-2 rounded-md p-1.5 text-sm font-medium outline-none transition-all hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50'
           aria-label='Menú de usuario'
         >
           <Avatar size='sm'>
@@ -220,17 +219,12 @@ function DesktopUserArea({ isAuthenticated, userName, userLinks }: DesktopUserAr
           <span className='text-sm font-medium'>{userName || 'Usuario'}</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-40'>
-        {userLinks?.map((link) => (
-          <DropdownMenuItem key={link.href} asChild>
-            <Link href={link.href} className='flex items-center gap-2'>
-              {link.icon}
-              {link.label}
-            </Link>
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent align='end'>
         <DropdownMenuItem asChild>
-          <SignOutButton />
+          <Link href='/profile'>Perfil</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className='w-full'>
+          <SignOutButton aria-label='Cerrar sesión'>Cerrar sesión</SignOutButton>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -239,13 +233,15 @@ function DesktopUserArea({ isAuthenticated, userName, userLinks }: DesktopUserAr
 
 interface MobileAuthAreaProps {
   isAuthenticated: boolean;
-  userLinks: NavLink[] | undefined;
 }
 
-function MobileAuthArea({ isAuthenticated, userLinks }: MobileAuthAreaProps) {
+function MobileAuthArea({ isAuthenticated }: MobileAuthAreaProps) {
   if (!isAuthenticated) {
     return (
-      <Link href='/auth/login' className={buttonVariants({ variant: 'outline' })}>
+      <Link
+        href='/auth/login'
+        className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
+      >
         Iniciar sesión
       </Link>
     );
@@ -253,17 +249,10 @@ function MobileAuthArea({ isAuthenticated, userLinks }: MobileAuthAreaProps) {
 
   return (
     <>
-      {userLinks?.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100'
-        >
-          {link.icon}
-          {link.label}
-        </Link>
-      ))}
-      <SignOutButton className='flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-100' />
+      <Link href='/profile' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+        Perfil
+      </Link>
+      <SignOutButton className={buttonVariants()}>Cerrar sesión</SignOutButton>
     </>
   );
 }
@@ -271,7 +260,6 @@ function MobileAuthArea({ isAuthenticated, userLinks }: MobileAuthAreaProps) {
 export function Navbar({
   isAuthenticated,
   userName,
-  userLinks,
   cartItemCount = 0,
   showCart = true,
   navLinks,
@@ -320,7 +308,7 @@ export function Navbar({
   const cartButton = (
     <Link
       href='/cart'
-      className={buttonVariants({ variant: 'outline', size: 'sm' })}
+      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
       aria-label={`Carrito${cartItemCount > 0 ? `, ${cartItemCount} producto${cartItemCount !== 1 ? 's' : ''}` : ''}`}
     >
       <ShoppingCart className='size-5' />
@@ -340,11 +328,7 @@ export function Navbar({
           <div className='w-72 lg:w-xl shrink-0'>{searchBar}</div>
 
           <div className='flex flex-1 items-center justify-end gap-3'>
-            <DesktopUserArea
-              isAuthenticated={isAuthenticated}
-              userName={userName}
-              userLinks={userLinks}
-            />
+            <DesktopUserArea isAuthenticated={isAuthenticated} userName={userName} />
             {showCart && cartButton}
           </div>
         </div>
@@ -364,7 +348,7 @@ export function Navbar({
               <SheetTrigger asChild>
                 <button
                   type='button'
-                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
                   aria-label='Abrir menú'
                 >
                   <Menu className='size-5' />
@@ -386,7 +370,7 @@ export function Navbar({
                 </div>
 
                 <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                  <MobileAuthArea isAuthenticated={isAuthenticated} userLinks={userLinks} />
+                  <MobileAuthArea isAuthenticated={isAuthenticated} />
                 </div>
               </SheetContent>
             </Sheet>
