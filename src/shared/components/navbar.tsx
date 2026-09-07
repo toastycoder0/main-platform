@@ -155,13 +155,13 @@ function DesktopUserArea({ isAuthenticated, userName }: DesktopUserAreaProps) {
       <DropdownMenuTrigger asChild>
         <button
           type='button'
-          className='flex items-center gap-2 rounded-md p-1.5 text-sm font-medium outline-none transition-all hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50'
+          className='flex items-center gap-2 rounded-md p-1.5 text-sm font-medium outline-none transition-all hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 overflow-hidden max-w-44'
           aria-label='Menú de usuario'
         >
           <Avatar size='sm'>
             <AvatarFallback>{userInitial}</AvatarFallback>
           </Avatar>
-          <span className='text-sm font-medium'>{userName || 'Usuario'}</span>
+          <span className='text-sm font-medium truncate'>{userName || 'Usuario'}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
@@ -305,7 +305,7 @@ export function Navbar({
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const submitSearch = (e: React.FormEvent) => {
+  const submitSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = searchRef.current?.value.trim();
     if (!trimmed) {
