@@ -13,7 +13,7 @@ import { Separator } from '@/shared/components/separator';
 import { SidebarTrigger } from '@/shared/components/sidebar';
 
 const routeLabels: Record<string, string> = {
-  admin: 'Admin',
+  admin: 'Administración',
 };
 
 export function AdminPageHeader() {
