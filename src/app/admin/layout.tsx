@@ -1,45 +1,27 @@
 import type { ReactNode } from 'react';
+import { getSession } from '@/modules/auth/infrastructure/auth.query';
 import { AdminSidebar } from '@/shared/components/admin-sidebar';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/shared/components/breadcrumb';
-import { Separator } from '@/shared/components/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/shared/components/sidebar';
+import { AdminPageHeader } from '@/shared/components/admin-sidebar/admin-page-header';
+import { SidebarInset, SidebarProvider } from '@/shared/components/sidebar';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default async function AdminLayout({ children }: AdminLayoutProps) {
+  const session = await getSession();
+
   return (
     <SidebarProvider>
-      <AdminSidebar />
+      <AdminSidebar
+        user={{
+          name: session?.user.name ?? 'Admin',
+          email: session?.user.email ?? '',
+          image: session?.user.image ?? null,
+        }}
+      />
       <SidebarInset>
-        <header className='flex h-16 shrink-0 items-center gap-2 border-b'>
-          <div className='flex items-center gap-2 px-4'>
-            <SidebarTrigger className='-ml-1' />
-            <Separator
-              orientation='vertical'
-              className='mr-2 data-vertical:h-4 data-vertical:self-auto'
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className='hidden md:block'>
-                  <BreadcrumbLink href='#'>Build Your Application</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className='hidden md:block' />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
+        <AdminPageHeader />
         <div className='flex flex-1 flex-col'>{children}</div>
       </SidebarInset>
     </SidebarProvider>
