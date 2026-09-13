@@ -2,7 +2,7 @@ import type { user } from '@/shared/db/schema';
 
 type SessionUser = Pick<
   typeof user.$inferSelect,
-  'id' | 'email' | 'firstName' | 'lastName' | 'role'
+  'id' | 'email' | 'firstName' | 'lastName' | 'role' | 'image'
 > & { name: string };
 
 export interface SessionDTO {
