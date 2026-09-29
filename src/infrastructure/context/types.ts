@@ -1,10 +1,8 @@
-import type { DatabaseClient } from '@/shared/db';
-import type { user } from '@/shared/db/schema';
-import type { logger } from '@/shared/logger';
+import type { DatabaseClient } from '@/infrastructure/db';
+import type { user } from '@/infrastructure/db/schema';
+import type { ILogger } from '@/infrastructure/logger/types';
 
-type Logger = typeof logger;
-
-type SessionUser = Pick<
+export type SessionUser = Pick<
   typeof user.$inferSelect,
   'id' | 'email' | 'firstName' | 'lastName' | 'role'
 > & { name: string };
@@ -16,6 +14,6 @@ export interface RequestContext {
     session: { id: string; expiresAt: Date };
   } | null;
   permissions: Set<string>;
-  logger: Logger;
+  logger: ILogger;
   requestId: string;
 }

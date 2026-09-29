@@ -1,6 +1,6 @@
 import { and, eq, gt, isNull, or } from 'drizzle-orm';
-import type { DatabaseClient } from '@/shared/db';
-import { permission, rolePermission, userPermission, userRole } from '@/shared/db/schema';
+import type { DatabaseClient } from '@/infrastructure/db';
+import { permission, rolePermission, userPermission, userRole } from '@/infrastructure/db/schema';
 
 export async function resolveUserPermissions(
   db: DatabaseClient,

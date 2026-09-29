@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { db } from '@/shared/db';
+import { db } from '@/infrastructure/db';
 import {
   permission,
   role,
@@ -7,7 +7,7 @@ import {
   user,
   userPermission,
   userRole,
-} from '@/shared/db/schema';
+} from '@/infrastructure/db/schema';
 import { resolveUserPermissions } from './resolve';
 
 let counter = 0;

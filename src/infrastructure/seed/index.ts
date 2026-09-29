@@ -1,10 +1,10 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { env } from '@/config/env';
+import { db } from '@/infrastructure/db';
+import { permission, role, rolePermission, user, userRole } from '@/infrastructure/db/schema';
+import { logger } from '@/infrastructure/logger';
 import { auth } from '@/modules/auth/infrastructure/auth.config';
 import { PERMISSIONS } from '@/shared/constants/permissions';
-import { db } from '@/shared/db';
-import { permission, role, rolePermission, user, userRole } from '@/shared/db/schema';
-import { logger } from '@/shared/logger';
 
 const { admin } = PERMISSIONS;
 

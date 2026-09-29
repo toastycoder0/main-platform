@@ -1,10 +1,9 @@
 import crypto from 'node:crypto';
-import type { DatabaseClient } from '@/shared/db';
-import type { logger } from '@/shared/logger';
-import { resolveUserPermissions } from '@/shared/permissions/resolve';
+import type { DatabaseClient } from '@/infrastructure/db';
+import type { ILogger } from '@/infrastructure/logger/types';
+import { resolveUserPermissions } from '@/infrastructure/permissions/resolve';
+import { mapSession } from './session-mapper';
 import type { RequestContext } from './types';
-
-type Logger = typeof logger;
 
 interface BuildDeps {
   db: DatabaseClient;
@@ -22,7 +21,7 @@ interface BuildDeps {
       } | null>;
     };
   };
-  logger: Logger;
+  logger: ILogger;
   headers: Headers;
 }
 
@@ -31,22 +30,7 @@ export async function buildRequestContext(deps: BuildDeps): Promise<RequestConte
 
   const betterAuthSession = await deps.auth.api.getSession({ headers: deps.headers });
 
-  const session = betterAuthSession
-    ? {
-        user: {
-          id: betterAuthSession.user.id,
-          email: betterAuthSession.user.email,
-          firstName: betterAuthSession.user.name,
-          lastName: betterAuthSession.user.lastName,
-          role: betterAuthSession.user.role ?? null,
-          name: `${betterAuthSession.user.name} ${betterAuthSession.user.lastName}`.trim(),
-        },
-        session: {
-          id: betterAuthSession.session.id,
-          expiresAt: betterAuthSession.session.expiresAt,
-        },
-      }
-    : null;
+  const session = betterAuthSession ? mapSession(betterAuthSession) : null;
 
   const permissions = session
     ? await resolveUserPermissions(deps.db, session.user.id)
@@ -56,7 +40,7 @@ export async function buildRequestContext(deps: BuildDeps): Promise<RequestConte
     db: deps.db,
     session,
     permissions,
-    logger: deps.logger.child({ requestId }) as Logger,
+    logger: deps.logger.child({ requestId }),
     requestId,
   };
 }
