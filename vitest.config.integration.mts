@@ -12,7 +12,10 @@ export default defineConfig({
     },
   },
   test: {
+    include: ['src/**/*.integration.test.ts'],
     environment: 'node',
-    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/*.integration.test.ts'],
+    globalSetup: ['./src/shared/db/test/setup.ts'],
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
   },
 });

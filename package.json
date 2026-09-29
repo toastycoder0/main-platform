@@ -9,7 +9,7 @@
     "lint": "biome check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "vitest run --dir src --pattern '**.integration.test.ts'",
+    "test:integration": "vitest run --config vitest.config.integration.mts",
     "test:e2e": "vitest run --config vitest.config.e2e.mts",
     "format": "biome format --write",
     "db:push": "drizzle-kit push",
