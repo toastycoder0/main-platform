@@ -1,12 +1,7 @@
-import type { user } from '@/shared/db/schema';
+import type { SessionUser } from '@/infrastructure/context/types';
 
-type SessionUser = Pick<
-  typeof user.$inferSelect,
-  'id' | 'email' | 'firstName' | 'lastName' | 'role'
-> & { name: string };
+export type { SessionUser };
 
 export interface SessionDTO {
   user: SessionUser;
 }
-
-export type LoginResult = { success: boolean; error?: string };

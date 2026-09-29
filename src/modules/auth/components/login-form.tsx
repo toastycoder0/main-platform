@@ -30,10 +30,10 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: LoginSchema) {
-    const { success, error } = await login(values);
+    const result = await login(values);
 
-    if (!success) {
-      toast.error(error);
+    if (!result.success) {
+      toast.error(result.error);
       return;
     }
 
