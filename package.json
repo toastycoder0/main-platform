@@ -9,14 +9,14 @@
     "lint": "biome check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "vitest run --dir src --pattern '**.integration.test.ts'",
+    "test:integration": "vitest run --config vitest.config.integration.mts",
     "test:e2e": "vitest run --config vitest.config.e2e.mts",
     "format": "biome format --write",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx --env-file=.env src/shared/seed/index.ts"
+    "db:seed": "tsx --env-file=.env src/infrastructure/seed/index.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -33,7 +33,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.5.0",
     "lucide-react": "^1.33.0",
-    "next": "16.3.1",
+    "next": "16.3.3",
     "pg": "^8.23.0",
     "pino": "^10.3.1",
     "postgres": "^3.4.9",

@@ -2,9 +2,9 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { nextCookies } from 'better-auth/next-js';
 import { admin } from 'better-auth/plugins';
-import { db } from '@/shared/db';
-import { account, session, user, verification } from '@/shared/db/schema';
-import { logger } from '@/shared/logger';
+import { db } from '@/infrastructure/db';
+import { account, session, user, verification } from '@/infrastructure/db/schema';
+import { logger } from '@/infrastructure/logger';
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

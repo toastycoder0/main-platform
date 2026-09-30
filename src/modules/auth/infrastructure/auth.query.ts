@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { mapSessionUser } from '@/infrastructure/context/session-mapper';
 import type { SessionDTO } from '../application/auth.types';
 import { auth } from './auth.config';
 
@@ -9,15 +10,5 @@ export async function getSession(): Promise<SessionDTO | null> {
     return null;
   }
 
-  return {
-    user: {
-      id: session.user.id,
-      email: session.user.email,
-      firstName: session.user.name,
-      lastName: session.user.lastName,
-      role: session.user.role ?? null,
-      image: session.user.image ?? null,
-      name: `${session.user.name} ${session.user.lastName}`.trim(),
-    },
-  };
+  return { user: mapSessionUser(session.user) };
 }

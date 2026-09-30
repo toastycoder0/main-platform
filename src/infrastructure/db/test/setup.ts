@@ -9,6 +9,23 @@ export async function setup() {
   process.env.DOCKER_HOST ??= DOCKER_HOST;
   process.env.TESTCONTAINERS_RYUK_DISABLED ??= 'true';
 
+  process.env.CLOUD_ACCOUNT_ID ??= 'test';
+  process.env.CLOUD_SECRET_ACCESS_KEY ??= 'test';
+  process.env.CLOUD_ACCESS_KEY_ID ??= 'test';
+  process.env.CLOUD_BUCKET ??= 'test';
+  process.env.EXCHANGE_TOKEN ??= 'test';
+  process.env.CRON_SECRET ??= 'test';
+  process.env.BILLING_API_URL ??= 'test';
+  process.env.BILLING_USERNAME ??= 'test';
+  process.env.BILLING_PASSWORD ??= 'test';
+  process.env.BETTER_AUTH_SECRET ??= 'test';
+  process.env.ADMIN_SEED_EMAIL ??= 'admin@test.com';
+  process.env.ADMIN_SEED_PASSWORD ??= 'password123';
+  process.env.NEXT_PUBLIC_CLOUD_URL ??= 'http://test.com';
+  process.env.NEXT_PUBLIC_PHONE ??= '123';
+  process.env.NEXT_PUBLIC_EMAIL ??= 'test@test.com';
+  process.env.NEXT_PUBLIC_CALCULATOR_SOURCE ??= 'test';
+
   container = await new PostgreSqlContainer('postgres:17')
     .withDatabase('platform_test')
     .withUsername('test_user')

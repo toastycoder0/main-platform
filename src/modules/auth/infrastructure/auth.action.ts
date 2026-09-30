@@ -3,15 +3,16 @@
 import { isAPIError } from 'better-auth/api';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { LoginResult } from '../application/auth.types';
+import type { Result } from '@/shared/result';
+import { fail, ok } from '@/shared/result';
 import { loginSchema } from '../application/auth.validation';
 import { auth } from './auth.config';
 
-export async function login(data: unknown): Promise<LoginResult> {
+export async function login(data: unknown): Promise<Result> {
   const parsed = loginSchema.safeParse(data);
 
   if (!parsed.success) {
-    return { success: false, error: 'Datos inválidos' };
+    return fail('Datos inválidos');
   }
 
   const { email, password } = parsed.data;
@@ -22,12 +23,12 @@ export async function login(data: unknown): Promise<LoginResult> {
       headers: await headers(),
     });
 
-    return { success: true };
+    return ok(undefined);
   } catch (error) {
     if (isAPIError(error) && error.status === 'UNAUTHORIZED') {
-      return { success: false, error: 'Credenciales inválidas' };
+      return fail('Credenciales inválidas');
     }
-    return { success: false, error: 'Error al iniciar sesión' };
+    return fail('Error al iniciar sesión');
   }
 }
 
