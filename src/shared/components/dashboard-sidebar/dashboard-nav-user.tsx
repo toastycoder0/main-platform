@@ -25,11 +25,11 @@ export interface NavUser {
   image?: string | null;
 }
 
-interface AdminNavUserProps {
+interface DashboardNavUserProps {
   user: NavUser;
 }
 
-export function AdminNavUser({ user }: AdminNavUserProps) {
+export function DashboardNavUser({ user }: DashboardNavUserProps) {
   const { isMobile } = useSidebar();
   const initials = user.name
     .split(' ')

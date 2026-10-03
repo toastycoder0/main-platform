@@ -1,8 +1,7 @@
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 import { getSession } from '@/modules/auth/infrastructure/auth.query';
-import { AdminSidebar } from '@/shared/components/admin-sidebar';
-import { AdminPageHeader } from '@/shared/components/admin-sidebar/admin-page-header';
+import { DashboardPageHeader, DashboardSidebar } from '@/shared/components/dashboard-sidebar';
 import { SidebarInset, SidebarProvider } from '@/shared/components/sidebar';
 
 const routeLabels: Record<string, string> = {
@@ -26,14 +25,16 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <SidebarProvider>
-      <AdminSidebar
+      <DashboardSidebar
         user={{
           name: session?.user.name ?? 'Admin',
           email: session?.user.email ?? '',
         }}
+        permissions={new Set<string>()}
+        sections={[]}
       />
       <SidebarInset>
-        <AdminPageHeader segments={segments} />
+        <DashboardPageHeader segments={segments} />
         <div className='flex flex-1 flex-col px-4 py-6'>{children}</div>
       </SidebarInset>
     </SidebarProvider>
