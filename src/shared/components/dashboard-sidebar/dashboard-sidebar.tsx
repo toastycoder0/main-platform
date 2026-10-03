@@ -1,6 +1,6 @@
 'use client';
 
-import { HouseIcon } from 'lucide-react';
+import { HouseIcon, type LucideIcon, ShieldIcon, UsersIcon } from 'lucide-react';
 import Link from 'next/link';
 import type * as React from 'react';
 import { LogoLarge } from '@/shared/components/logo-large';
@@ -16,20 +16,23 @@ import {
   SidebarMenuItem,
 } from '@/shared/components/sidebar';
 import type { NavUser } from '@/shared/components/user-nav';
-import { DASHBOARD_SECTIONS } from '@/shared/constants/navigation';
+import type { NavSection, SectionIconName } from '@/shared/constants/navigation';
 import { DashboardNavUser } from './dashboard-nav-user';
+
+const SECTION_ICONS: Record<SectionIconName, LucideIcon> = {
+  users: UsersIcon,
+  roles: ShieldIcon,
+};
 
 export function DashboardSidebar({
   user,
-  permissions,
+  sections,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: NavUser;
-  permissions: Set<string>;
+  sections: NavSection[];
 }) {
-  const adminSections = DASHBOARD_SECTIONS.filter(
-    (s) => s.group === 'admin' && permissions.has(s.slug),
-  );
+  const adminSections = sections.filter((s) => s.group === 'admin');
 
   return (
     <Sidebar variant='sidebar' {...props}>
@@ -57,16 +60,20 @@ export function DashboardSidebar({
           <SidebarGroup>
             <SidebarGroupLabel>Administraci&oacute;n</SidebarGroupLabel>
             <SidebarMenu>
-              {adminSections.map((section) => (
-                <SidebarMenuItem key={section.href}>
-                  <SidebarMenuButton asChild>
-                    <Link href={section.href}>
-                      <section.icon />
-                      <span>{section.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {adminSections.map((section) => {
+                const Icon = SECTION_ICONS[section.icon];
+
+                return (
+                  <SidebarMenuItem key={section.href}>
+                    <SidebarMenuButton asChild>
+                      <Link href={section.href}>
+                        <Icon />
+                        <span>{section.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroup>
         )}

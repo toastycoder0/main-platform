@@ -1,12 +1,12 @@
-'use client';
-import { type LucideIcon, ShieldIcon, UsersIcon } from 'lucide-react';
 import { PERMISSIONS } from './permissions';
+
+export type SectionIconName = 'users' | 'roles';
 
 export interface NavSection {
   label: string;
   slug: string;
   href: string;
-  icon: LucideIcon;
+  icon: SectionIconName;
   group?: 'admin';
 }
 
@@ -21,14 +21,14 @@ export const DASHBOARD_SECTIONS: NavSection[] = [
     label: 'Usuarios',
     slug: PERMISSIONS.admin.users.access,
     href: '/dashboard/users',
-    icon: UsersIcon,
+    icon: 'users',
     group: 'admin',
   },
   {
     label: 'Roles',
     slug: PERMISSIONS.admin.roles.access,
     href: '/dashboard/roles',
-    icon: ShieldIcon,
+    icon: 'roles',
     group: 'admin',
   },
 ];
