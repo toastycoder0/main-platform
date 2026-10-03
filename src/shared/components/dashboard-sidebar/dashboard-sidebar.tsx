@@ -1,6 +1,6 @@
 'use client';
 
-import { HouseIcon, type LucideIcon } from 'lucide-react';
+import { HouseIcon } from 'lucide-react';
 import Link from 'next/link';
 import type * as React from 'react';
 import { LogoLarge } from '@/shared/components/logo-large';
@@ -15,14 +15,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/shared/components/sidebar';
+import type { NavSection } from '@/shared/constants/navigation';
 import { DashboardNavUser, type NavUser } from './dashboard-nav-user';
-
-export interface NavSection {
-  label: string;
-  slug: string;
-  href: string;
-  icon: LucideIcon;
-}
 
 export function DashboardSidebar({
   user,

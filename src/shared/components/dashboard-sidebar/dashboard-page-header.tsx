@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,8 +11,16 @@ import {
 } from '@/shared/components/breadcrumb';
 import { Separator } from '@/shared/components/separator';
 import { SidebarTrigger } from '@/shared/components/sidebar';
+import { ROUTE_LABELS } from '@/shared/constants/navigation';
 
-export function DashboardPageHeader({ segments }: { segments: { label: string; href: string }[] }) {
+export function DashboardPageHeader() {
+  const pathname = usePathname();
+  const parts = pathname.split('/').filter(Boolean);
+  const segments = parts.map((segment, i) => ({
+    label: ROUTE_LABELS[segment] ?? segment,
+    href: `/${parts.slice(0, i + 1).join('/')}`,
+  }));
+
   return (
     <header className='flex h-16 shrink-0 items-center gap-2 border-b'>
       <div className='flex items-center gap-2 px-4'>
