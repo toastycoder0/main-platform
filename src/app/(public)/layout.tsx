@@ -15,13 +15,18 @@ const navLinks = [
 async function PublicLayout({ children }: PublicLayoutProps) {
   const session = await getSession();
 
+  const links = session
+    ? [...navLinks, { label: 'Panel de control', href: '/dashboard' }]
+    : navLinks;
+
   return (
     <>
       <Navbar
         isAuthenticated={!!session}
         userName={session?.user.name}
+        userEmail={session?.user.email}
         userLinks={undefined}
-        navLinks={navLinks}
+        navLinks={links}
       />
       <main className='mx-auto max-w-360 px-4 py-6 md:px-6'>{children}</main>
       <Footer />

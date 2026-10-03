@@ -8,9 +8,10 @@ import { UserNavContent } from '@/shared/components/user-nav';
 interface DesktopUserAreaProps {
   isAuthenticated: boolean;
   userName: string | undefined;
+  userEmail?: string | undefined;
 }
 
-export function DesktopUserArea({ isAuthenticated, userName }: DesktopUserAreaProps) {
+export function DesktopUserArea({ isAuthenticated, userName, userEmail }: DesktopUserAreaProps) {
   if (!isAuthenticated) {
     return (
       <Link href='/auth/login' className={navigationMenuTriggerStyle()}>
@@ -35,7 +36,7 @@ export function DesktopUserArea({ isAuthenticated, userName }: DesktopUserAreaPr
           <span className='text-sm font-medium truncate'>{userName || 'Usuario'}</span>
         </button>
       </DropdownMenuTrigger>
-      <UserNavContent user={{ name: userName ?? 'Usuario', email: '' }} hideHomeLink />
+      <UserNavContent user={{ name: userName ?? 'Usuario', email: userEmail }} hideHomeLink />
     </DropdownMenu>
   );
 }
@@ -59,10 +60,10 @@ export function MobileAuthArea({ isAuthenticated }: MobileAuthAreaProps) {
   return (
     <>
       <Link
-        href='/profile'
+        href='/account'
         className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
       >
-        Perfil
+        Cuenta
       </Link>
       <SignOutButton className='flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-muted'>
         Cerrar sesión
