@@ -1,13 +1,9 @@
 import Link from 'next/link';
 import { SignOutButton } from '@/modules/auth/components/sign-out-button';
 import { Avatar, AvatarFallback } from '@/shared/components/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/components/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger } from '@/shared/components/dropdown-menu';
 import { navigationMenuTriggerStyle } from '@/shared/components/navigation-menu';
+import { UserNavContent } from '@/shared/components/user-nav';
 
 interface DesktopUserAreaProps {
   isAuthenticated: boolean;
@@ -39,14 +35,7 @@ export function DesktopUserArea({ isAuthenticated, userName }: DesktopUserAreaPr
           <span className='text-sm font-medium truncate'>{userName || 'Usuario'}</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end'>
-        <DropdownMenuItem asChild>
-          <Link href='/profile'>Perfil</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className='w-full'>
-          <SignOutButton aria-label='Cerrar sesión'>Cerrar sesión</SignOutButton>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+      <UserNavContent user={{ name: userName ?? 'Usuario', email: '' }} hideHomeLink />
     </DropdownMenu>
   );
 }

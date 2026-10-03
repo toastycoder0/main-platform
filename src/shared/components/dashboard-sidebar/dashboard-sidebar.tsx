@@ -15,8 +15,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/shared/components/sidebar';
+import type { NavUser } from '@/shared/components/user-nav';
 import type { NavSection } from '@/shared/constants/navigation';
-import { DashboardNavUser, type NavUser } from './dashboard-nav-user';
+import { DashboardNavUser } from './dashboard-nav-user';
 
 export function DashboardSidebar({
   user,
