@@ -19,15 +19,17 @@ import {
   useSidebar,
 } from '@/shared/components/sidebar';
 
-export function AdminNavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    image?: string | null;
-  };
-}) {
+export interface NavUser {
+  name: string;
+  email: string;
+  image?: string | null;
+}
+
+interface AdminNavUserProps {
+  user: NavUser;
+}
+
+export function AdminNavUser({ user }: AdminNavUserProps) {
   const { isMobile } = useSidebar();
   const initials = user.name
     .split(' ')

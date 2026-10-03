@@ -15,17 +15,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/shared/components/sidebar';
-import { AdminNavUser } from './admin-nav-user';
+import { AdminNavUser, type NavUser } from './admin-nav-user';
 
 export function AdminSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user: {
-    name: string;
-    email: string;
-    image?: string | null;
-  };
+  user: NavUser;
 }) {
   return (
     <Sidebar variant='sidebar' {...props}>
