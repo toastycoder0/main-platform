@@ -3,7 +3,7 @@
 import { HouseIcon } from 'lucide-react';
 import Link from 'next/link';
 import type * as React from 'react';
-import { Logo } from '@/shared/components/logo';
+import { LogoLarge } from '@/shared/components/logo-large';
 import {
   Sidebar,
   SidebarContent,
@@ -24,26 +24,15 @@ export function AdminSidebar({
   user: {
     name: string;
     email: string;
-    image: string | null;
+    image?: string | null;
   };
 }) {
   return (
     <Sidebar variant='sidebar' {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size='lg' asChild>
-              <Link href='/'>
-                <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
-                  <Logo className='size-4' />
-                </div>
-                <div className='grid flex-1 text-left text-sm leading-tight'>
-                  <span className='truncate font-medium'>Boya</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarHeader className='p-4'>
+        <Link href='/'>
+          <LogoLarge className='h-8 w-auto self-start' />
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

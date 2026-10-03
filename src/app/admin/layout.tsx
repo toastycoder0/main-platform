@@ -30,12 +30,11 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
         user={{
           name: session?.user.name ?? 'Admin',
           email: session?.user.email ?? '',
-          image: session?.user.image ?? null,
         }}
       />
       <SidebarInset>
         <AdminPageHeader segments={segments} />
-        <div className='flex flex-1 flex-col'>{children}</div>
+        <div className='flex flex-1 flex-col px-4 py-6'>{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

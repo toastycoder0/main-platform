@@ -25,7 +25,7 @@ export function AdminNavUser({
   user: {
     name: string;
     email: string;
-    image: string | null;
+    image?: string | null;
   };
 }) {
   const { isMobile } = useSidebar();
