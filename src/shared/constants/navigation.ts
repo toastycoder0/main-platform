@@ -1,3 +1,4 @@
+'use client';
 import { type LucideIcon, ShieldIcon, UsersIcon } from 'lucide-react';
 import { PERMISSIONS } from './permissions';
 
@@ -6,6 +7,7 @@ export interface NavSection {
   slug: string;
   href: string;
   icon: LucideIcon;
+  group?: 'admin';
 }
 
 export const ROUTE_LABELS: Record<string, string> = {
@@ -20,11 +22,13 @@ export const DASHBOARD_SECTIONS: NavSection[] = [
     slug: PERMISSIONS.admin.users.access,
     href: '/dashboard/users',
     icon: UsersIcon,
+    group: 'admin',
   },
   {
     label: 'Roles',
     slug: PERMISSIONS.admin.roles.access,
     href: '/dashboard/roles',
     icon: ShieldIcon,
+    group: 'admin',
   },
 ];

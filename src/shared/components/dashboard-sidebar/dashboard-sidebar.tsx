@@ -28,7 +28,7 @@ export function DashboardSidebar({
   permissions: Set<string>;
   sections: NavSection[];
 }) {
-  const visibleSections = sections.filter((s) => permissions.has(s.slug));
+  const adminSections = sections.filter((s) => s.group === 'admin' && permissions.has(s.slug));
 
   return (
     <Sidebar variant='sidebar' {...props}>
@@ -38,11 +38,25 @@ export function DashboardSidebar({
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        {visibleSections.length > 0 && (
+        <SidebarGroup>
+          <SidebarGroupLabel>General</SidebarGroupLabel>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href='/'>
+                  <HouseIcon />
+                  <span>Ir al inicio</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        {adminSections.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Navegaci&oacute;n</SidebarGroupLabel>
+            <SidebarGroupLabel>Administraci&oacute;n</SidebarGroupLabel>
             <SidebarMenu>
-              {visibleSections.map((section) => (
+              {adminSections.map((section) => (
                 <SidebarMenuItem key={section.href}>
                   <SidebarMenuButton asChild>
                     <Link href={section.href}>
@@ -52,14 +66,6 @@ export function DashboardSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href='/'>
-                    <HouseIcon />
-                    <span>Ir al inicio</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         )}
