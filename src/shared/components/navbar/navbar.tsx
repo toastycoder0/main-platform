@@ -39,7 +39,7 @@ export function Navbar({
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const submitSearch = (e: React.FormEvent<HTMLFormElement>) => {
+  const submitSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = searchRef.current?.value.trim();
     if (!trimmed) {
@@ -101,7 +101,7 @@ export function Navbar({
 
           <div className='flex flex-1 items-center justify-end gap-3'>
             <DesktopUserArea isAuthenticated={isAuthenticated} userName={userName} />
-            {showCart && cartButton}
+            {showCart && isAuthenticated && cartButton}
           </div>
         </div>
 
@@ -117,7 +117,7 @@ export function Navbar({
 
         <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
           <div className='flex items-center gap-1'>
-            {showCart && cartButton}
+            {showCart && isAuthenticated && cartButton}
             <Sheet>
               <SheetTrigger asChild>
                 <button

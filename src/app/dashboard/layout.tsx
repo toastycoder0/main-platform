@@ -3,7 +3,6 @@ import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { requireAuthenticated } from '@/infrastructure/services/base';
 import { DashboardPageHeader, DashboardSidebar } from '@/shared/components/dashboard-sidebar';
 import { SidebarInset, SidebarProvider } from '@/shared/components/sidebar';
-import { DASHBOARD_SECTIONS } from '@/shared/constants/navigation';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -21,7 +20,6 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
           email: ctx.session.user.email,
         }}
         permissions={ctx.permissions}
-        sections={DASHBOARD_SECTIONS}
       />
       <SidebarInset>
         <DashboardPageHeader />

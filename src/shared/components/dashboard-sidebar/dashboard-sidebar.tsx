@@ -15,20 +15,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/shared/components/sidebar';
-import type { NavSection } from '@/shared/constants/navigation';
+import { DASHBOARD_SECTIONS } from '@/shared/constants/navigation';
 import { DashboardNavUser, type NavUser } from './dashboard-nav-user';
 
 export function DashboardSidebar({
   user,
   permissions,
-  sections,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: NavUser;
   permissions: Set<string>;
-  sections: NavSection[];
 }) {
-  const visibleSections = sections.filter((s) => permissions.has(s.slug));
+  const visibleSections = DASHBOARD_SECTIONS.filter((s) => permissions.has(s.slug));
 
   return (
     <Sidebar variant='sidebar' {...props}>
