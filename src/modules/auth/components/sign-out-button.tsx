@@ -1,5 +1,6 @@
 'use client';
 
+import { LogOutIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { logout } from '@/modules/auth/infrastructure/auth.action';
 
@@ -7,7 +8,7 @@ interface SignOutButtonProps extends React.ComponentProps<'button'> {
   afterSignOut?: () => void;
 }
 
-export function SignOutButton({ onClick, afterSignOut, ...props }: SignOutButtonProps) {
+export function SignOutButton({ onClick, afterSignOut, children, ...props }: SignOutButtonProps) {
   const router = useRouter();
 
   async function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
@@ -17,5 +18,10 @@ export function SignOutButton({ onClick, afterSignOut, ...props }: SignOutButton
     afterSignOut?.();
   }
 
-  return <button type='button' onClick={handleClick} {...props} />;
+  return (
+    <button type='button' onClick={handleClick} {...props}>
+      <LogOutIcon />
+      {children}
+    </button>
+  );
 }
