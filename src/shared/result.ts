@@ -4,6 +4,6 @@ export function ok<T>(data: T): Result<T> {
   return { success: true, data };
 }
 
-export function fail(error: string): Result {
+export function fail<T = void>(error: string): Result<T> {
   return { success: false, error };
 }
