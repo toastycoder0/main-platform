@@ -1,6 +1,6 @@
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
-import { requireAuthenticated } from '@/infrastructure/services/base';
 import { DashboardPageHeader, DashboardSidebar } from '@/shared/components/dashboard-sidebar';
 import { SidebarInset, SidebarProvider } from '@/shared/components/sidebar';
 import { DASHBOARD_SECTIONS } from '@/shared/constants/navigation';
@@ -11,7 +11,12 @@ interface DashboardLayoutProps {
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const ctx = await createRequestContext();
-  requireAuthenticated(ctx);
+
+  // Auth is a navigation concern here: guests are sent to the login page
+  // instead of throwing into the error boundary.
+  if (!ctx.session) {
+    redirect('/auth/login');
+  }
 
   const sections = DASHBOARD_SECTIONS.filter((s) => ctx.permissions.has(s.slug));
 

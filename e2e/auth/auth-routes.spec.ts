@@ -36,4 +36,10 @@ describe('Auth route restrictions E2E', () => {
     const count = await page.getByText('Iniciar sesión').count();
     expect(count).toBeGreaterThanOrEqual(1);
   });
+
+  it('redirects guest away from /dashboard to login', async () => {
+    await page.goto(`${BASE}/dashboard`);
+    await page.waitForURL('**/auth/login');
+    expect(page.url()).toBe(`${BASE}/auth/login`);
+  });
 });
