@@ -44,7 +44,11 @@ export function DashboardNavUser({ user }: DashboardNavUserProps) {
               <ChevronsUpDownIcon className='ml-auto size-4' />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <UserNavContent user={user} align={isMobile ? 'start' : 'end'} />
+          <UserNavContent
+            user={user}
+            align={isMobile ? 'start' : 'end'}
+            side={isMobile ? 'bottom' : 'right'}
+          />
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>

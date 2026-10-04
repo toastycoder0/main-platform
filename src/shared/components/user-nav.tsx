@@ -20,10 +20,16 @@ export interface NavUser {
 interface UserNavContentProps {
   user: NavUser;
   hideHomeLink?: boolean;
-  align?: 'start' | 'end';
+  align?: 'start' | 'center' | 'end';
+  side?: 'bottom' | 'right';
 }
 
-export function UserNavContent({ user, hideHomeLink = false, align = 'end' }: UserNavContentProps) {
+export function UserNavContent({
+  user,
+  hideHomeLink = false,
+  align = 'end',
+  side = 'bottom',
+}: UserNavContentProps) {
   const initials = user.name
     .split(' ')
     .map((n) => n.charAt(0))
@@ -32,7 +38,7 @@ export function UserNavContent({ user, hideHomeLink = false, align = 'end' }: Us
     .slice(0, 2);
 
   return (
-    <DropdownMenuContent className='min-w-56 rounded-lg' align={align}>
+    <DropdownMenuContent className='min-w-56 rounded-lg' align={align} side={side}>
       <DropdownMenuLabel className='p-0 font-normal'>
         <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
           <Avatar className='h-8 w-8 rounded-lg'>
