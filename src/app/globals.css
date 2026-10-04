@@ -131,3 +131,28 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+@theme {
+  --animate-matrix: matrix 1s infinite linear;
+
+  @keyframes matrix {
+    0% {
+      background-position:
+        0% 100%,
+        50% 100%,
+        100% 100%;
+    }
+    100% {
+      background-position:
+        0% 0%,
+        50% 0%,
+        100% 0%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-matrix {
+    animation: none;
+  }
+}
