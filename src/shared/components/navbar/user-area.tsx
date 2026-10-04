@@ -1,5 +1,5 @@
+import { ChevronsUpDownIcon } from 'lucide-react';
 import Link from 'next/link';
-import { SignOutButton } from '@/modules/auth/components/sign-out-button';
 import { Avatar, AvatarFallback } from '@/shared/components/avatar';
 import { DropdownMenu, DropdownMenuTrigger } from '@/shared/components/dropdown-menu';
 import { navigationMenuTriggerStyle } from '@/shared/components/navigation-menu';
@@ -43,9 +43,11 @@ export function DesktopUserArea({ isAuthenticated, userName, userEmail }: Deskto
 
 interface MobileAuthAreaProps {
   isAuthenticated: boolean;
+  userName?: string | undefined;
+  userEmail?: string | undefined;
 }
 
-export function MobileAuthArea({ isAuthenticated }: MobileAuthAreaProps) {
+export function MobileAuthArea({ isAuthenticated, userName, userEmail }: MobileAuthAreaProps) {
   if (!isAuthenticated) {
     return (
       <Link
@@ -58,16 +60,21 @@ export function MobileAuthArea({ isAuthenticated }: MobileAuthAreaProps) {
   }
 
   return (
-    <>
-      <Link
-        href='/account'
-        className='flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted'
-      >
-        Cuenta
-      </Link>
-      <SignOutButton className='flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-muted'>
-        Cerrar sesión
-      </SignOutButton>
-    </>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type='button'
+          className='flex w-full items-center gap-2 rounded-md p-2 text-sm font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50'
+          aria-label='Menú de usuario'
+        >
+          <Avatar size='sm'>
+            <AvatarFallback>{userName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+          </Avatar>
+          <span className='truncate text-sm font-medium'>{userName || 'Usuario'}</span>
+          <ChevronsUpDownIcon className='ml-auto size-4 shrink-0 text-muted-foreground' />
+        </button>
+      </DropdownMenuTrigger>
+      <UserNavContent user={{ name: userName ?? 'Usuario', email: userEmail }} align='start' />
+    </DropdownMenu>
   );
 }

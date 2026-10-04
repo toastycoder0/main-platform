@@ -146,7 +146,11 @@ export function Navbar({
                 </div>
 
                 <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                  <MobileAuthArea isAuthenticated={isAuthenticated} />
+                  <MobileAuthArea
+                    isAuthenticated={isAuthenticated}
+                    userName={userName}
+                    userEmail={userEmail}
+                  />
                 </div>
               </SheetContent>
             </Sheet>
