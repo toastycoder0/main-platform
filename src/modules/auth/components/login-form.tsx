@@ -1,6 +1,5 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { type LoginSchema, loginSchema } from '@/modules/auth/application/auth.validation';
@@ -18,8 +17,6 @@ import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
 
 export function LoginForm() {
-  const router = useRouter();
-
   const {
     handleSubmit,
     control,
@@ -34,10 +31,7 @@ export function LoginForm() {
 
     if (!result.success) {
       toast.error(result.error);
-      return;
     }
-
-    router.push('/');
   }
 
   return (

@@ -1,21 +1,20 @@
 'use client';
 
 import { LogOutIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { logout } from '@/modules/auth/infrastructure/auth.action';
 
-interface SignOutButtonProps extends React.ComponentProps<'button'> {
-  afterSignOut?: () => void;
-}
+type SignOutButtonProps = React.ComponentProps<'button'>;
 
-export function SignOutButton({ onClick, afterSignOut, children, ...props }: SignOutButtonProps) {
-  const router = useRouter();
-
+export function SignOutButton({ onClick, children, ...props }: SignOutButtonProps) {
   async function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
-    await logout();
-    router.refresh();
     onClick?.(e);
-    afterSignOut?.();
+
+    const result = await logout();
+
+    if (!result.success) {
+      toast.error(result.error);
+    }
   }
 
   return (
