@@ -18,22 +18,3 @@ export function requirePermission(ctx: RequestContext, slug: string): void {
     throw new AppError('forbidden');
   }
 }
-
-export function createWithAuth(getContext: () => Promise<RequestContext>) {
-  function withAuth<TReturn, TData>(
-    handler: (ctx: AuthenticatedContext, data: TData) => Promise<TReturn>,
-  ): (data: TData) => Promise<TReturn>;
-  function withAuth<TReturn>(
-    handler: (ctx: AuthenticatedContext) => Promise<TReturn>,
-  ): () => Promise<TReturn>;
-  function withAuth<TReturn, TData = undefined>(
-    handler: (ctx: AuthenticatedContext, data?: TData) => Promise<TReturn>,
-  ): (data?: TData) => Promise<TReturn> {
-    return async (data?: TData) => {
-      const ctx = await getContext();
-      requireAuthenticated(ctx);
-      return handler(ctx, data);
-    };
-  }
-  return withAuth;
-}
