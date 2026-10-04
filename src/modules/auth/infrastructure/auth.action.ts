@@ -3,7 +3,7 @@
 import { isAPIError } from 'better-auth/api';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { run } from '@/infrastructure/services/action';
+import { run } from '@/infrastructure/services/next-action';
 import { AppError } from '@/shared/errors';
 import { loginSchema } from '../application/auth.validation';
 import { auth } from './auth.config';

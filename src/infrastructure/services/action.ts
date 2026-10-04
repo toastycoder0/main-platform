@@ -1,11 +1,10 @@
 import type { z } from 'zod';
-import { createRequestContext } from '@/infrastructure/context/next-factory';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { AppError, isAppError } from '@/shared/errors';
 import { fail, ok, type Result } from '@/shared/result';
 import { requireAuthenticated, requirePermission } from './base';
 
-interface ActionConfig<TSchema extends z.ZodType> {
+export interface ActionConfig<TSchema extends z.ZodType> {
   /** `'session'` by default (secure by default); `'public'` only for actions that don't require a session. */
   access?: 'session' | 'public';
   /** Permission slug required before running the handler. */
@@ -67,33 +66,42 @@ function handleFailure(ctx: RequestContext | undefined, error: unknown): Result 
   return fail(new AppError('internal').message);
 }
 
+/** The single injected boundary: how the RequestContext is obtained. */
+interface ActionDeps {
+  getContext: () => Promise<RequestContext>;
+}
+
 /**
  * Orchestrates a Server Action protocol in a fixed order:
  * context → session → permission → schema → handler.
  * The handler never writes try/catch: this wrapper is the only owner of one.
  * Success → `ok`, error → `fail(msg)`; the client only submits and shows errors.
+ *
+ * The context factory is the only I/O boundary and arrives through `deps`,
+ * so tests can exercise every branch with fixtures instead of mocking modules.
+ * The Next binding lives in `next-action.ts`.
  */
-export function run<TSchema extends z.ZodType>(
+export async function executeAction<TSchema extends z.ZodType>(
+  deps: ActionDeps,
   config: ActionConfig<TSchema>,
   handler: (ctx: RequestContext, data: z.infer<TSchema>) => Promise<void>,
-): (data?: unknown) => Promise<Result> {
-  return async (payload?: unknown): Promise<Result> => {
-    let ctx: RequestContext | undefined;
+  payload?: unknown,
+): Promise<Result> {
+  let ctx: RequestContext | undefined;
 
-    try {
-      ctx = await createRequestContext();
-      guardAccess(ctx, config);
+  try {
+    ctx = await deps.getContext();
+    guardAccess(ctx, config);
 
-      const input = validateInput(ctx, config.input, payload);
+    const input = validateInput(ctx, config.input, payload);
 
-      if (!input.success) {
-        return fail(input.error);
-      }
-
-      await handler(ctx, input.data);
-      return ok(undefined);
-    } catch (error) {
-      return handleFailure(ctx, error);
+    if (!input.success) {
+      return fail(input.error);
     }
-  };
+
+    await handler(ctx, input.data);
+    return ok(undefined);
+  } catch (error) {
+    return handleFailure(ctx, error);
+  }
 }
