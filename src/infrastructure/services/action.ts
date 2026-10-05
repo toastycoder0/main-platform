@@ -9,7 +9,7 @@ export interface ActionConfig<TSchema extends z.ZodType> {
   access?: 'session' | 'public';
   /** Permission slug required before running the handler. */
   permission?: string;
-  /** Strict schema for the input; without it, the payload passes through as-is. */
+  /** Strict schema for the input; without it the action declares "no input" and the payload must be `undefined`. */
   input?: TSchema;
 }
 
@@ -41,7 +41,15 @@ function validateInput<TSchema extends z.ZodType>(
   payload: unknown,
 ): Result<z.infer<TSchema>> {
   if (!schema) {
-    return ok(payload as z.infer<TSchema>);
+    // A schemaless action declares "no input": a stray payload is a spec
+    // violation — every backend-bound value must be structurally validated.
+    if (payload !== undefined) {
+      ctx.logger.warn('Server action received a payload without an input schema');
+      return fail('Datos inválidos');
+    }
+    // The handler receives no data; the cast satisfies the unresolved generic
+    // without widening it to any/unknown.
+    return ok(undefined as z.infer<TSchema>);
   }
 
   const parsed = schema.safeParse(payload);

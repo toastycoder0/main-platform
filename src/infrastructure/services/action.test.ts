@@ -113,6 +113,17 @@ describe('executeAction', () => {
       expect(handler).not.toHaveBeenCalled();
     });
 
+    it('rejects a payload when no input schema is configured', async () => {
+      const { deps, warn } = createFixture({ session: true });
+      const handler = createHandler();
+
+      const result = await executeAction(deps, {}, handler, { stray: true });
+
+      expect(result).toEqual({ success: false, error: 'Datos inválidos' });
+      expect(warn).toHaveBeenCalledOnce();
+      expect(handler).not.toHaveBeenCalled();
+    });
+
     it('passes parsed and transformed data to the handler', async () => {
       const { deps } = createFixture({ session: true });
       const input = z.object({ count: z.string().transform((value) => Number(value)) });
