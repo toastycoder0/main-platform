@@ -8,7 +8,6 @@ const ADMIN_PASS = 'Pass1234';
 
 const errorToast = '[data-sonner-toast][data-type="error"]';
 
-/** Opens the desktop user dropdown and activates "Cerrar sesión". */
 async function signOutThroughMenu(page: Page) {
   await page.locator('[aria-label="Menú de usuario"]:visible').click();
   await page.locator("[data-slot='dropdown-menu-content']").getByText('Cerrar sesión').click();
@@ -38,8 +37,7 @@ describe('Logout E2E', () => {
 
     await page.waitForURL('**/auth/login');
     expect(page.url()).toBe(`${BASE}/auth/login`);
-    // Not role=alert: Next's route announcer also uses it after navigation.
-    // The real login form must have rendered and no error card may exist.
+    await page.waitForSelector('#login-form');
     expect(await page.locator('#login-form').count()).toBe(1);
     expect(await page.getByRole('button', { name: 'Intentar de nuevo' }).count()).toBe(0);
   });
