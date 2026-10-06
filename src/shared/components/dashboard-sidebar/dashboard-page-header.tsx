@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { Fragment } from 'react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,16 +36,16 @@ export function DashboardPageHeader() {
               const isLast = i === segments.length - 1;
 
               return (
-                <BreadcrumbItem key={segment.href} className={!isLast ? 'hidden md:block' : ''}>
-                  {isLast ? (
-                    <BreadcrumbPage>{segment.label}</BreadcrumbPage>
-                  ) : (
-                    <>
+                <Fragment key={segment.href}>
+                  <BreadcrumbItem className={!isLast ? 'hidden md:block' : ''}>
+                    {isLast ? (
+                      <BreadcrumbPage>{segment.label}</BreadcrumbPage>
+                    ) : (
                       <BreadcrumbLink href={segment.href}>{segment.label}</BreadcrumbLink>
-                      <BreadcrumbSeparator className='hidden md:block' />
-                    </>
-                  )}
-                </BreadcrumbItem>
+                    )}
+                  </BreadcrumbItem>
+                  {!isLast && <BreadcrumbSeparator className='hidden md:block' />}
+                </Fragment>
               );
             })}
           </BreadcrumbList>
