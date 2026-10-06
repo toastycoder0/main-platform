@@ -11,11 +11,6 @@ interface FixtureOptions {
   permissions?: string[];
 }
 
-/**
- * Pure fixtures: the context factory is replaced by an already-resolved
- * RequestContext, so these tests never touch the database, Next.js or
- * better-auth — no module mocking anywhere in this suite.
- */
 function createFixture({ session = false, permissions = [] }: FixtureOptions = {}) {
   const warn = vi.fn();
   const logError = vi.fn();
@@ -79,7 +74,17 @@ describe('executeAction', () => {
       expect(handler).toHaveBeenCalledOnce();
     });
 
-    it('rejects when the required permission is missing', async () => {
+    it('rejects with unauthorized when a permission is required but no session exists', async () => {
+      const { deps } = createFixture({ session: false });
+      const handler = createHandler();
+
+      const result = await executeAction(deps, { permission: 'users:write' }, handler);
+
+      expect(result).toEqual({ success: false, error: new AppError('unauthorized').message });
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('rejects with forbidden when the session lacks the required permission', async () => {
       const { deps } = createFixture({ session: true, permissions: ['users:read'] });
       const handler = createHandler();
 
