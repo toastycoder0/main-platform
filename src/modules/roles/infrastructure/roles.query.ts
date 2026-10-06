@@ -1,38 +1,21 @@
-import { and, asc, eq, ilike, inArray, or, type SQL, sql } from 'drizzle-orm';
+import { asc, eq, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { permission, role, rolePermission } from '@/infrastructure/db/schema';
+import { role, rolePermission } from '@/infrastructure/db/schema';
+import type { ListParams } from '@/shared/list-params';
+import { searchILike } from '@/shared/list-query';
 import type { Paginated } from '@/shared/paginated';
-import type { RolesListParams } from '../application/roles.params';
 import type { RoleListItemDTO } from '../application/roles.types';
 
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, '\\$&');
-}
-
-function buildWhere(ctx: RequestContext, params: RolesListParams): SQL | undefined {
-  const conditions: (SQL | undefined)[] = [];
-
-  if (params.q) {
-    const pattern = `%${escapeLike(params.q)}%`;
-    conditions.push(or(ilike(role.name, pattern), ilike(role.slug, pattern)));
-  }
-
-  if (params.permission) {
-    const linked = ctx.db
-      .select({ roleId: rolePermission.roleId })
-      .from(rolePermission)
-      .innerJoin(permission, eq(permission.id, rolePermission.permissionId))
-      .where(eq(permission.slug, params.permission));
-    conditions.push(inArray(role.id, linked));
-  }
-
-  return and(...conditions);
+function buildWhere(params: ListParams): SQL | undefined {
+  return params.q ? searchILike([role.name, role.slug], params.q) : undefined;
 }
 
 export async function listRoles(
   ctx: RequestContext,
-  params: RolesListParams,
+  params: ListParams,
 ): Promise<Paginated<RoleListItemDTO>> {
+  const where = buildWhere(params);
+
   const rows = await ctx.db
     .select({
       id: role.id,
@@ -44,11 +27,20 @@ export async function listRoles(
     })
     .from(role)
     .leftJoin(rolePermission, eq(rolePermission.roleId, role.id))
-    .where(buildWhere(ctx, params))
+    .where(where)
     .groupBy(role.id)
     .orderBy(asc(role.name), asc(role.slug))
     .limit(params.pageSize)
     .offset((params.page - 1) * params.pageSize);
+
+  if (rows.length === 0 && params.page > 1) {
+    const [counted] = await ctx.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(role)
+      .where(where);
+
+    return { items: [], total: counted?.total ?? 0 };
+  }
 
   return {
     items: rows.map(({ total, ...item }) => item),

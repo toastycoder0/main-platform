@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
 import { permission, role, rolePermission } from '@/infrastructure/db/schema';
-import type { RolesListParams } from '../application/roles.params';
+import type { ListParams } from '@/shared/list-params';
 import { listRoles } from './roles.query';
 
 const scope = `listroles${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -23,8 +23,8 @@ function testContext(): RequestContext {
   return { db, session: null, permissions: new Set<string>(), logger, requestId: 'itest' };
 }
 
-function params(overrides: Partial<RolesListParams> = {}): RolesListParams {
-  return { q: scope, page: 1, pageSize: 10, permission: null, ...overrides };
+function params(overrides: Partial<ListParams> = {}): ListParams {
+  return { q: scope, page: 1, pageSize: 10, ...overrides };
 }
 
 async function seedRoles(values: { slug: string; name: string }[]): Promise<{ id: string }[]> {
@@ -114,13 +114,6 @@ describe('listRoles', () => {
     expect(result.items).toHaveLength(seededNames.length);
   });
 
-  it('filters by permission slug', async () => {
-    const result = await listRoles(testContext(), params({ permission: permA.slug }));
-
-    expect(result.total).toBe(2);
-    expect(result.items.map((item) => item.permissionsCount)).toEqual([1, 2]);
-  });
-
   it('matches the search against the slug as well as the name', async () => {
     const result = await listRoles(testContext(), params({ q: `${scope}_role_07` }));
 
@@ -133,6 +126,13 @@ describe('listRoles', () => {
 
     expect(result.items).toHaveLength(0);
     expect(result.total).toBe(0);
+  });
+
+  it('reports the real total on a page beyond the last one', async () => {
+    const result = await listRoles(testContext(), params({ page: 999 }));
+
+    expect(result.items).toHaveLength(0);
+    expect(result.total).toBe(seededNames.length);
   });
 
   it('treats LIKE wildcards in the search as literals', async () => {
