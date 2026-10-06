@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Montserrat } from 'next/font/google';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/shared/components/tooltip';
@@ -214,7 +215,9 @@ function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang='es' className='overscroll-y-none'>
       <body className={`${montserrat.className} antialiased`}>
-        <TooltipProvider>{children}</TooltipProvider>
+        <NuqsAdapter defaultOptions={{ shallow: false }}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </NuqsAdapter>
         <Toaster closeButton richColors position='top-right' />
       </body>
     </html>
