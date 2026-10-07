@@ -4,10 +4,20 @@ import { role, rolePermission } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list-params';
 import { searchILike } from '@/shared/list-query';
 import type { Paginated } from '@/shared/paginated';
-import type { RoleListItemDTO } from '../application/roles.types';
+import type { RoleFormDTO, RoleListItemDTO } from '../application/roles.types';
 
 function buildWhere(params: ListParams): SQL | undefined {
   return params.q ? searchILike([role.name, role.slug], params.q) : undefined;
+}
+
+export async function getRole(ctx: RequestContext, id: string): Promise<RoleFormDTO | undefined> {
+  const rows = await ctx.db
+    .select({ id: role.id, name: role.name, description: role.description })
+    .from(role)
+    .where(eq(role.id, id))
+    .limit(1);
+
+  return rows[0];
 }
 
 export async function listRoles(
