@@ -3,7 +3,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form';
-import { toast } from 'sonner';
 import type { PermissionOptionDTO } from '@/modules/roles/application/roles.types';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
@@ -19,6 +18,7 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
+import { submitAction } from '@/shared/submit-action';
 import type { RoleOptionDTO, UserFormDTO } from '../application/users.types';
 import { type UserFormSchema, userFormSchema } from '../application/users.validation';
 import { createUser, updateUser } from '../infrastructure/users.action';
@@ -194,15 +194,7 @@ export function UserForm({ user, roleOptions, permissionOptions }: UserFormProps
   });
 
   async function onSubmit(values: UserFormSchema) {
-    try {
-      const result = user ? await updateUser(values) : await createUser(values);
-
-      if (result && !result.success) {
-        toast.error(result.error);
-      }
-    } catch {
-      // En éxito `redirect()` rechaza la promesa; la navegación la gestiona Next.
-    }
+    await submitAction(() => (user ? updateUser(values) : createUser(values)));
   }
 
   return (

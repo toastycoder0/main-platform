@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/select';
-import { executeAction } from '@/shared/execute-action';
+import { submitAction } from '@/shared/submit-action';
 import { adminResetPassword, banUser, deleteUser, unbanUser } from '../infrastructure/users.action';
 
 const DURATION_OPTIONS = [
@@ -72,7 +72,7 @@ function BanSection({ user }: { user: AccessUser }) {
 
   function submitBan() {
     startTransition(async () => {
-      const succeeded = await executeAction(() =>
+      const result = await submitAction(() =>
         banUser({
           id: user.id,
           reason,
@@ -80,7 +80,7 @@ function BanSection({ user }: { user: AccessUser }) {
         }),
       );
 
-      if (succeeded) {
+      if (result.success) {
         setOpen(false);
         setReason('');
         setDuration('permanent');
@@ -90,7 +90,7 @@ function BanSection({ user }: { user: AccessUser }) {
 
   function submitUnban() {
     startTransition(async () => {
-      await executeAction(() => unbanUser({ id: user.id }));
+      await submitAction(() => unbanUser({ id: user.id }));
     });
   }
 
@@ -182,9 +182,9 @@ function ResetSection({ userId }: { userId: string }) {
 
   function submitReset() {
     startTransition(async () => {
-      const succeeded = await executeAction(() => adminResetPassword({ id: userId, newPassword }));
+      const result = await submitAction(() => adminResetPassword({ id: userId, newPassword }));
 
-      if (succeeded) {
+      if (result.success) {
         setOpen(false);
         setNewPassword('');
       }
@@ -239,7 +239,7 @@ function DeleteSection({ user }: { user: AccessUser }) {
 
   function submitDelete() {
     startTransition(async () => {
-      await executeAction(() => deleteUser({ id: user.id }));
+      await submitAction(() => deleteUser({ id: user.id }));
     });
   }
 

@@ -27,7 +27,7 @@ import {
 } from '@/shared/components/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
-import { executeAction } from '@/shared/execute-action';
+import { submitAction } from '@/shared/submit-action';
 import type { UserAddressDTO } from '../../application/users.types';
 import {
   type AddressSchema,
@@ -80,11 +80,11 @@ function AddressForm({ address, onDone }: AddressFormProps) {
   });
 
   async function onSubmit(values: AddressSchema) {
-    const succeeded = await executeAction(() =>
+    const result = await submitAction(() =>
       address ? updateAddress({ id: address.id, ...values }) : createAddress(values),
     );
 
-    if (succeeded) {
+    if (result.success) {
       onDone();
     }
   }
@@ -224,7 +224,7 @@ function AddressCard({ address, onEdit }: { address: UserAddressDTO; onEdit: () 
 
   async function remove() {
     setIsRemoving(true);
-    await executeAction(() => deleteAddress({ id: address.id }));
+    await submitAction(() => deleteAddress({ id: address.id }));
     setConfirmOpen(false);
     setIsRemoving(false);
   }

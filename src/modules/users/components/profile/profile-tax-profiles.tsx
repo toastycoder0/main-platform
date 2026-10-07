@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/select';
-import { executeAction } from '@/shared/execute-action';
+import { submitAction } from '@/shared/submit-action';
 import { CFDI_USE_OPTIONS, FISCAL_REGIME_OPTIONS } from '../../application/users.cfdi';
 import type { UserTaxProfileDTO } from '../../application/users.types';
 import {
@@ -92,11 +92,11 @@ function TaxProfileForm({ profile, onDone }: TaxProfileFormProps) {
   });
 
   async function onSubmit(values: TaxProfileSchema) {
-    const succeeded = await executeAction(() =>
+    const result = await submitAction(() =>
       profile ? updateTaxProfile({ id: profile.id, ...values }) : createTaxProfile(values),
     );
 
-    if (succeeded) {
+    if (result.success) {
       onDone();
     }
   }
@@ -247,7 +247,7 @@ function TaxProfileCard({ profile, onEdit }: { profile: UserTaxProfileDTO; onEdi
 
   async function remove() {
     setIsRemoving(true);
-    await executeAction(() => deleteTaxProfile({ id: profile.id }));
+    await submitAction(() => deleteTaxProfile({ id: profile.id }));
     setConfirmOpen(false);
     setIsRemoving(false);
   }

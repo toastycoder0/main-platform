@@ -14,7 +14,7 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
-import { executeAction } from '@/shared/execute-action';
+import { submitAction } from '@/shared/submit-action';
 import type { ProfileDTO } from '../../application/users.types';
 import {
   type ChangePasswordSchema,
@@ -46,13 +46,13 @@ export function ProfileGeneral({ profile }: ProfileGeneralProps) {
   });
 
   async function onSubmitProfile(values: ProfileSchema) {
-    await executeAction(() => updateProfile(values));
+    await submitAction(() => updateProfile(values));
   }
 
   async function onSubmitPassword(values: ChangePasswordSchema) {
-    const succeeded = await executeAction(() => changeOwnPassword(values));
+    const result = await submitAction(() => changeOwnPassword(values));
 
-    if (succeeded) {
+    if (result.success) {
       passwordForm.reset({ currentPassword: '', newPassword: '' });
     }
   }

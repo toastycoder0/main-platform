@@ -1,19 +1,12 @@
 import { z } from 'zod';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { AppError, isAppError } from '@/shared/errors';
+import { AppError, isAppError, isNextRedirect } from '@/shared/errors';
 import { fail, ok, type Result } from '@/shared/result';
 
 export interface ActionConfig<TSchema extends z.ZodType> {
   access?: 'session' | 'public';
   permission?: string;
   input?: TSchema;
-}
-
-function isNextRedirect(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null || !('digest' in error)) {
-    return false;
-  }
-  return typeof error.digest === 'string' && error.digest.startsWith('NEXT_REDIRECT;');
 }
 
 function guardAccess(ctx: RequestContext, config: ActionConfig<z.ZodType>): void {

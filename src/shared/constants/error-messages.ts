@@ -12,3 +12,5 @@ export const FIELD_ERRORS = {
   url: 'La URL no es válida',
   date: 'La fecha no es válida',
 } as const;
+
+export const UNEXPECTED_ERROR = 'Ocurrió un error inesperado. Intenta de nuevo.';
