@@ -27,13 +27,6 @@ interface ControlledComboboxProps<T extends FieldValues> {
   description?: string;
 }
 
-/**
- * Combobox filtrable controlado para catálogos grandes (CFDI, régimen, permisos).
- *
- * El formulario guarda `string`, pero Base UI compara `value` contra los objetos de
- * `items`, por lo que se traduce en ambos sentidos y se usa `isItemEqualToValue` para
- * no depender de la identidad de los objetos (los catálogos se reconstruyen en cada render).
- */
 export function ControlledCombobox<T extends FieldValues>({
   control,
   name,
