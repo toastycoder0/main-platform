@@ -9,5 +9,5 @@ export default async function AccountLayout({ children }: { children: ReactNode 
     redirect('/auth/login');
   }
 
-  return <div className='mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8'>{children}</div>;
+  return <div className='mx-auto flex w-full max-w-3xl flex-col gap-6'>{children}</div>;
 }
