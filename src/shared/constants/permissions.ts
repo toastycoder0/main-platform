@@ -6,6 +6,7 @@ export const PERMISSIONS = {
       create: 'admin.users.create',
       edit: 'admin.users.edit',
       delete: 'admin.users.delete',
+      ban: 'admin.users.ban',
     },
     roles: {
       access: 'admin.roles.access',

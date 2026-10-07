@@ -14,6 +14,7 @@ const INITIAL_PERMISSIONS = [
   { slug: admin.users.create, name: 'Crear usuarios', type: 'action' as const },
   { slug: admin.users.edit, name: 'Editar usuarios', type: 'action' as const },
   { slug: admin.users.delete, name: 'Eliminar usuarios', type: 'action' as const },
+  { slug: admin.users.ban, name: 'Banear usuarios', type: 'action' as const },
   { slug: admin.roles.access, name: 'Acceso a gestión de roles', type: 'access' as const },
   { slug: admin.roles.create, name: 'Crear roles', type: 'action' as const },
   { slug: admin.roles.edit, name: 'Editar roles', type: 'action' as const },

@@ -1,13 +1,14 @@
 import { authManifest } from './auth/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
 import { rolesManifest } from './roles/manifest';
+import { usersManifest } from './users/manifest';
 
 // Composition root: modules register here manually via their manifests.
 // Decentralizing this list (auto-discovery of `modules/*/manifest.ts` via
 // build-time codegen or server-side resolution) is a future consideration —
 // the pure registry functions below already accept `ModuleManifest[]`, so
 // that migration only has to change how this list is populated.
-const manifests: ModuleManifest[] = [authManifest, rolesManifest];
+const manifests: ModuleManifest[] = [authManifest, rolesManifest, usersManifest];
 
 interface SectionMeta {
   rootPath: string;

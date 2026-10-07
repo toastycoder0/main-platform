@@ -6,4 +6,9 @@ export const FIELD_ERRORS = {
   description: 'La descripción es demasiado larga',
   permissions: 'Debes seleccionar al menos un permiso',
   tooLong: 'El texto excede el número máximo de caracteres',
+  postalCode: 'El código postal no es válido (5 dígitos)',
+  phone: 'El teléfono no es válido (10 dígitos)',
+  rfc: 'El RFC no es válido',
+  url: 'La URL no es válida',
+  date: 'La fecha no es válida',
 } as const;
