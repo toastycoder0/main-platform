@@ -2,14 +2,19 @@ import { inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
-import { permission, role, rolePermission } from '@/infrastructure/db/schema';
+import { permission, role, rolePermission, user, userRole } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list-params';
-import { listRoles } from './roles.query';
+import { getRole, listPermissionOptions, listRoles, listUserRoleIds } from './roles.query';
 
 const scope = `listroles${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
 const createdRoleIds: string[] = [];
+const createdUserIds: string[] = [];
 const seededNames: string[] = [];
+
+let firstRoleId = '';
+let emptyRoleId = '';
+let lastRoleId = '';
 
 function testContext(): RequestContext {
   const logger: RequestContext['logger'] = {
@@ -65,10 +70,15 @@ beforeAll(async () => {
   permB = await seedPermission('b', 'action');
 
   const first = inserted.at(0);
+  const second = inserted.at(1);
   const last = inserted.at(11);
-  if (!first || !last) {
+  if (!first || !second || !last) {
     throw new Error('Failed to create test roles');
   }
+
+  firstRoleId = first.id;
+  emptyRoleId = second.id;
+  lastRoleId = last.id;
 
   await db.insert(rolePermission).values([
     { roleId: first.id, permissionId: permA.id },
@@ -80,6 +90,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (createdUserIds.length > 0) {
+    await db.delete(user).where(inArray(user.id, createdUserIds));
+  }
   if (createdRoleIds.length > 0) {
     await db.delete(role).where(inArray(role.id, createdRoleIds));
   }
@@ -139,5 +152,71 @@ describe('listRoles', () => {
     const result = await listRoles(testContext(), params({ q: `${scope}%` }));
 
     expect(result.total).toBe(0);
+  });
+});
+
+describe('getRole', () => {
+  it('returns undefined for a missing role', async () => {
+    expect(await getRole(testContext(), 'role_does_not_exist')).toBeUndefined();
+  });
+
+  it('returns the role with its assigned permission ids', async () => {
+    const result = await getRole(testContext(), lastRoleId);
+
+    expect(result?.id).toBe(lastRoleId);
+    expect(result?.permissionIds?.toSorted()).toEqual([permA.id, permB.id].toSorted());
+  });
+
+  it('returns an empty permission list when the role has none', async () => {
+    const result = await getRole(testContext(), emptyRoleId);
+
+    expect(result?.id).toBe(emptyRoleId);
+    expect(result?.permissionIds).toEqual([]);
+  });
+});
+
+describe('listPermissionOptions', () => {
+  it('includes the seeded test permissions ordered by slug', async () => {
+    const options = await listPermissionOptions(testContext());
+    const slugs = options.map((option) => option.slug);
+
+    expect(slugs).toContain(permA.slug);
+    expect(slugs).toContain(permB.slug);
+    expect(slugs.toSorted()).toEqual(slugs);
+  });
+
+  it('returns id, slug, name and type for each permission', async () => {
+    const options = await listPermissionOptions(testContext());
+    const permAOption = options.find((option) => option.id === permA.id);
+
+    expect(permAOption).toEqual({
+      id: permA.id,
+      slug: permA.slug,
+      name: permA.slug,
+      type: 'access',
+    });
+  });
+});
+
+describe('listUserRoleIds', () => {
+  it('returns an empty list for a user without roles', async () => {
+    expect(await listUserRoleIds(testContext(), 'user_does_not_exist')).toEqual([]);
+  });
+
+  it('returns the roles assigned to the user', async () => {
+    const inserted = await db
+      .insert(user)
+      .values({ firstName: 'RoleQuery', lastName: 'Test', email: `${scope}@rolequery.test` })
+      .returning({ id: user.id });
+    const userRow = inserted.at(0);
+
+    if (!userRow) {
+      throw new Error('Failed to create test user');
+    }
+
+    createdUserIds.push(userRow.id);
+    await db.insert(userRole).values({ userId: userRow.id, roleId: firstRoleId });
+
+    expect(await listUserRoleIds(testContext(), userRow.id)).toEqual([firstRoleId]);
   });
 });

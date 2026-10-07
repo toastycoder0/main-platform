@@ -10,6 +10,7 @@ export const updateRoleSchema = z.object({
   id: z.string().min(1, FIELD_ERRORS.required),
   name: z.string().trim().min(1, FIELD_ERRORS.name).max(100, FIELD_ERRORS.name),
   description: z.string().trim().max(500, FIELD_ERRORS.description).nullable().optional(),
+  permissionIds: z.array(z.string().min(1, FIELD_ERRORS.required)).min(1, FIELD_ERRORS.permissions),
 });
 
 export type UpdateRoleSchema = z.infer<typeof updateRoleSchema>;

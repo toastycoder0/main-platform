@@ -1,10 +1,10 @@
 import { asc, eq, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { role, rolePermission } from '@/infrastructure/db/schema';
+import { permission, role, rolePermission, userRole } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list-params';
 import { searchILike } from '@/shared/list-query';
 import type { Paginated } from '@/shared/paginated';
-import type { RoleFormDTO, RoleListItemDTO } from '../application/roles.types';
+import type { PermissionOptionDTO, RoleFormDTO, RoleListItemDTO } from '../application/roles.types';
 
 function buildWhere(params: ListParams): SQL | undefined {
   return params.q ? searchILike([role.name, role.slug], params.q) : undefined;
@@ -17,7 +17,44 @@ export async function getRole(ctx: RequestContext, id: string): Promise<RoleForm
     .where(eq(role.id, id))
     .limit(1);
 
-  return rows[0];
+  const row = rows[0];
+
+  if (!row) {
+    return undefined;
+  }
+
+  const permissionRows = await ctx.db
+    .select({ permissionId: rolePermission.permissionId })
+    .from(rolePermission)
+    .where(eq(rolePermission.roleId, id));
+
+  return {
+    ...row,
+    permissionIds: permissionRows.map((item) => item.permissionId),
+  };
+}
+
+export async function listPermissionOptions(ctx: RequestContext): Promise<PermissionOptionDTO[]> {
+  const options = await ctx.db
+    .select({
+      id: permission.id,
+      slug: permission.slug,
+      name: permission.name,
+      type: permission.type,
+    })
+    .from(permission)
+    .orderBy(asc(permission.slug));
+
+  return options;
+}
+
+export async function listUserRoleIds(ctx: RequestContext, userId: string): Promise<string[]> {
+  const rows = await ctx.db
+    .select({ roleId: userRole.roleId })
+    .from(userRole)
+    .where(eq(userRole.userId, userId));
+
+  return rows.map((item) => item.roleId);
 }
 
 export async function listRoles(

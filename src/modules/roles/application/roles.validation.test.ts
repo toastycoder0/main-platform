@@ -9,6 +9,7 @@ describe('updateRoleSchema', () => {
       id: 'role_1',
       name: 'Administrador',
       description: 'Rol con acceso total',
+      permissionIds: ['perm_1'],
     };
 
     const result = updateRoleSchema.safeParse(validData);
@@ -16,9 +17,17 @@ describe('updateRoleSchema', () => {
   });
 
   it('allows a missing or null description', () => {
-    expect(updateRoleSchema.safeParse({ id: 'role_1', name: 'Admin' }).success).toBe(true);
     expect(
-      updateRoleSchema.safeParse({ id: 'role_1', name: 'Admin', description: null }).success,
+      updateRoleSchema.safeParse({ id: 'role_1', name: 'Admin', permissionIds: ['perm_1'] })
+        .success,
+    ).toBe(true);
+    expect(
+      updateRoleSchema.safeParse({
+        id: 'role_1',
+        name: 'Admin',
+        description: null,
+        permissionIds: ['perm_1'],
+      }).success,
     ).toBe(true);
   });
 
@@ -60,6 +69,7 @@ describe('updateRoleSchema', () => {
       id: 'role_1',
       name: 'Admin',
       description: 'a'.repeat(501),
+      permissionIds: ['perm_1'],
     });
 
     expect(result.success).toBe(false);
@@ -68,6 +78,52 @@ describe('updateRoleSchema', () => {
       const errors = z.flattenError(result.error).fieldErrors;
       expect(errors.description).toContain(FIELD_ERRORS.description);
     }
+  });
+
+  it('fails validation when permissionIds is missing', () => {
+    const result = updateRoleSchema.safeParse({ id: 'role_1', name: 'Admin' });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('fails validation when permissionIds is empty', () => {
+    const result = updateRoleSchema.safeParse({
+      id: 'role_1',
+      name: 'Admin',
+      permissionIds: [],
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      const errors = z.flattenError(result.error).fieldErrors;
+      expect(errors.permissionIds).toContain(FIELD_ERRORS.permissions);
+    }
+  });
+
+  it('fails validation when a permission id is empty', () => {
+    const result = updateRoleSchema.safeParse({
+      id: 'role_1',
+      name: 'Admin',
+      permissionIds: ['perm_1', ''],
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      const errors = z.flattenError(result.error).fieldErrors;
+      expect(errors.permissionIds).toContain(FIELD_ERRORS.required);
+    }
+  });
+
+  it('successfully validates multiple permission ids', () => {
+    const result = updateRoleSchema.safeParse({
+      id: 'role_1',
+      name: 'Admin',
+      permissionIds: ['perm_1', 'perm_2'],
+    });
+
+    expect(result.success).toBe(true);
   });
 });
 

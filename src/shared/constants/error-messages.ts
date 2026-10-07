@@ -4,4 +4,5 @@ export const FIELD_ERRORS = {
   required: 'El campo es requerido',
   name: 'El nombre es requerido',
   description: 'La descripción es demasiado larga',
+  permissions: 'Debes seleccionar al menos un permiso',
 } as const;
