@@ -132,4 +132,33 @@ describe('Roles list E2E', () => {
     await waitForTable(page);
     expect(await roleCell(page).isVisible()).toBe(true);
   });
+
+  it('renders the permissions checklist locked for the admin own role', async () => {
+    await loginAsAdmin(page);
+    await page.goto(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    await page.getByLabel(`Acciones de ${SEEDED_ROLE}`).click();
+    await page.getByRole('menuitem', { name: 'Editar' }).click();
+
+    await page.waitForURL('**/dashboard/roles/form/**');
+    await page.waitForSelector('#role-form');
+
+    expect(await page.getByText('Permisos', { exact: true }).first().isVisible()).toBe(true);
+    expect(
+      await page.getByText('Panel de administración', { exact: true }).first().isVisible(),
+    ).toBe(true);
+    expect(await page.getByText('Usuarios', { exact: true }).first().isVisible()).toBe(true);
+    expect(await page.getByText('No puedes quitar permisos de tu propio rol.').isVisible()).toBe(
+      true,
+    );
+
+    const checkboxes = page.getByRole('checkbox');
+    const count = await checkboxes.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let index = 0; index < count; index++) {
+      expect(await checkboxes.nth(index).isDisabled()).toBe(true);
+    }
+  });
 });
