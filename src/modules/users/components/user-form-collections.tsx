@@ -9,6 +9,7 @@ import {
   MAX_PERMISSION_OVERRIDES,
   MAX_TAX_PROFILES,
 } from '../application/users.validation';
+import { ControlledCombobox } from './controlled-combobox';
 import {
   CollectionHeader,
   ControlledCheckbox,
@@ -83,7 +84,7 @@ export function OverridesSection({ permissionOptions }: OverridesSectionProps) {
           </div>
 
           <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-            <ControlledSelect
+            <ControlledCombobox
               control={control}
               name={`overrides.${index}.permissionId`}
               label='Permiso'
@@ -252,14 +253,14 @@ export function TaxProfilesSection() {
               label='URL del RFC (opcional)'
               placeholder='https://…'
             />
-            <ControlledSelect
+            <ControlledCombobox
               control={control}
               name={`taxProfiles.${index}.cfdiUse`}
               label='Uso de CFDI'
               placeholder='Selecciona un uso'
               options={CFDI_USE_OPTIONS}
             />
-            <ControlledSelect
+            <ControlledCombobox
               control={control}
               name={`taxProfiles.${index}.taxRegime`}
               label='Régimen fiscal'

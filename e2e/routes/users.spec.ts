@@ -152,6 +152,52 @@ describe('Users list E2E', () => {
     await page.getByRole('heading', { name: 'Perfiles de facturación' }).waitFor();
   });
 
+  it('creates a tax profile filtering the CFDI and fiscal regime comboboxes', async () => {
+    await loginAsAdmin(page);
+    const consoleErrors = collectConsoleErrors(page);
+
+    await page.goto(`${BASE}/account?tab=billing`);
+    await page.getByRole('heading', { name: 'Perfiles de facturación' }).waitFor();
+
+    const alias = `Perfil ${Date.now()}`;
+    await page.getByRole('button', { name: 'Agregar perfil' }).click();
+    await page.getByRole('dialog').waitFor();
+
+    await page.getByLabel('Alias', { exact: true }).fill(alias);
+    await page.getByLabel('Razón social', { exact: true }).fill('Mi Empresa S.A. de C.V.');
+    await page.getByLabel('RFC', { exact: true }).fill('ABC123456789');
+    await page.getByLabel('Código postal fiscal', { exact: true }).fill('06000');
+
+    const cfdi = page.getByLabel('Uso de CFDI', { exact: true });
+
+    await cfdi.click();
+    await cfdi.fill('zzz-no-existe');
+    await page.getByText('Sin resultados').waitFor();
+
+    await cfdi.fill('mobiliario');
+    await page
+      .getByRole('option', { name: 'I02 - Mobiliario y equipo de oficina para inversiones' })
+      .click();
+    expect(await cfdi.inputValue()).toBe('I02 - Mobiliario y equipo de oficina para inversiones');
+
+    const regime = page.getByLabel('Régimen fiscal', { exact: true });
+
+    await regime.click();
+    await regime.fill('PEMEX');
+    await page.getByRole('option', { name: '617 - PEMEX' }).click();
+    expect(await regime.inputValue()).toBe('617 - PEMEX');
+
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await page.getByText(alias, { exact: true }).waitFor();
+    expect(
+      await page
+        .getByText('I02 - Mobiliario y equipo de oficina para inversiones')
+        .first()
+        .isVisible(),
+    ).toBe(true);
+    expect(consoleErrors).toEqual([]);
+  });
+
   it('creates a user, bans and unbans them, and finally deletes them', async () => {
     await loginAsAdmin(page);
     const stamp = Date.now();

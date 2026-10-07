@@ -27,13 +27,6 @@ import {
 } from '@/shared/components/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/select';
 import { submitAction } from '@/shared/submit-action';
 import { CFDI_USE_OPTIONS, FISCAL_REGIME_OPTIONS } from '../../application/users.cfdi';
 import type { UserTaxProfileDTO } from '../../application/users.types';
@@ -47,6 +40,7 @@ import {
   deleteTaxProfile,
   updateTaxProfile,
 } from '../../infrastructure/profile.action';
+import { ControlledCombobox } from '../controlled-combobox';
 
 const EMPTY_TAX_PROFILE: TaxProfileSchema = {
   alias: '',
@@ -164,55 +158,19 @@ function TaxProfileForm({ profile, onDone }: TaxProfileFormProps) {
             </Field>
           )}
         />
-        <Controller
+        <ControlledCombobox
+          control={control}
           name='cfdiUse'
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field orientation='vertical' data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='tax-cfdi-use'>Uso de CFDI</FieldLabel>
-              <Select
-                {...(field.value ? { value: field.value } : {})}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id='tax-cfdi-use' className='w-full'>
-                  <SelectValue placeholder='Selecciona un uso' />
-                </SelectTrigger>
-                <SelectContent>
-                  {CFDI_USE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+          label='Uso de CFDI'
+          placeholder='Selecciona un uso'
+          options={CFDI_USE_OPTIONS}
         />
-        <Controller
-          name='taxRegime'
+        <ControlledCombobox
           control={control}
-          render={({ field, fieldState }) => (
-            <Field orientation='vertical' data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor='tax-regime'>Régimen fiscal</FieldLabel>
-              <Select
-                {...(field.value ? { value: field.value } : {})}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger id='tax-regime' className='w-full'>
-                  <SelectValue placeholder='Selecciona un régimen' />
-                </SelectTrigger>
-                <SelectContent>
-                  {FISCAL_REGIME_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+          name='taxRegime'
+          label='Régimen fiscal'
+          placeholder='Selecciona un régimen'
+          options={FISCAL_REGIME_OPTIONS}
         />
         <Controller
           name='isDefault'
