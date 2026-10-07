@@ -23,12 +23,63 @@ function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
 
   page.on('console', (message) => {
-    if (message.type() === 'error') {
-      errors.push(message.text());
+    if (message.type() !== 'error') {
+      return;
     }
+
+    // Radix (aria-hidden al abrir modales) muta el DOM mientras React aún
+    // hidrata el navbar en streaming; en dev esto emite warnings de
+    // hidratación que no son errores de la app bajo prueba.
+    if (message.text().includes('https://react.dev/link/hydration-mismatch')) {
+      return;
+    }
+
+    errors.push(message.text());
   });
 
   return errors;
+}
+
+const errorToast = (page: Page) => page.locator('[data-sonner-toast][data-type="error"]');
+
+async function createUserThroughForm(page: Page, stamp: number, password: string) {
+  const email = `e2e.user.${stamp}@example.com`;
+
+  await page.goto(`${BASE}/dashboard/users/new`);
+  await page.waitForSelector('#user-form');
+  await page.locator('#user-form-first-name').fill('E2E');
+  await page.locator('#user-form-last-name').fill(`Usuario ${stamp}`);
+  await page.locator('#user-form-email').fill(email);
+  await page.locator('#user-form-password').fill(password);
+  await page.click('#user-form button[type="submit"]');
+  await page.waitForURL(`${BASE}/dashboard/users`);
+  await waitForTable(page);
+
+  return email;
+}
+
+async function gotoUsersByEmail(page: Page, email: string) {
+  await page.goto(`${BASE}/dashboard/users?q=${email}`);
+  await waitForTable(page);
+  await page.getByRole('cell', { name: email, exact: true }).waitFor();
+}
+
+async function openEditForm(page: Page, fullName: string) {
+  await page.getByLabel(`Acciones de ${fullName}`).click();
+  await page.getByRole('menuitem', { name: 'Editar' }).click();
+  await page.waitForURL('**/dashboard/users/form/**');
+  await page.waitForSelector('#user-form');
+}
+
+async function deleteUserFromForm(page: Page, email: string) {
+  await page.getByRole('button', { name: 'Eliminar usuario' }).click();
+  await page.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  await page.waitForURL(`${BASE}/dashboard/users`);
+  await waitForTable(page);
+
+  await searchBox(page).fill(email);
+  await page.waitForURL(`**/dashboard/users?q=${email}`);
+  await emptyState(page).waitFor();
 }
 
 describe('Users list E2E', () => {
@@ -256,5 +307,128 @@ describe('Users list E2E', () => {
     await searchBox(page).fill(userEmail);
     await page.waitForURL(`**/dashboard/users?q=${userEmail}`);
     await emptyState(page).waitFor();
+  });
+
+  it('edits a user and persists the changes after reopening the form', async () => {
+    await loginAsAdmin(page);
+    const stamp = Date.now();
+    const email = await createUserThroughForm(page, stamp, 'Secret123');
+
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+
+    await page.locator('#user-form-last-name').fill(`Editado ${stamp}`);
+    await page.click('#user-form button[type="submit"]');
+    await page.waitForURL(`${BASE}/dashboard/users`);
+    await waitForTable(page);
+
+    await gotoUsersByEmail(page, email);
+    await page.getByRole('cell', { name: `E2E Editado ${stamp}`, exact: true }).waitFor();
+
+    await openEditForm(page, `E2E Editado ${stamp}`);
+    expect(await page.locator('#user-form-last-name').inputValue()).toBe(`Editado ${stamp}`);
+
+    await deleteUserFromForm(page, email);
+  });
+
+  it('manages an address from the own profile', async () => {
+    await loginAsAdmin(page);
+    const stamp = Date.now();
+    const addressName = `Casa ${stamp}`;
+
+    await page.goto(`${BASE}/account?tab=addresses`);
+    await page.getByRole('heading', { name: 'Direcciones' }).waitFor();
+
+    await page.getByRole('button', { name: 'Agregar dirección' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.waitFor();
+
+    await page.locator('#address-name').fill(addressName);
+    await page.locator('#address-street').fill('Av. Reforma');
+    await page.locator('#address-exterior').fill('123');
+    await page.locator('#address-colony').fill('Centro');
+    await page.locator('#address-municipality').fill('Cuauhtémoc');
+    await page.locator('#address-state').fill('Ciudad de México');
+    await page.locator('#address-postal-code').fill('06000');
+    await dialog.getByRole('button', { name: 'Guardar' }).click();
+
+    const card = page.locator('li', { hasText: addressName });
+    await card.waitFor();
+
+    await card.getByRole('button', { name: 'Editar' }).click();
+    await dialog.waitFor();
+    await page.locator('#address-street').fill('Av. Insurgentes');
+    await dialog.getByRole('button', { name: 'Guardar' }).click();
+    await page.getByText('Av. Insurgentes 123').waitFor();
+
+    await card.getByRole('button', { name: 'Eliminar' }).click();
+    await page
+      .locator('[data-slot=alert-dialog-content]')
+      .getByRole('button', { name: 'Eliminar', exact: true })
+      .click();
+    await card.waitFor({ state: 'detached' });
+  });
+
+  it('changes the own password from the profile and signs in with it', async () => {
+    await loginAsAdmin(page);
+    const stamp = Date.now();
+    const email = await createUserThroughForm(page, stamp, 'Secret123');
+    const newPassword = `NuevaClave${stamp}`;
+
+    await page.context().clearCookies();
+    await loginAs(page, email, 'Secret123');
+    await page.waitForURL(`${BASE}/`);
+
+    await page.goto(`${BASE}/account`);
+    await page.waitForSelector('#password-form');
+    await page.locator('#profile-current-password').fill('Secret123');
+    await page.locator('#profile-new-password').fill(newPassword);
+    await page.locator('#password-form button[type="submit"]').click();
+    await page.waitForURL('**/account?tab=general');
+
+    await page.context().clearCookies();
+
+    await loginAs(page, email, 'Secret123');
+    await errorToast(page).waitFor();
+
+    await loginAs(page, email, newPassword);
+    await page.waitForURL(`${BASE}/`);
+
+    await page.context().clearCookies();
+    await loginAsAdmin(page);
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+    await deleteUserFromForm(page, email);
+  });
+
+  it('resets a user password from the access panel and blocks the old one', async () => {
+    await loginAsAdmin(page);
+    const stamp = Date.now();
+    const email = await createUserThroughForm(page, stamp, 'Secret123');
+    const newPassword = `ResetClave${stamp}`;
+
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+    await page.getByRole('heading', { name: 'Acceso' }).waitFor();
+
+    await page.getByRole('button', { name: 'Restablecer contraseña' }).click();
+    await page.getByRole('dialog').waitFor();
+    await page.locator('#reset-password').fill(newPassword);
+    await page.getByRole('button', { name: 'Restablecer', exact: true }).click();
+    await page.getByRole('dialog').waitFor({ state: 'detached' });
+
+    await page.context().clearCookies();
+
+    await loginAs(page, email, 'Secret123');
+    await errorToast(page).waitFor();
+
+    await loginAs(page, email, newPassword);
+    await page.waitForURL(`${BASE}/`);
+
+    await page.context().clearCookies();
+    await loginAsAdmin(page);
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+    await deleteUserFromForm(page, email);
   });
 });
