@@ -5,4 +5,5 @@ export const FIELD_ERRORS = {
   name: 'El nombre es requerido',
   description: 'La descripción es demasiado larga',
   permissions: 'Debes seleccionar al menos un permiso',
+  tooLong: 'El texto excede el número máximo de caracteres',
 } as const;

@@ -20,6 +20,7 @@ declare global {
       BILLING_USERNAME?: string;
       BILLING_PASSWORD?: string;
       BETTER_AUTH_SECRET?: string;
+      APP_URL?: string;
       ADMIN_SEED_EMAIL: string;
       ADMIN_SEED_PASSWORD: string;
       VERCEL_URL?: string;
@@ -41,6 +42,7 @@ export const env = createEnv({
     BILLING_USERNAME: z.string().min(1),
     BILLING_PASSWORD: z.string().min(1),
     BETTER_AUTH_SECRET: z.string().min(1),
+    APP_URL: z.url().optional(),
     ADMIN_SEED_EMAIL: z.email(),
     ADMIN_SEED_PASSWORD: z.string().min(8),
   },
@@ -67,6 +69,7 @@ export const env = createEnv({
     BILLING_USERNAME: process.env.BILLING_USERNAME,
     BILLING_PASSWORD: process.env.BILLING_PASSWORD,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    APP_URL: process.env.APP_URL,
     ADMIN_SEED_EMAIL: process.env.ADMIN_SEED_EMAIL,
     ADMIN_SEED_PASSWORD: process.env.ADMIN_SEED_PASSWORD,
   },
