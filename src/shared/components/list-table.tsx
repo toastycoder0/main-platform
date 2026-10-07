@@ -18,9 +18,10 @@ export interface ListColumn {
 interface ListTableProps {
   columns: ListColumn[];
   children: React.ReactNode;
+  actions?: boolean;
 }
 
-export function ListTable({ columns, children }: ListTableProps) {
+export function ListTable({ columns, children, actions = false }: ListTableProps) {
   return (
     <div data-slot='list-table' className='overflow-hidden rounded-md border'>
       <Table>
@@ -34,6 +35,11 @@ export function ListTable({ columns, children }: ListTableProps) {
                 {column.label}
               </TableHead>
             ))}
+            {actions ? (
+              <TableHead key='actions' className='w-14 px-4 text-right'>
+                <span className='sr-only'>Acciones</span>
+              </TableHead>
+            ) : null}
           </TableRow>
         </TableHeader>
         <TableBody>{children}</TableBody>
