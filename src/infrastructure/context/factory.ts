@@ -3,24 +3,11 @@ import type { DatabaseClient } from '@/infrastructure/db';
 import type { ILogger } from '@/infrastructure/logger/types';
 import { resolveUserPermissions } from '@/infrastructure/permissions/resolve';
 import { mapSession } from './session-mapper';
-import type { RequestContext } from './types';
+import type { AuthApi, RequestContext } from './types';
 
 interface BuildDeps {
   db: DatabaseClient;
-  auth: {
-    api: {
-      getSession: (options: { headers: Headers }) => Promise<{
-        user: {
-          id: string;
-          email: string;
-          name: string;
-          lastName: string;
-          role?: string | null | undefined;
-        };
-        session: { id: string; expiresAt: Date };
-      } | null>;
-    };
-  };
+  auth: AuthApi;
   logger: ILogger;
   headers: Headers;
 }

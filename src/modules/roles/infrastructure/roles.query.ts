@@ -16,34 +16,27 @@ export async function listRoles(
 ): Promise<Paginated<RoleListItemDTO>> {
   const where = buildWhere(params);
 
-  const rows = await ctx.db
-    .select({
-      id: role.id,
-      slug: role.slug,
-      name: role.name,
-      description: role.description,
-      permissionsCount: sql<number>`count(${rolePermission.permissionId})::int`,
-      total: sql<number>`count(*) over()::int`,
-    })
-    .from(role)
-    .leftJoin(rolePermission, eq(rolePermission.roleId, role.id))
-    .where(where)
-    .groupBy(role.id)
-    .orderBy(asc(role.name), asc(role.slug))
-    .limit(params.pageSize)
-    .offset((params.page - 1) * params.pageSize);
-
-  if (rows.length === 0 && params.page > 1) {
-    const [counted] = await ctx.db
-      .select({ total: sql<number>`count(*)::int` })
+  const [counted, rows] = await Promise.all([
+    ctx.db.select({ total: sql<number>`count(*)::int` }).from(role).where(where),
+    ctx.db
+      .select({
+        id: role.id,
+        slug: role.slug,
+        name: role.name,
+        description: role.description,
+        permissionsCount: sql<number>`count(${rolePermission.permissionId})::int`,
+      })
       .from(role)
-      .where(where);
-
-    return { items: [], total: counted?.total ?? 0 };
-  }
+      .leftJoin(rolePermission, eq(rolePermission.roleId, role.id))
+      .where(where)
+      .groupBy(role.id)
+      .orderBy(asc(role.name), asc(role.slug))
+      .limit(params.pageSize)
+      .offset((params.page - 1) * params.pageSize),
+  ]);
 
   return {
-    items: rows.map(({ total, ...item }) => item),
-    total: rows[0]?.total ?? 0,
+    items: rows,
+    total: counted[0]?.total ?? 0,
   };
 }

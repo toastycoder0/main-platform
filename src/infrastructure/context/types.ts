@@ -4,8 +4,29 @@ import type { ILogger } from '@/infrastructure/logger/types';
 
 export type SessionUser = Pick<
   typeof user.$inferSelect,
-  'id' | 'email' | 'firstName' | 'lastName' | 'role'
+  'id' | 'email' | 'firstName' | 'lastName'
 > & { name: string };
+
+export interface RawBetterAuthUser {
+  id: string;
+  email: string;
+  name: string;
+  lastName: string;
+}
+
+export interface RawBetterAuthSession {
+  id: string;
+  expiresAt: Date;
+}
+
+export interface AuthApi {
+  api: {
+    getSession(options: { headers: Headers }): Promise<{
+      user: RawBetterAuthUser;
+      session: RawBetterAuthSession;
+    } | null>;
+  };
+}
 
 export interface RequestContext {
   db: DatabaseClient;
