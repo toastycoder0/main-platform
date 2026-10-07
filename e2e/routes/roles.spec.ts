@@ -161,4 +161,41 @@ describe('Roles list E2E', () => {
       expect(await checkboxes.nth(index).isDisabled()).toBe(true);
     }
   });
+
+  it('redirects a guest away from the new role page to login', async () => {
+    await page.goto(`${BASE}/dashboard/roles/new`);
+    await page.waitForURL('**/auth/login');
+    expect(page.url()).toBe(`${BASE}/auth/login`);
+  });
+
+  it('creates a new role from the toolbar button', async () => {
+    await loginAsAdmin(page);
+    await page.goto(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    const roleName = `E2E Rol ${Date.now()}`;
+
+    await page.getByRole('link', { name: 'Crear rol' }).click();
+    await page.waitForURL('**/dashboard/roles/new');
+    await page.waitForSelector('#role-form');
+
+    const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
+    expect(await breadcrumb.textContent()).toContain('Crear rol');
+
+    await page.getByLabel('Nombre').fill(roleName);
+
+    const firstCheckbox = page.getByRole('checkbox').first();
+    await firstCheckbox.click();
+    expect(await firstCheckbox.getAttribute('aria-checked')).toBe('true');
+
+    await page.click('#role-form button[type="submit"]');
+
+    await page.waitForURL(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    await searchBox(page).fill(roleName);
+    await page.waitForURL('**/dashboard/roles?q=*');
+    await waitForTable(page);
+    expect(await page.getByRole('cell', { name: roleName, exact: true }).isVisible()).toBe(true);
+  });
 });

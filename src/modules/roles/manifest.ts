@@ -18,6 +18,7 @@ export const rolesManifest: ModuleManifest = {
       ],
       routeLabels: {
         '/dashboard/roles': 'Roles',
+        '/dashboard/roles/new': 'Crear rol',
         '/dashboard/roles/form/[id]': 'Editar rol',
       },
     },

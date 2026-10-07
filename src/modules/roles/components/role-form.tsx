@@ -4,11 +4,8 @@ import Link from 'next/link';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { PermissionOptionDTO, RoleFormDTO } from '@/modules/roles/application/roles.types';
-import {
-  type UpdateRoleSchema,
-  updateRoleSchema,
-} from '@/modules/roles/application/roles.validation';
-import { updateRole } from '@/modules/roles/infrastructure/roles.action';
+import { type RoleFormSchema, roleFormSchema } from '@/modules/roles/application/roles.validation';
+import { createRole, updateRole } from '@/modules/roles/infrastructure/roles.action';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
 import {
@@ -61,30 +58,30 @@ function groupPermissions(permissions: PermissionOptionDTO[]): PermissionGroup[]
 }
 
 interface RoleFormProps {
-  role: RoleFormDTO;
+  role?: RoleFormDTO;
   permissions: PermissionOptionDTO[];
-  isOwnRole: boolean;
+  isOwnRole?: boolean;
 }
 
-export function RoleForm({ role, permissions, isOwnRole }: RoleFormProps) {
+export function RoleForm({ role, permissions, isOwnRole = false }: RoleFormProps) {
   const {
     handleSubmit,
     control,
     formState: { isSubmitting },
-  } = useForm<UpdateRoleSchema>({
-    resolver: zodResolver(updateRoleSchema),
+  } = useForm<RoleFormSchema>({
+    resolver: zodResolver(roleFormSchema),
     defaultValues: {
-      id: role.id,
-      name: role.name,
-      description: role.description ?? '',
-      permissionIds: role.permissionIds,
+      id: role?.id,
+      name: role?.name ?? '',
+      description: role?.description ?? '',
+      permissionIds: role?.permissionIds ?? [],
     },
   });
 
   const permissionGroups = groupPermissions(permissions);
 
-  async function onSubmit(values: UpdateRoleSchema) {
-    const result = await updateRole(values);
+  async function onSubmit(values: RoleFormSchema) {
+    const result = role ? await updateRole(values) : await createRole(values);
 
     if (!result.success) {
       toast.error(result.error);
