@@ -30,7 +30,7 @@ export function ProfileGeneral({ profile }: ProfileGeneralProps) {
   });
 
   async function onSubmitProfile(values: ProfileSchema) {
-    await submitAction(() => updateProfile(values));
+    await submitAction(() => updateProfile(values), 'Cambios guardados');
   }
 
   return (

@@ -86,8 +86,9 @@ function TaxProfileForm({ profile, onDone }: TaxProfileFormProps) {
   });
 
   async function onSubmit(values: TaxProfileSchema) {
-    const result = await submitAction(() =>
-      profile ? updateTaxProfile({ id: profile.id, ...values }) : createTaxProfile(values),
+    const result = await submitAction(
+      () => (profile ? updateTaxProfile({ id: profile.id, ...values }) : createTaxProfile(values)),
+      'Perfil de facturación guardado',
     );
 
     if (result.success) {
@@ -205,7 +206,10 @@ function TaxProfileCard({ profile, onEdit }: { profile: UserTaxProfileDTO; onEdi
 
   async function remove() {
     setIsRemoving(true);
-    await submitAction(() => deleteTaxProfile({ id: profile.id }));
+    await submitAction(
+      () => deleteTaxProfile({ id: profile.id }),
+      'Perfil de facturación eliminado',
+    );
     setConfirmOpen(false);
     setIsRemoving(false);
   }

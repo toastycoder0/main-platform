@@ -11,22 +11,31 @@ import { fail, ok, type Result } from '@/shared/result';
  * debe leer `result.success` y nunca repetir el toast.
  *
  * - `fail` → la action devolvió un error ya enmascarado; se muestra y se propaga.
- * - `ok` → éxito. Si la action llamó a `redirect()`, Next ya inició la navegación
- *   y el rechazo de la promesa se absorbe aquí.
+ * - `ok` → éxito. Si la acción llamó a `redirect()`, Next ya inició la navegación
+ *   y el rechazo de la promesa se absorbe aquí. Con `successMessage` se emite un
+ *   único toast de éxito desde este punto.
  * - Rechazo que no es un redirect (red, serialización) → toast genérico;
  *   nunca reporta éxito.
  */
-export async function submitAction(action: () => Promise<Result>): Promise<Result> {
+export async function submitAction(
+  action: () => Promise<Result>,
+  successMessage?: string,
+): Promise<Result> {
   try {
     const result = await action();
 
     if (!result.success) {
       toast.error(result.error);
+    } else if (successMessage) {
+      toast.success(successMessage);
     }
 
     return result;
   } catch (error) {
     if (isNextRedirect(error)) {
+      if (successMessage) {
+        toast.success(successMessage);
+      }
       return ok(undefined);
     }
 

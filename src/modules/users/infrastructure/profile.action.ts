@@ -109,7 +109,7 @@ export const updateProfile = run({ input: profileSchema }, async (ctx, data) => 
     throw new AppError('internal', 'No se pudo actualizar el perfil');
   }
 
-  redirect('/account?tab=general&saved=profile');
+  redirect('/account?tab=general');
 });
 
 export const changeOwnPassword = run({ input: changePasswordSchema }, async (ctx, data) => {
@@ -142,7 +142,7 @@ export const changeOwnPassword = run({ input: changePasswordSchema }, async (ctx
     .delete(session)
     .where(and(eq(session.userId, active.user.id), ne(session.id, active.session.id)));
 
-  redirect('/account?tab=security&saved=password');
+  redirect('/account?tab=security');
 });
 
 export const createAddress = run({ input: addressSchema }, async (ctx, data) => {

@@ -4,7 +4,6 @@ import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { ProfileAddresses } from '@/modules/users/components/profile/profile-addresses';
 import { ProfileGeneral } from '@/modules/users/components/profile/profile-general';
-import { ProfileSavedToast } from '@/modules/users/components/profile/profile-saved-toast';
 import { ProfileSecurity } from '@/modules/users/components/profile/profile-security';
 import { type AccountTab, ProfileTabs } from '@/modules/users/components/profile/profile-tabs';
 import { ProfileTaxProfiles } from '@/modules/users/components/profile/profile-tax-profiles';
@@ -66,8 +65,6 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
   return (
     <>
-      <ProfileSavedToast />
-
       <div className='flex items-center gap-4'>
         <Avatar size='lg'>
           <AvatarImage src={profile.image ?? undefined} alt='' />

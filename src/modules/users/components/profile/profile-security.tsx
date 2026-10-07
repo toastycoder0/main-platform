@@ -22,7 +22,7 @@ export function ProfileSecurity() {
   });
 
   async function onSubmitPassword(values: ChangePasswordSchema) {
-    const result = await submitAction(() => changeOwnPassword(values));
+    const result = await submitAction(() => changeOwnPassword(values), 'Contraseña actualizada');
 
     if (result.success) {
       passwordForm.reset({ currentPassword: '', newPassword: '' });

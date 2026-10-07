@@ -80,8 +80,9 @@ function AddressForm({ address, onDone }: AddressFormProps) {
   });
 
   async function onSubmit(values: AddressSchema) {
-    const result = await submitAction(() =>
-      address ? updateAddress({ id: address.id, ...values }) : createAddress(values),
+    const result = await submitAction(
+      () => (address ? updateAddress({ id: address.id, ...values }) : createAddress(values)),
+      'Dirección guardada',
     );
 
     if (result.success) {
@@ -224,7 +225,7 @@ function AddressCard({ address, onEdit }: { address: UserAddressDTO; onEdit: () 
 
   async function remove() {
     setIsRemoving(true);
-    await submitAction(() => deleteAddress({ id: address.id }));
+    await submitAction(() => deleteAddress({ id: address.id }), 'Dirección eliminada');
     setConfirmOpen(false);
     setIsRemoving(false);
   }
