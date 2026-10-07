@@ -4,7 +4,7 @@ import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
 import { permission, role, rolePermission, user, userRole } from '@/infrastructure/db/schema';
 import { PERMISSIONS } from '@/shared/constants/permissions';
-import { updateRole } from './roles.action';
+import { createRole, updateRole } from './roles.action';
 
 const scope = `updrole${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
@@ -50,7 +50,7 @@ function testContext(): RequestContext {
       },
       session: { id: 'sess_itest', expiresAt: new Date(Date.now() + 60_000) },
     },
-    permissions: new Set([PERMISSIONS.admin.roles.edit]),
+    permissions: new Set([PERMISSIONS.admin.roles.edit, PERMISSIONS.admin.roles.create]),
     logger,
     requestId: 'itest',
   };
@@ -97,6 +97,17 @@ async function assignedPermissionIds(roleId: string): Promise<string[]> {
     .from(rolePermission)
     .where(eq(rolePermission.roleId, roleId));
   return rows.map((item) => item.permissionId);
+}
+
+async function findRolesByName(
+  name: string,
+): Promise<{ id: string; slug: string; description: string | null }[]> {
+  const rows = await db
+    .select({ id: role.id, slug: role.slug, description: role.description })
+    .from(role)
+    .where(eq(role.name, name));
+
+  return rows;
 }
 
 beforeAll(async () => {
@@ -247,5 +258,102 @@ describe('updateRole', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
+  });
+});
+
+describe('createRole', () => {
+  it('creates a role with permissions and a slug derived from the name', async () => {
+    const name = `${scope} Gerente De Compras`;
+
+    const resultPromise = createRole({
+      name,
+      description: 'Encargado de compras',
+      permissionIds: [permAId, permBId],
+    });
+
+    await expect(resultPromise).rejects.toThrow();
+
+    const [created] = await findRolesByName(name);
+    expect(created?.slug).toBe(`${scope}-gerente-de-compras`);
+    expect(created?.description).toBe('Encargado de compras');
+
+    if (created) {
+      createdRoleIds.push(created.id);
+      expect((await assignedPermissionIds(created.id)).toSorted()).toEqual(
+        [permAId, permBId].toSorted(),
+      );
+    }
+  });
+
+  it('generates a suffixed slug when the base slug is already taken', async () => {
+    const name = `${scope} Slug Repetido`;
+
+    await expect(
+      createRole({ name, description: null, permissionIds: [permAId] }),
+    ).rejects.toThrow();
+
+    const rows = await findRolesByName(name);
+    const [first] = rows;
+    expect(first?.slug).toBe(`${scope}-slug-repetido`);
+    if (first) {
+      createdRoleIds.push(first.id);
+    }
+
+    await expect(
+      createRole({ name, description: null, permissionIds: [permBId] }),
+    ).rejects.toThrow();
+
+    const all = await findRolesByName(name);
+    expect(all).toHaveLength(2);
+
+    const second = all.find((item) => item.id !== first?.id);
+    expect(second?.slug.startsWith(`${scope}-slug-repetido-`)).toBe(true);
+    if (second) {
+      createdRoleIds.push(second.id);
+    }
+  });
+
+  it('rejects unknown permission ids without creating the role', async () => {
+    const name = `${scope} Invalid`;
+
+    const result = await createRole({
+      name,
+      description: null,
+      permissionIds: ['perm_does_not_exist'],
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'La lista de permisos contiene elementos inválidos',
+    });
+    expect(await findRolesByName(name)).toEqual([]);
+  });
+
+  it('rejects an empty permission list through schema validation', async () => {
+    const result = await createRole({
+      name: `${scope} Empty`,
+      description: null,
+      permissionIds: [],
+    });
+
+    expect(result).toEqual({ success: false, error: 'Datos inválidos' });
+  });
+
+  it('rejects creation when the actor lacks the create permission', async () => {
+    state.ctx = {
+      ...testContext(),
+      permissions: new Set([PERMISSIONS.admin.roles.edit]),
+    };
+
+    const result = await createRole({
+      name: `${scope} Forbidden`,
+      description: null,
+      permissionIds: [permAId],
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'No tienes permiso para realizar esta acción',
+    });
   });
 });
