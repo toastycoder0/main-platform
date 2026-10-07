@@ -194,6 +194,10 @@ describe('Users list E2E', () => {
     await page.waitForSelector('h1:has-text("Mi perfil")');
     expect(await page.getByText(ADMIN_EMAIL).first().isVisible()).toBe(true);
 
+    await page.getByRole('tab', { name: 'Seguridad' }).click();
+    await page.waitForURL('**/account?tab=security');
+    await page.getByRole('heading', { name: 'Cambiar contraseña' }).waitFor();
+
     await page.getByRole('tab', { name: 'Direcciones' }).click();
     await page.waitForURL('**/account?tab=addresses');
     await page.getByRole('heading', { name: 'Direcciones' }).waitFor();
@@ -379,12 +383,13 @@ describe('Users list E2E', () => {
     await loginAs(page, email, 'Secret123');
     await page.waitForURL(`${BASE}/`);
 
-    await page.goto(`${BASE}/account`);
+    await page.goto(`${BASE}/account?tab=security`);
     await page.waitForSelector('#password-form');
     await page.locator('#profile-current-password').fill('Secret123');
     await page.locator('#profile-new-password').fill(newPassword);
     await page.locator('#password-form button[type="submit"]').click();
-    await page.waitForURL('**/account?tab=general');
+    await page.getByText('Contraseña actualizada').waitFor();
+    await page.waitForURL('**/account?tab=security');
 
     await page.context().clearCookies();
 

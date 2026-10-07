@@ -3,10 +3,11 @@
 import { useQueryState } from 'nuqs';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/tabs';
 
-export type AccountTab = 'general' | 'addresses' | 'billing';
+export type AccountTab = 'general' | 'security' | 'addresses' | 'billing';
 
 const TAB_ITEMS: { value: AccountTab; label: string }[] = [
   { value: 'general', label: 'General' },
+  { value: 'security', label: 'Seguridad' },
   { value: 'addresses', label: 'Direcciones' },
   { value: 'billing', label: 'Facturación' },
 ];

@@ -4,6 +4,8 @@ import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { ProfileAddresses } from '@/modules/users/components/profile/profile-addresses';
 import { ProfileGeneral } from '@/modules/users/components/profile/profile-general';
+import { ProfileSavedToast } from '@/modules/users/components/profile/profile-saved-toast';
+import { ProfileSecurity } from '@/modules/users/components/profile/profile-security';
 import { type AccountTab, ProfileTabs } from '@/modules/users/components/profile/profile-tabs';
 import { ProfileTaxProfiles } from '@/modules/users/components/profile/profile-tax-profiles';
 import {
@@ -11,11 +13,15 @@ import {
   listUserAddresses,
   listUserTaxProfiles,
 } from '@/modules/users/infrastructure/users.query';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/avatar';
 import { Skeleton } from '@/shared/components/skeleton';
 
-const tabParam = parseAsStringEnum<AccountTab>(['general', 'addresses', 'billing']).withDefault(
+const tabParam = parseAsStringEnum<AccountTab>([
   'general',
-);
+  'security',
+  'addresses',
+  'billing',
+]).withDefault('general');
 
 const loadAccountParams = createLoader({ tab: tabParam });
 
@@ -56,13 +62,24 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     redirect('/auth/login');
   }
 
+  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+
   return (
     <>
-      <div className='flex flex-col gap-1'>
-        <h1 className='text-2xl font-semibold'>Mi perfil</h1>
-        <p className='text-sm text-muted-foreground'>
-          {profile.firstName} {profile.lastName} · {profile.email}
-        </p>
+      <ProfileSavedToast />
+
+      <div className='flex items-center gap-4'>
+        <Avatar size='lg'>
+          <AvatarImage src={profile.image ?? undefined} alt='' />
+          <AvatarFallback className='text-base font-medium'>{initials}</AvatarFallback>
+        </Avatar>
+
+        <div className='flex flex-col gap-1'>
+          <h1 className='text-2xl font-semibold'>Mi perfil</h1>
+          <p className='text-sm text-muted-foreground'>
+            {profile.firstName} {profile.lastName} · {profile.email}
+          </p>
+        </div>
       </div>
 
       <ProfileTabs tab={tab} />
@@ -72,6 +89,8 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
           <ProfileAddresses addresses={addresses} />
         ) : tab === 'billing' ? (
           <ProfileTaxProfiles taxProfiles={taxProfiles} />
+        ) : tab === 'security' ? (
+          <ProfileSecurity />
         ) : (
           <ProfileGeneral profile={profile} />
         )}
