@@ -1,17 +1,4 @@
-import type { SessionUser } from './types';
-
-export interface RawBetterAuthUser {
-  id: string;
-  email: string;
-  name: string;
-  lastName: string;
-  role?: string | null | undefined;
-}
-
-export interface RawBetterAuthSession {
-  id: string;
-  expiresAt: Date;
-}
+import type { RawBetterAuthSession, RawBetterAuthUser, SessionUser } from './types';
 
 export function mapSessionUser(raw: RawBetterAuthUser): SessionUser {
   return {
@@ -19,7 +6,6 @@ export function mapSessionUser(raw: RawBetterAuthUser): SessionUser {
     email: raw.email,
     firstName: raw.name,
     lastName: raw.lastName,
-    role: raw.role ?? null,
     name: `${raw.name} ${raw.lastName}`.trim(),
   };
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { HouseIcon, type LucideIcon, ShieldIcon, UsersIcon } from 'lucide-react';
+import { HouseIcon } from 'lucide-react';
 import Link from 'next/link';
 import type * as React from 'react';
+import { getNav } from '@/modules/registry';
 import { LogoLarge } from '@/shared/components/logo-large';
 import {
   Sidebar,
@@ -16,22 +17,17 @@ import {
   SidebarMenuItem,
 } from '@/shared/components/sidebar';
 import type { NavUser } from '@/shared/components/user-nav';
-import type { NavSection, SectionIconName } from '@/shared/constants/navigation';
 import { DashboardNavUser } from './dashboard-nav-user';
-
-const SECTION_ICONS: Record<SectionIconName, LucideIcon> = {
-  users: UsersIcon,
-  roles: ShieldIcon,
-};
 
 export function DashboardSidebar({
   user,
-  sections,
+  permissions,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: NavUser;
-  sections: NavSection[];
+  permissions: string[];
 }) {
+  const sections = getNav('dashboard', permissions);
   const adminSections = sections.filter((s) => s.group === 'admin');
 
   return (
@@ -60,15 +56,15 @@ export function DashboardSidebar({
           <SidebarGroup>
             <SidebarGroupLabel>Administraci&oacute;n</SidebarGroupLabel>
             <SidebarMenu>
-              {adminSections.map((section) => {
-                const Icon = SECTION_ICONS[section.icon];
+              {adminSections.map((item) => {
+                const Icon = item.icon;
 
                 return (
-                  <SidebarMenuItem key={section.href}>
+                  <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton asChild>
-                      <Link href={section.href}>
+                      <Link href={item.href}>
                         <Icon />
-                        <span>{section.label}</span>
+                        <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -32,7 +32,6 @@ function createFixture({ session = false, permissions = [] }: FixtureOptions = {
             firstName: 'Test',
             lastName: 'User',
             name: 'Test User',
-            role: 'super_admin',
           },
           session: { id: 'session_test', expiresAt: new Date('2030-01-01T00:00:00Z') },
         }

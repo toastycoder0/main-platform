@@ -13,9 +13,6 @@ export function SignOutButton({ onClick, children, ...props }: SignOutButtonProp
   function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     onClick?.(e);
 
-    // The server owns the redirect on success; the transition only blocks
-    // double submissions and drives the local spinner while the roundtrip
-    // is in flight. Failures resolve to a Result and surface as a toast.
     startTransition(async () => {
       const result = await logout();
 
