@@ -8,7 +8,7 @@ const ADMIN_PASS = 'Pass1234';
 const SEEDED_ROLE = 'Super Administrador';
 
 const searchBox = (page: Page) => page.getByLabel('Buscar roles');
-const roleCell = (page: Page) => page.getByRole('cell', { name: SEEDED_ROLE });
+const roleCell = (page: Page) => page.getByRole('cell', { name: SEEDED_ROLE, exact: true });
 const emptyState = (page: Page) => page.locator('[data-slot=list-empty]');
 const pageSummary = (page: Page) => page.locator('text=/^Página \\d+ de \\d+/');
 
@@ -101,5 +101,35 @@ describe('Roles list E2E', () => {
     await searchBox(page).fill('zzz-no-existe');
     await page.waitForURL('**/dashboard/roles?q=zzz-no-existe');
     await emptyState(page).waitFor();
+  });
+
+  it('redirects a guest away from the role form to login', async () => {
+    await page.goto(`${BASE}/dashboard/roles/form/role-any`);
+    await page.waitForURL('**/auth/login');
+    expect(page.url()).toBe(`${BASE}/auth/login`);
+  });
+
+  it('opens the edit form from the row actions and submits back to the list', async () => {
+    await loginAsAdmin(page);
+    await page.goto(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    await page.getByLabel(`Acciones de ${SEEDED_ROLE}`).click();
+    await page.getByRole('menuitem', { name: 'Editar' }).click();
+
+    await page.waitForURL('**/dashboard/roles/form/**');
+    await page.waitForSelector('#role-form');
+    expect(await page.getByLabel('Nombre').inputValue()).toBe(SEEDED_ROLE);
+
+    const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
+    expect(await breadcrumb.textContent()).toContain('Roles');
+    expect(await breadcrumb.textContent()).toContain('Editar rol');
+    expect(await breadcrumb.textContent()).not.toContain('form');
+
+    await page.click('#role-form button[type="submit"]');
+
+    await page.waitForURL(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+    expect(await roleCell(page).isVisible()).toBe(true);
   });
 });

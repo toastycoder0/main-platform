@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
-import { resolveLabel } from '@/modules/registry';
+import { resolveBreadcrumbs } from '@/modules/registry';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,15 +16,7 @@ import { SidebarTrigger } from '@/shared/components/sidebar';
 
 export function DashboardPageHeader() {
   const pathname = usePathname();
-  const parts = pathname.split('/').filter(Boolean);
-  const segments = parts.map((segment, i) => {
-    const href = `/${parts.slice(0, i + 1).join('/')}`;
-
-    return {
-      label: resolveLabel('dashboard', href) ?? segment,
-      href,
-    };
-  });
+  const segments = resolveBreadcrumbs('dashboard', pathname);
 
   return (
     <header className='flex h-16 shrink-0 items-center gap-2 border-b'>

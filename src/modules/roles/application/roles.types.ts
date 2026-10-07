@@ -5,3 +5,9 @@ export interface RoleListItemDTO {
   description: string | null;
   permissionsCount: number;
 }
+
+export interface RoleFormDTO {
+  id: string;
+  name: string;
+  description: string | null;
+}
