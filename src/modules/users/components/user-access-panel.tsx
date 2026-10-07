@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/shared/components/dialog';
+import { Field } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { Label } from '@/shared/components/label';
 import {
@@ -133,7 +134,7 @@ function BanSection({ user }: { user: AccessUser }) {
         </DialogHeader>
 
         <div className='flex flex-col gap-4'>
-          <div className='flex flex-col gap-2'>
+          <Field orientation='vertical'>
             <Label htmlFor='ban-reason'>Motivo</Label>
             <Input
               id='ban-reason'
@@ -142,9 +143,9 @@ function BanSection({ user }: { user: AccessUser }) {
               placeholder='Motivo del baneo'
               required
             />
-          </div>
+          </Field>
 
-          <div className='flex flex-col gap-2'>
+          <Field orientation='vertical'>
             <Label htmlFor='ban-duration'>Duración</Label>
             <Select value={duration} onValueChange={(value) => setDuration(value)}>
               <SelectTrigger id='ban-duration' className='w-full'>
@@ -158,7 +159,7 @@ function BanSection({ user }: { user: AccessUser }) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
         </div>
 
         <DialogFooter>
@@ -207,7 +208,7 @@ function ResetSection({ userId }: { userId: string }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className='flex flex-col gap-2'>
+        <Field orientation='vertical'>
           <Label htmlFor='reset-password'>Nueva contraseña</Label>
           <Input
             id='reset-password'
@@ -218,7 +219,7 @@ function ResetSection({ userId }: { userId: string }) {
             minLength={8}
             required
           />
-        </div>
+        </Field>
 
         <DialogFooter>
           <Button
