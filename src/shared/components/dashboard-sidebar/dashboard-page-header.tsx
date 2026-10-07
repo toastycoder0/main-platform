@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
+import { resolveLabel } from '@/modules/registry';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,15 +13,18 @@ import {
 } from '@/shared/components/breadcrumb';
 import { Separator } from '@/shared/components/separator';
 import { SidebarTrigger } from '@/shared/components/sidebar';
-import { ROUTE_LABELS } from '@/shared/constants/navigation';
 
 export function DashboardPageHeader() {
   const pathname = usePathname();
   const parts = pathname.split('/').filter(Boolean);
-  const segments = parts.map((segment, i) => ({
-    label: ROUTE_LABELS[segment] ?? segment,
-    href: `/${parts.slice(0, i + 1).join('/')}`,
-  }));
+  const segments = parts.map((segment, i) => {
+    const href = `/${parts.slice(0, i + 1).join('/')}`;
+
+    return {
+      label: resolveLabel('dashboard', href) ?? segment,
+      href,
+    };
+  });
 
   return (
     <header className='flex h-16 shrink-0 items-center gap-2 border-b'>
