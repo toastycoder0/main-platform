@@ -121,6 +121,11 @@ describe('Roles list E2E', () => {
     await page.waitForSelector('#role-form');
     expect(await page.getByLabel('Nombre').inputValue()).toBe(SEEDED_ROLE);
 
+    const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
+    expect(await breadcrumb.textContent()).toContain('Roles');
+    expect(await breadcrumb.textContent()).toContain('Editar rol');
+    expect(await breadcrumb.textContent()).not.toContain('form');
+
     await page.click('#role-form button[type="submit"]');
 
     await page.waitForURL(`${BASE}/dashboard/roles`);

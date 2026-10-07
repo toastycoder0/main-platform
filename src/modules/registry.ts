@@ -75,3 +75,28 @@ export function resolveLabel(section: SectionId, pathname: string): string | und
 
   return undefined;
 }
+
+export interface BreadcrumbCrumb {
+  label: string;
+  href: string;
+}
+
+export function resolveBreadcrumbs(section: SectionId, pathname: string): BreadcrumbCrumb[] {
+  const parts = pathname.split('/').filter(Boolean);
+  const lastIndex = parts.length - 1;
+
+  return parts.flatMap((segment, i) => {
+    const href = `/${parts.slice(0, i + 1).join('/')}`;
+    const label = resolveLabel(section, href);
+
+    if (label !== undefined) {
+      return [{ label, href }];
+    }
+
+    if (i === lastIndex) {
+      return [{ label: segment, href }];
+    }
+
+    return [];
+  });
+}
