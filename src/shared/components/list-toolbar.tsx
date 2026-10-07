@@ -58,7 +58,9 @@ export function ListToolbar({ searchLabel, searchPlaceholder, children }: ListTo
         ) : null}
       </InputGroup>
 
-      {children}
+      {children ? (
+        <div className='ms-auto flex flex-wrap items-center gap-3'>{children}</div>
+      ) : null}
     </div>
   );
 }

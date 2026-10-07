@@ -132,4 +132,70 @@ describe('Roles list E2E', () => {
     await waitForTable(page);
     expect(await roleCell(page).isVisible()).toBe(true);
   });
+
+  it('renders the permissions checklist locked for the admin own role', async () => {
+    await loginAsAdmin(page);
+    await page.goto(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    await page.getByLabel(`Acciones de ${SEEDED_ROLE}`).click();
+    await page.getByRole('menuitem', { name: 'Editar' }).click();
+
+    await page.waitForURL('**/dashboard/roles/form/**');
+    await page.waitForSelector('#role-form');
+
+    expect(await page.getByText('Permisos', { exact: true }).first().isVisible()).toBe(true);
+    expect(
+      await page.getByText('Panel de administración', { exact: true }).first().isVisible(),
+    ).toBe(true);
+    expect(await page.getByText('Usuarios', { exact: true }).first().isVisible()).toBe(true);
+    expect(await page.getByText('No puedes quitar permisos de tu propio rol.').isVisible()).toBe(
+      true,
+    );
+
+    const checkboxes = page.getByRole('checkbox');
+    const count = await checkboxes.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let index = 0; index < count; index++) {
+      expect(await checkboxes.nth(index).isDisabled()).toBe(true);
+    }
+  });
+
+  it('redirects a guest away from the new role page to login', async () => {
+    await page.goto(`${BASE}/dashboard/roles/new`);
+    await page.waitForURL('**/auth/login');
+    expect(page.url()).toBe(`${BASE}/auth/login`);
+  });
+
+  it('creates a new role from the toolbar button', async () => {
+    await loginAsAdmin(page);
+    await page.goto(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    const roleName = `E2E Rol ${Date.now()}`;
+
+    await page.getByRole('link', { name: 'Crear rol' }).click();
+    await page.waitForURL('**/dashboard/roles/new');
+    await page.waitForSelector('#role-form');
+
+    const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
+    expect(await breadcrumb.textContent()).toContain('Crear rol');
+
+    await page.getByLabel('Nombre').fill(roleName);
+
+    const firstCheckbox = page.getByRole('checkbox').first();
+    await firstCheckbox.click();
+    expect(await firstCheckbox.getAttribute('aria-checked')).toBe('true');
+
+    await page.click('#role-form button[type="submit"]');
+
+    await page.waitForURL(`${BASE}/dashboard/roles`);
+    await waitForTable(page);
+
+    await searchBox(page).fill(roleName);
+    await page.waitForURL('**/dashboard/roles?q=*');
+    await waitForTable(page);
+    expect(await page.getByRole('cell', { name: roleName, exact: true }).isVisible()).toBe(true);
+  });
 });
