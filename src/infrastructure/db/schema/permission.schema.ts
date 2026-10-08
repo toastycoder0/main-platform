@@ -1,5 +1,6 @@
 import { pgEnum, primaryKey, snakeCase, text, timestamp } from 'drizzle-orm/pg-core';
 import { generateId } from '../id';
+import { ordering } from '../order';
 import { timestamps } from '../time';
 import { user } from './user.schema';
 
@@ -24,6 +25,7 @@ export const role = snakeCase.table('role', {
   slug: text().notNull().unique(),
   name: text().notNull(),
   description: text(),
+  ...ordering,
   ...timestamps,
 });
 

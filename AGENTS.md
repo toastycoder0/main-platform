@@ -56,6 +56,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Prefer ESM and modern browser syntax
 - Comments in English, only when they explain non-obvious intent (the "why"). Never restate what the code already says.
 
+## Database Schema
+
+- Ordering columns use the shared `ordering` helper (`src/infrastructure/db/order.ts`): `sortOrder` → `sort_order`, `integer not null default 0`.
+- Always order such lists with a unique tiebreaker: `sort_order ASC, id ASC`.
+- Order values are auto-generated and internal: `max + 1` for global scopes, array index for owner-preserved collections. Never expose them in DTOs, validation or UI.
+
 ## Organization
 
 - Small components with a single responsibility

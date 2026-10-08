@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, integer, snakeCase, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, snakeCase, text, timestamp } from 'drizzle-orm/pg-core';
 import { generateId } from '../id';
+import { ordering } from '../order';
 import { timestamps } from '../time';
 
 export const user = snakeCase.table(
@@ -14,7 +15,7 @@ export const user = snakeCase.table(
     email: text().unique().notNull(),
     emailVerified: boolean().default(true),
     image: text(),
-    sortOrder: integer().notNull().default(0),
+    ...ordering,
     deletedAt: timestamp({ withTimezone: true }),
     role: text(),
     banned: boolean(),
@@ -44,6 +45,7 @@ export const userAddress = snakeCase.table('user_address', {
   postalCode: text('postal_code').notNull(),
   phone: text(),
   isDefault: boolean('is_default').notNull().default(false),
+  ...ordering,
   ...timestamps,
 });
 
@@ -62,5 +64,6 @@ export const userTaxProfile = snakeCase.table('user_tax_profile', {
   taxPostalCode: text('tax_postal_code').notNull(),
   rfcUrl: text('rfc_url'),
   isDefault: boolean('is_default').notNull().default(false),
+  ...ordering,
   ...timestamps,
 });
