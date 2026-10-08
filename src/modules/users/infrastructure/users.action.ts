@@ -11,10 +11,8 @@ import {
   role,
   rolePermission,
   user,
-  userAddress,
   userPermission,
   userRole,
-  userTaxProfile,
 } from '@/infrastructure/db/schema';
 import { run } from '@/infrastructure/services/next-action';
 import { auth } from '@/modules/auth/infrastructure/auth.config';
@@ -32,8 +30,9 @@ import {
   updateUserSchema,
   userParamsSchema,
 } from '../application/users.validation';
+import { syncUserAddresses, syncUserTaxProfiles } from './users.collections';
 
-type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'delete'>;
+type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;
 
 interface RelationsPayload {
   roleIds: string[];
@@ -56,19 +55,6 @@ function dedupeOverrides(overrides: PermissionOverrideSchema[]): PermissionOverr
 
     seen.add(item.permissionId);
     return true;
-  });
-}
-
-function normalizeDefaults<T extends { isDefault: boolean }>(items: T[]): T[] {
-  let foundDefault = false;
-
-  return items.map((item) => {
-    if (!item.isDefault || foundDefault) {
-      return item.isDefault ? { ...item, isDefault: false } : item;
-    }
-
-    foundDefault = true;
-    return item;
   });
 }
 
@@ -151,43 +137,8 @@ async function syncUserRelations(
     );
   }
 
-  await db.delete(userAddress).where(eq(userAddress.userId, userId));
-
-  if (data.addresses.length > 0) {
-    await db.insert(userAddress).values(
-      data.addresses.map((item) => ({
-        userId,
-        name: item.name,
-        street: item.street,
-        exteriorNumber: item.exteriorNumber,
-        interiorNumber: item.interiorNumber || null,
-        colony: item.colony,
-        municipality: item.municipality,
-        state: item.state,
-        postalCode: item.postalCode,
-        phone: item.phone || null,
-        isDefault: item.isDefault,
-      })),
-    );
-  }
-
-  await db.delete(userTaxProfile).where(eq(userTaxProfile.userId, userId));
-
-  if (data.taxProfiles.length > 0) {
-    await db.insert(userTaxProfile).values(
-      data.taxProfiles.map((item) => ({
-        userId,
-        alias: item.alias,
-        legalName: item.legalName,
-        rfc: item.rfc,
-        cfdiUse: item.cfdiUse,
-        taxRegime: item.taxRegime,
-        taxPostalCode: item.taxPostalCode,
-        rfcUrl: item.rfcUrl || null,
-        isDefault: item.isDefault,
-      })),
-    );
-  }
+  await syncUserAddresses(db, userId, data.addresses);
+  await syncUserTaxProfiles(db, userId, data.taxProfiles);
 }
 
 function toRelationsPayload(data: {
@@ -199,8 +150,8 @@ function toRelationsPayload(data: {
   return {
     roleIds: dedupeRoleIds(data.roleIds),
     overrides: dedupeOverrides(data.overrides),
-    addresses: normalizeDefaults(data.addresses),
-    taxProfiles: normalizeDefaults(data.taxProfiles),
+    addresses: data.addresses,
+    taxProfiles: data.taxProfiles,
   };
 }
 

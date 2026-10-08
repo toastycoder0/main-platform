@@ -7,12 +7,9 @@ import { db } from '@/infrastructure/db';
 import { account, session, user, userAddress, userTaxProfile } from '@/infrastructure/db/schema';
 import {
   changeOwnPassword,
-  createAddress,
-  createTaxProfile,
-  deleteAddress,
-  updateAddress,
+  saveOwnAddresses,
+  saveOwnTaxProfiles,
   updateProfile,
-  updateTaxProfile,
 } from './profile.action';
 
 const scope = `profact${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -211,11 +208,19 @@ describe('changeOwnPassword', () => {
   });
 });
 
-describe('addresses', () => {
-  it('creates an address and enforces a single default', async () => {
-    await expect(createAddress({ ...validAddress(), isDefault: true })).rejects.toThrow();
+describe('saveOwnAddresses', () => {
+  beforeEach(async () => {
+    await db.delete(userAddress).where(eq(userAddress.userId, actorUserId));
+  });
+
+  it('inserts addresses and enforces a single default', async () => {
     await expect(
-      createAddress({ ...validAddress(), name: 'Oficina', isDefault: true }),
+      saveOwnAddresses({
+        addresses: [
+          { ...validAddress(), name: 'Casa', isDefault: true },
+          { ...validAddress(), name: 'Oficina', isDefault: true },
+        ],
+      }),
     ).rejects.toThrow();
 
     const rows = await db.select().from(userAddress).where(eq(userAddress.userId, actorUserId));
@@ -224,65 +229,66 @@ describe('addresses', () => {
 
     const defaults = rows.filter((item) => item.isDefault);
     expect(defaults).toHaveLength(1);
-    expect(defaults[0]?.name).toBe('Oficina');
+    expect(defaults[0]?.name).toBe('Casa');
   });
 
-  it('rejects updating an address that belongs to another user', async () => {
-    const foreign = await createForeignAddress();
-
-    const result = await updateAddress({
-      id: foreign,
-      ...validAddress(),
-      name: 'Ajena',
-    });
-
-    expect(result).toEqual({
-      success: false,
-      error: 'El recurso solicitado no existe',
-    });
-  });
-
-  it('rejects deleting an address that belongs to another user', async () => {
-    const foreign = await createForeignAddress();
-
-    const result = await deleteAddress({ id: foreign });
-
-    expect(result).toEqual({
-      success: false,
-      error: 'El recurso solicitado no existe',
-    });
-  });
-
-  it('deletes the actor own address', async () => {
-    const created = await db
+  it('updates existing addresses preserving ids and removes the missing ones', async () => {
+    const seeded = await db
       .insert(userAddress)
-      .values({
-        userId: actorUserId,
-        name: 'Borrable',
-        street: 'Calle',
-        exteriorNumber: '1',
-        colony: 'Centro',
-        municipality: 'Municipio',
-        state: 'Estado',
-        postalCode: '00001',
-        isDefault: false,
-      })
+      .values([
+        { userId: actorUserId, ...validAddress(), name: 'Primera' },
+        { userId: actorUserId, ...validAddress(), name: 'Segunda' },
+      ])
       .returning({ id: userAddress.id });
-    const addressId = created[0]?.id;
 
-    expect(addressId).toBeTruthy();
+    const kept = seeded[0];
+    const removed = seeded[1];
 
-    await expect(deleteAddress({ id: addressId ?? '' })).rejects.toThrow();
+    if (!kept || !removed) {
+      throw new Error('Failed to seed addresses');
+    }
 
-    const remaining = await db
+    await expect(
+      saveOwnAddresses({
+        addresses: [{ id: kept.id, ...validAddress(), name: 'Primera editada' }],
+      }),
+    ).rejects.toThrow();
+
+    const rows = await db.select().from(userAddress).where(eq(userAddress.userId, actorUserId));
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe(kept.id);
+    expect(rows[0]?.name).toBe('Primera editada');
+
+    const gone = await db
       .select({ id: userAddress.id })
       .from(userAddress)
-      .where(eq(userAddress.id, addressId ?? ''));
-    expect(remaining).toHaveLength(0);
+      .where(eq(userAddress.id, removed.id));
+    expect(gone).toHaveLength(0);
+  });
+
+  it('ignores ids owned by another user', async () => {
+    const foreign = await createForeignAddress();
+
+    await expect(
+      saveOwnAddresses({ addresses: [{ id: foreign, ...validAddress(), name: 'Intento' }] }),
+    ).rejects.toThrow();
+
+    const actorRows = await db
+      .select()
+      .from(userAddress)
+      .where(eq(userAddress.userId, actorUserId));
+
+    expect(actorRows).toHaveLength(1);
+    expect(actorRows[0]?.name).toBe('Intento');
+
+    const foreignRow = await db.select().from(userAddress).where(eq(userAddress.id, foreign));
+    expect(foreignRow).toHaveLength(1);
+    expect(foreignRow[0]?.name).toBe('Ajena');
   });
 });
 
-describe('tax profiles', () => {
+describe('saveOwnTaxProfiles', () => {
   const validTaxProfile = {
     alias: 'Empresa',
     legalName: 'Empresa S.A. de C.V.',
@@ -294,8 +300,43 @@ describe('tax profiles', () => {
     isDefault: true,
   };
 
-  it('creates a tax profile for the actor', async () => {
-    await expect(createTaxProfile(validTaxProfile)).rejects.toThrow();
+  beforeEach(async () => {
+    await db.delete(userTaxProfile).where(eq(userTaxProfile.userId, actorUserId));
+  });
+
+  it('inserts profiles and enforces a single default', async () => {
+    await expect(
+      saveOwnTaxProfiles({
+        taxProfiles: [validTaxProfile, { ...validTaxProfile, alias: 'Dos', isDefault: true }],
+      }),
+    ).rejects.toThrow();
+
+    const rows = await db
+      .select()
+      .from(userTaxProfile)
+      .where(eq(userTaxProfile.userId, actorUserId));
+
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((item) => item.isDefault)).toHaveLength(1);
+    expect(rows[0]?.rfcUrl).toBeNull();
+  });
+
+  it('updates an existing profile preserving its id', async () => {
+    const seeded = await db
+      .insert(userTaxProfile)
+      .values({ userId: actorUserId, ...validTaxProfile })
+      .returning({ id: userTaxProfile.id });
+    const profile = seeded[0];
+
+    if (!profile) {
+      throw new Error('Failed to seed tax profile');
+    }
+
+    await expect(
+      saveOwnTaxProfiles({
+        taxProfiles: [{ id: profile.id, ...validTaxProfile, alias: 'Editado' }],
+      }),
+    ).rejects.toThrow();
 
     const rows = await db
       .select()
@@ -303,23 +344,28 @@ describe('tax profiles', () => {
       .where(eq(userTaxProfile.userId, actorUserId));
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.rfc).toBe('ABC123456789');
-    expect(rows[0]?.rfcUrl).toBeNull();
+    expect(rows[0]?.id).toBe(profile.id);
+    expect(rows[0]?.alias).toBe('Editado');
   });
 
-  it('rejects updating a tax profile that belongs to another user', async () => {
+  it('ignores ids owned by another user', async () => {
     const foreign = await createForeignTaxProfile();
 
-    const result = await updateTaxProfile({
-      id: foreign,
-      ...validTaxProfile,
-      alias: 'Ajeno',
-    });
+    await expect(
+      saveOwnTaxProfiles({ taxProfiles: [{ id: foreign, ...validTaxProfile, alias: 'Intento' }] }),
+    ).rejects.toThrow();
 
-    expect(result).toEqual({
-      success: false,
-      error: 'El recurso solicitado no existe',
-    });
+    const actorRows = await db
+      .select()
+      .from(userTaxProfile)
+      .where(eq(userTaxProfile.userId, actorUserId));
+
+    expect(actorRows).toHaveLength(1);
+    expect(actorRows[0]?.alias).toBe('Intento');
+
+    const foreignRow = await db.select().from(userTaxProfile).where(eq(userTaxProfile.id, foreign));
+    expect(foreignRow).toHaveLength(1);
+    expect(foreignRow[0]?.alias).toBe('Ajena');
   });
 });
 

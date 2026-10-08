@@ -1,6 +1,6 @@
 'use client';
 
-import type { Control, FieldPath } from 'react-hook-form';
+import type { Control, FieldPath, FieldValues } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
@@ -19,16 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/select';
-import type { UserFormSchema } from '../application/users.validation';
 
 interface SelectOption {
   value: string;
   label: string;
 }
 
-interface ControlledInputProps {
-  control: Control<UserFormSchema>;
-  name: FieldPath<UserFormSchema>;
+interface ControlledInputProps<T extends FieldValues> {
+  control: Control<T>;
+  name: FieldPath<T>;
   label: string;
   placeholder?: string;
   type?: string;
@@ -36,7 +35,7 @@ interface ControlledInputProps {
   transform?: (value: string) => string;
 }
 
-export function ControlledInput({
+export function ControlledInput<T extends FieldValues>({
   control,
   name,
   label,
@@ -44,7 +43,7 @@ export function ControlledInput({
   type,
   description,
   transform,
-}: ControlledInputProps) {
+}: ControlledInputProps<T>) {
   const id = String(name).replaceAll('.', '-');
 
   return (
@@ -73,23 +72,23 @@ export function ControlledInput({
   );
 }
 
-interface ControlledSelectProps {
-  control: Control<UserFormSchema>;
-  name: FieldPath<UserFormSchema>;
+interface ControlledSelectProps<T extends FieldValues> {
+  control: Control<T>;
+  name: FieldPath<T>;
   label: string;
   placeholder: string;
   options: SelectOption[];
   description?: string;
 }
 
-export function ControlledSelect({
+export function ControlledSelect<T extends FieldValues>({
   control,
   name,
   label,
   placeholder,
   options,
   description,
-}: ControlledSelectProps) {
+}: ControlledSelectProps<T>) {
   const id = String(name).replaceAll('.', '-');
 
   return (
@@ -123,14 +122,19 @@ export function ControlledSelect({
   );
 }
 
-interface ControlledCheckboxProps {
-  control: Control<UserFormSchema>;
-  name: FieldPath<UserFormSchema>;
+interface ControlledCheckboxProps<T extends FieldValues> {
+  control: Control<T>;
+  name: FieldPath<T>;
   label: string;
   description?: string;
 }
 
-export function ControlledCheckbox({ control, name, label, description }: ControlledCheckboxProps) {
+export function ControlledCheckbox<T extends FieldValues>({
+  control,
+  name,
+  label,
+  description,
+}: ControlledCheckboxProps<T>) {
   const id = String(name).replaceAll('.', '-');
 
   return (

@@ -42,6 +42,27 @@ function collectConsoleErrors(page: Page): string[] {
 
 const errorToast = (page: Page) => page.locator('[data-sonner-toast][data-type="error"]');
 
+async function saveCollection(page: Page, path: string) {
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes(path) && response.request().method() === 'POST',
+    ),
+    page.getByRole('button', { name: 'Guardar cambios' }).click(),
+  ]);
+}
+
+async function resetCollection(page: Page, removeLabel: RegExp, path: string, savedToast: string) {
+  const removeButtons = page.getByRole('button', { name: removeLabel });
+
+  while ((await removeButtons.count()) > 0) {
+    await removeButtons.first().click();
+  }
+
+  await saveCollection(page, path);
+  await page.getByText(savedToast).waitFor();
+  await page.getByText(savedToast).waitFor({ state: 'detached' });
+}
+
 async function createUserThroughForm(page: Page, stamp: number, password: string) {
   const email = `e2e.user.${stamp}@example.com`;
 
@@ -187,23 +208,23 @@ describe('Users list E2E', () => {
     expect(page.url()).toBe(`${BASE}/auth/login`);
   });
 
-  it('renders the own profile and switches tabs through the URL', async () => {
+  it('renders the own profile and navigates sections through routes', async () => {
     await loginAsAdmin(page);
     await page.goto(`${BASE}/account`);
 
     await page.waitForSelector('h1:has-text("Mi perfil")');
     expect(await page.getByText(ADMIN_EMAIL).first().isVisible()).toBe(true);
 
-    await page.getByRole('tab', { name: 'Seguridad' }).click();
-    await page.waitForURL('**/account?tab=security');
+    await page.getByRole('link', { name: 'Seguridad' }).click();
+    await page.waitForURL('**/account/security');
     await page.getByRole('heading', { name: 'Cambiar contraseña' }).waitFor();
 
-    await page.getByRole('tab', { name: 'Direcciones' }).click();
-    await page.waitForURL('**/account?tab=addresses');
+    await page.getByRole('link', { name: 'Direcciones' }).click();
+    await page.waitForURL('**/account/addresses');
     await page.getByRole('heading', { name: 'Direcciones' }).waitFor();
 
-    await page.getByRole('tab', { name: 'Facturación' }).click();
-    await page.waitForURL('**/account?tab=billing');
+    await page.getByRole('link', { name: 'Facturación' }).click();
+    await page.waitForURL('**/account/billing');
     await page.getByRole('heading', { name: 'Perfiles de facturación' }).waitFor();
   });
 
@@ -211,19 +232,26 @@ describe('Users list E2E', () => {
     await loginAsAdmin(page);
     const consoleErrors = collectConsoleErrors(page);
 
-    await page.goto(`${BASE}/account?tab=billing`);
+    await page.goto(`${BASE}/account/billing`);
     await page.getByRole('heading', { name: 'Perfiles de facturación' }).waitFor();
+    await resetCollection(
+      page,
+      /Eliminar perfil fiscal/,
+      '/account/billing',
+      'Perfiles de facturación guardados',
+    );
 
     const alias = `Perfil ${Date.now()}`;
     await page.getByRole('button', { name: 'Agregar perfil' }).click();
-    await page.getByRole('dialog').waitFor();
 
-    await page.getByLabel('Alias', { exact: true }).fill(alias);
-    await page.getByLabel('Razón social', { exact: true }).fill('Mi Empresa S.A. de C.V.');
-    await page.getByLabel('RFC', { exact: true }).fill('ABC123456789');
-    await page.getByLabel('Código postal fiscal', { exact: true }).fill('06000');
+    const item = page.locator('[data-slot=collection-item]').last();
 
-    const cfdi = page.getByLabel('Uso de CFDI', { exact: true });
+    await item.getByLabel('Alias', { exact: true }).fill(alias);
+    await item.getByLabel('Razón social', { exact: true }).fill('Mi Empresa S.A. de C.V.');
+    await item.getByLabel('RFC', { exact: true }).fill('ABC123456789');
+    await item.getByLabel('Código postal fiscal', { exact: true }).fill('06000');
+
+    const cfdi = item.getByLabel('Uso de CFDI', { exact: true });
 
     await cfdi.click();
     await cfdi.fill('zzz-no-existe');
@@ -235,21 +263,17 @@ describe('Users list E2E', () => {
       .click();
     expect(await cfdi.inputValue()).toBe('I02 - Mobiliario y equipo de oficina para inversiones');
 
-    const regime = page.getByLabel('Régimen fiscal', { exact: true });
+    const regime = item.getByLabel('Régimen fiscal', { exact: true });
 
     await regime.click();
     await regime.fill('PEMEX');
     await page.getByRole('option', { name: '617 - PEMEX' }).click();
     expect(await regime.inputValue()).toBe('617 - PEMEX');
 
-    await page.getByRole('button', { name: 'Guardar' }).click();
-    await page.getByText(alias, { exact: true }).waitFor();
-    expect(
-      await page
-        .getByText('I02 - Mobiliario y equipo de oficina para inversiones')
-        .first()
-        .isVisible(),
-    ).toBe(true);
+    await saveCollection(page, '/account/billing');
+
+    await page.reload();
+    expect(await page.getByLabel('Alias', { exact: true }).inputValue()).toBe(alias);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -340,37 +364,45 @@ describe('Users list E2E', () => {
     const stamp = Date.now();
     const addressName = `Casa ${stamp}`;
 
-    await page.goto(`${BASE}/account?tab=addresses`);
+    await page.goto(`${BASE}/account/addresses`);
     await page.getByRole('heading', { name: 'Direcciones' }).waitFor();
+    await resetCollection(
+      page,
+      /Eliminar dirección/,
+      '/account/addresses',
+      'Direcciones guardadas',
+    );
 
     await page.getByRole('button', { name: 'Agregar dirección' }).click();
-    const dialog = page.getByRole('dialog');
-    await dialog.waitFor();
+    const item = page.locator('[data-slot=collection-item]').last();
 
-    await page.locator('#address-name').fill(addressName);
-    await page.locator('#address-street').fill('Av. Reforma');
-    await page.locator('#address-exterior').fill('123');
-    await page.locator('#address-colony').fill('Centro');
-    await page.locator('#address-municipality').fill('Cuauhtémoc');
-    await page.locator('#address-state').fill('Ciudad de México');
-    await page.locator('#address-postal-code').fill('06000');
-    await dialog.getByRole('button', { name: 'Guardar' }).click();
+    await item.getByLabel('Nombre', { exact: true }).fill(addressName);
+    await item.getByLabel('Calle', { exact: true }).fill('Av. Reforma');
+    await item.getByLabel('Número exterior', { exact: true }).fill('123');
+    await item.getByLabel('Colonia', { exact: true }).fill('Centro');
+    await item.getByLabel('Municipio', { exact: true }).fill('Cuauhtémoc');
+    await item.getByLabel('Estado', { exact: true }).fill('Ciudad de México');
+    await item.getByLabel('Código postal', { exact: true }).fill('06000');
 
-    const card = page.locator('li', { hasText: addressName });
-    await card.waitFor();
+    await saveCollection(page, '/account/addresses');
 
-    await card.getByRole('button', { name: 'Editar' }).click();
-    await dialog.waitFor();
-    await page.locator('#address-street').fill('Av. Insurgentes');
-    await dialog.getByRole('button', { name: 'Guardar' }).click();
-    await page.getByText('Av. Insurgentes 123').waitFor();
+    await page.reload();
+    expect(await page.getByLabel('Nombre', { exact: true }).inputValue()).toBe(addressName);
 
-    await card.getByRole('button', { name: 'Eliminar' }).click();
+    await page.getByLabel('Calle', { exact: true }).fill('Av. Insurgentes');
+    await saveCollection(page, '/account/addresses');
+
+    await page.reload();
+    expect(await page.getByLabel('Calle', { exact: true }).inputValue()).toBe('Av. Insurgentes');
+
     await page
-      .locator('[data-slot=alert-dialog-content]')
-      .getByRole('button', { name: 'Eliminar', exact: true })
+      .getByRole('button', { name: /Eliminar dirección/ })
+      .first()
       .click();
-    await card.waitFor({ state: 'detached' });
+    await saveCollection(page, '/account/addresses');
+
+    await page.reload();
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(0);
   });
 
   it('changes the own password from the profile and signs in with it', async () => {
@@ -383,13 +415,13 @@ describe('Users list E2E', () => {
     await loginAs(page, email, 'Secret123');
     await page.waitForURL(`${BASE}/`);
 
-    await page.goto(`${BASE}/account?tab=security`);
+    await page.goto(`${BASE}/account/security`);
     await page.waitForSelector('#password-form');
     await page.locator('#profile-current-password').fill('Secret123');
     await page.locator('#profile-new-password').fill(newPassword);
     await page.locator('#password-form button[type="submit"]').click();
     await page.getByText('Contraseña actualizada').waitFor();
-    await page.waitForURL('**/account?tab=security');
+    await page.waitForURL('**/account/security');
 
     await page.context().clearCookies();
 

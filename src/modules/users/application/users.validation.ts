@@ -40,34 +40,52 @@ export const addressSchema = z.object({
   isDefault: z.boolean(),
 });
 
-export const taxProfileSchema = z
-  .object({
-    alias: text(100),
-    legalName: text(200),
-    rfc: z
-      .string()
-      .trim()
-      .min(1, FIELD_ERRORS.required)
-      .regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, FIELD_ERRORS.rfc),
-    cfdiUse: text(10),
-    taxRegime: text(10),
-    taxPostalCode: postalCode,
-    rfcUrl,
-    isDefault: z.boolean(),
-  })
-  .superRefine((value, ctx) => {
-    if (!isCfdiUse(value.cfdiUse)) {
-      ctx.addIssue({ code: 'custom', path: ['cfdiUse'], message: 'El uso de CFDI no es válido' });
-    }
+const taxProfileBaseSchema = z.object({
+  alias: text(100),
+  legalName: text(200),
+  rfc: z
+    .string()
+    .trim()
+    .min(1, FIELD_ERRORS.required)
+    .regex(/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/, FIELD_ERRORS.rfc),
+  cfdiUse: text(10),
+  taxRegime: text(10),
+  taxPostalCode: postalCode,
+  rfcUrl,
+  isDefault: z.boolean(),
+});
 
-    if (!isFiscalRegime(value.taxRegime)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['taxRegime'],
-        message: 'El régimen fiscal no es válido',
-      });
-    }
-  });
+function refineFiscal(value: { cfdiUse: string; taxRegime: string }, ctx: z.RefinementCtx): void {
+  if (!isCfdiUse(value.cfdiUse)) {
+    ctx.addIssue({ code: 'custom', path: ['cfdiUse'], message: 'El uso de CFDI no es válido' });
+  }
+
+  if (!isFiscalRegime(value.taxRegime)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['taxRegime'],
+      message: 'El régimen fiscal no es válido',
+    });
+  }
+}
+
+export const taxProfileSchema = taxProfileBaseSchema.superRefine(refineFiscal);
+
+export const accountAddressItemSchema = addressSchema.extend({
+  id: z.string().min(1, FIELD_ERRORS.required).optional(),
+});
+
+export const accountAddressesSchema = z.object({
+  addresses: z.array(accountAddressItemSchema).max(MAX_ADDRESSES),
+});
+
+export const accountTaxProfileItemSchema = taxProfileBaseSchema
+  .extend({ id: z.string().min(1, FIELD_ERRORS.required).optional() })
+  .superRefine(refineFiscal);
+
+export const accountTaxProfilesSchema = z.object({
+  taxProfiles: z.array(accountTaxProfileItemSchema).max(MAX_TAX_PROFILES),
+});
 
 export const permissionOverrideSchema = z.object({
   permissionId: z.string().min(1, FIELD_ERRORS.required),
@@ -129,21 +147,13 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8, FIELD_ERRORS.password).max(128, FIELD_ERRORS.tooLong),
 });
 
-export const updateAddressSchema = z.object({
-  id: z.string().min(1, FIELD_ERRORS.required),
-  ...addressSchema.shape,
-});
-
-export const updateTaxProfileSchema = z.object({
-  id: z.string().min(1, FIELD_ERRORS.required),
-  ...taxProfileSchema.shape,
-});
-
 export type UserFormSchema = z.infer<typeof userFormSchema>;
 export type CreateUserSchema = z.infer<typeof createUserSchema>;
 export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
 export type AddressSchema = z.infer<typeof addressSchema>;
 export type TaxProfileSchema = z.infer<typeof taxProfileSchema>;
+export type AccountAddressesSchema = z.infer<typeof accountAddressesSchema>;
+export type AccountTaxProfilesSchema = z.infer<typeof accountTaxProfilesSchema>;
 export type PermissionOverrideSchema = z.infer<typeof permissionOverrideSchema>;
 export type BanUserSchema = z.infer<typeof banUserSchema>;
 export type ProfileSchema = z.infer<typeof profileSchema>;
