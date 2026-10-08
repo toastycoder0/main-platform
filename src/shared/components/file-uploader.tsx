@@ -1,9 +1,15 @@
 'use client';
 
 import { FileTextIcon, UploadIcon, XIcon } from 'lucide-react';
-import { useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
+import { isTempKey } from '@/infrastructure/storage/keys';
+import {
+  confirmUpload,
+  deleteTempUpload,
+  requestUploadUrl,
+} from '@/modules/files/infrastructure/files.action';
 import {
   Attachment,
   AttachmentAction,
@@ -37,6 +43,7 @@ export function FileUploader({
   fileInputRef,
   existingUrl,
   existingFileName,
+  inputId,
 }: {
   items?: FileItem[];
   accept?: string;
@@ -47,6 +54,7 @@ export function FileUploader({
   fileInputRef?: { current: HTMLInputElement | null };
   existingUrl?: string;
   existingFileName?: string;
+  inputId?: string;
 }) {
   const allItems = existingUrl
     ? [
@@ -88,7 +96,7 @@ export function FileUploader({
               Arrastra archivos o{' '}
               <label
                 className='cursor-pointer font-medium text-primary hover:text-primary/90'
-                htmlFor='file-upload-input'
+                htmlFor={inputId ?? 'file-upload-input'}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -162,28 +170,83 @@ export function ControlledFileUploader<T extends FieldValues>({
   fileType,
   label,
   description,
-  existingUrl,
-  existingFileName,
 }: {
   control: Control<T>;
   name: string;
   fileType: FileTypeSlug;
   label?: string;
   description?: string;
-  existingUrl?: string;
-  existingFileName?: string;
 }) {
   const config = FILE_REGISTRY[fileType];
+  const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const items: FileItem[] = [];
+  const [items, setItems] = useState<FileItem[]>([]);
+  const onChangeRef = useRef<(value: string) => void>(() => undefined);
+  const formValueRef = useRef('');
 
-  function handleSelect(files: FileList) {
+  async function upload(file: File): Promise<string | null> {
+    const result = await requestUploadUrl({
+      fileType,
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+    });
+    if (!result.success) {
+      return null;
+    }
+
+    const res = await fetch(result.data.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type },
+    });
+    if (!res.ok) {
+      return null;
+    }
+
+    const confirm = await confirmUpload({ fileKey: result.data.tempKey, fileType });
+    return confirm.success ? result.data.tempKey : null;
+  }
+
+  async function addFile(file: File): Promise<void> {
+    const id = crypto.randomUUID();
+    setItems((cur) => [
+      ...cur,
+      { state: 'uploading', fileName: file.name, fileSize: file.size, tempKey: id },
+    ]);
+
+    const tempKey = await upload(file);
+    if (tempKey) {
+      setItems((cur) =>
+        cur.map((it) => (it.tempKey === id ? { ...it, state: 'done', tempKey } : it)),
+      );
+      onChangeRef.current(tempKey);
+      return;
+    }
+
+    setItems((cur) => cur.map((it) => (it.tempKey === id ? { ...it, state: 'error' } : it)));
+  }
+
+  async function handleSelect(files: FileList): Promise<void> {
+    if (formValueRef.current !== '' && !isTempKey(formValueRef.current)) {
+      onChangeRef.current('');
+    }
+
     for (let i = 0; i < files.length && items.length < config.maxCount; i++) {
       const file = files.item(i);
-      if (!fileIsValid(file, config.allowedTypes, config.maxSize)) {
-        continue;
+      if (fileIsValid(file, config.allowedTypes, config.maxSize)) {
+        await addFile(file);
       }
-      items.push({ state: 'done', fileName: file.name, fileSize: file.size, tempKey: file.name });
+    }
+  }
+
+  function handleRemove(item: FileItem): void {
+    if (isTempKey(item.tempKey)) {
+      deleteTempUpload({ fileKey: item.tempKey }).catch(() => undefined);
+    }
+    setItems((cur) => cur.filter((it) => it.tempKey !== item.tempKey));
+    if (formValueRef.current === item.tempKey) {
+      onChangeRef.current('');
     }
   }
 
@@ -191,43 +254,54 @@ export function ControlledFileUploader<T extends FieldValues>({
     <Controller
       name={name as Path<T>}
       control={control}
-      render={({ fieldState }) => (
-        <Field orientation='vertical' data-invalid={fieldState.invalid}>
-          {label && <FieldLabel>{label}</FieldLabel>}
-          {description && <FieldDescription>{description}</FieldDescription>}
+      render={({ field, fieldState }) => {
+        onChangeRef.current = field.onChange;
+        const formValue: string = field.value ?? '';
+        formValueRef.current = formValue;
+        const hasExisting = formValue !== '' && !isTempKey(formValue);
 
-          <FileUploader
-            accept={config.allowedTypes.join(',')}
-            maxCount={config.maxCount}
-            maxSize={config.maxSize}
-            fileInputRef={fileInputRef}
-            onSelect={handleSelect}
-            onRemove={(item) => {
-              const idx = items.indexOf(item);
-              if (idx !== -1) {
-                items.splice(idx, 1);
-              }
-            }}
-            {...(existingUrl ? { existingUrl, existingFileName } : {})}
-          />
+        const entries: FileItem[] = hasExisting
+          ? [
+              ...items,
+              { state: 'done', fileName: 'Archivo adjunto', fileSize: 0, tempKey: formValue },
+            ]
+          : items;
 
-          <input
-            accept={config.allowedTypes.join(',')}
-            className='hidden'
-            id='file-upload-input'
-            multiple={config.maxCount > 1}
-            ref={fileInputRef}
-            type='file'
-            onChange={(e) => {
-              if (e.target.files) {
-                handleSelect(e.target.files);
-              }
-            }}
-          />
+        return (
+          <Field orientation='vertical' data-invalid={fieldState.invalid}>
+            {label && <FieldLabel>{label}</FieldLabel>}
+            {description && <FieldDescription>{description}</FieldDescription>}
 
-          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-        </Field>
-      )}
+            <FileUploader
+              accept={config.allowedTypes.join(',')}
+              maxCount={config.maxCount}
+              maxSize={config.maxSize}
+              fileInputRef={fileInputRef}
+              inputId={inputId}
+              items={entries}
+              onSelect={handleSelect}
+              onRemove={handleRemove}
+            />
+
+            <input
+              accept={config.allowedTypes.join(',')}
+              className='hidden'
+              id={inputId}
+              multiple={config.maxCount > 1}
+              ref={fileInputRef}
+              type='file'
+              onChange={(e) => {
+                if (e.target.files) {
+                  handleSelect(e.target.files);
+                }
+                e.target.value = '';
+              }}
+            />
+
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        );
+      }}
     />
   );
 }
