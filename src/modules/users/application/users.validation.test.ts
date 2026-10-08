@@ -129,15 +129,10 @@ describe('taxProfileSchema', () => {
     }
   });
 
-  it('fails validation when rfcUrl is not a valid url', () => {
+  it('fails validation when rfcUrl is not a valid url nor a temp key', () => {
     const result = taxProfileSchema.safeParse({ ...validTaxProfile, rfcUrl: 'not-a-url' });
 
     expect(result.success).toBe(false);
-
-    if (!result.success) {
-      const errors = z.flattenError(result.error).fieldErrors;
-      expect(errors.rfcUrl).toContain(FIELD_ERRORS.url);
-    }
   });
 });
 

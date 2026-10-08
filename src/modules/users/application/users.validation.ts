@@ -21,7 +21,7 @@ const phone = z
   .trim()
   .refine((value) => value === '' || /^\d{10}$/.test(value), FIELD_ERRORS.phone);
 
-const rfcUrl = z.union([z.literal(''), z.url(FIELD_ERRORS.url)]);
+const rfcUrl = z.union([z.literal(''), z.string().startsWith('_temp/'), z.url(FIELD_ERRORS.url)]);
 
 export const userParamsSchema = z.object({
   id: z.string().min(1, FIELD_ERRORS.required),

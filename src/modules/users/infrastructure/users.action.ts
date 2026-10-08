@@ -32,6 +32,7 @@ import {
   userParamsSchema,
 } from '../application/users.validation';
 import { syncUserAddresses, syncUserTaxProfiles } from './users.collections';
+import { resolveTaxProfileFiles } from './users.files';
 
 type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;
 
@@ -225,6 +226,8 @@ export const createUser = run(
       failCreateUser(error, ctx);
     }
 
+    await resolveTaxProfileFiles(createdId, data.taxProfiles);
+
     try {
       await ctx.db.transaction(async (tx) => {
         const [row] = await tx
@@ -302,6 +305,8 @@ export const updateUser = run(
     } catch (error) {
       failUpdateUser(error, ctx, data.id);
     }
+
+    await resolveTaxProfileFiles(data.id, data.taxProfiles);
 
     await ctx.db.transaction(async (tx) => {
       await syncUserRelations(tx, data.id, relations);

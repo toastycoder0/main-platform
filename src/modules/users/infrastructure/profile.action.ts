@@ -15,6 +15,7 @@ import {
   profileSchema,
 } from '../application/users.validation';
 import { syncUserAddresses, syncUserTaxProfiles } from './users.collections';
+import { resolveTaxProfileFiles } from './users.files';
 
 export const updateProfile = run({ input: profileSchema }, async (ctx, data) => {
   try {
@@ -78,6 +79,8 @@ export const saveOwnAddresses = run({ input: accountAddressesSchema }, async (ct
 });
 
 export const saveOwnTaxProfiles = run({ input: accountTaxProfilesSchema }, async (ctx, data) => {
+  await resolveTaxProfileFiles(ctx.session.user.id, data.taxProfiles);
+
   await ctx.db.transaction(async (tx) => {
     await syncUserTaxProfiles(tx, ctx.session.user.id, data.taxProfiles);
   });
