@@ -1,7 +1,6 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { type LoginSchema, loginSchema } from '@/modules/auth/application/auth.validation';
 import { login } from '@/modules/auth/infrastructure/auth.action';
 import { Button } from '@/shared/components/button';
@@ -15,6 +14,7 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
+import { submitAction } from '@/shared/submit-action';
 
 export function LoginForm() {
   const {
@@ -27,11 +27,7 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: LoginSchema) {
-    const result = await login(values);
-
-    if (!result.success) {
-      toast.error(result.error);
-    }
+    await submitAction(() => login(values));
   }
 
   return (

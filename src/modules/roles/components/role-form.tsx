@@ -2,7 +2,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import type { PermissionOptionDTO, RoleFormDTO } from '@/modules/roles/application/roles.types';
 import { type RoleFormSchema, roleFormSchema } from '@/modules/roles/application/roles.validation';
 import { createRole, updateRole } from '@/modules/roles/infrastructure/roles.action';
@@ -20,6 +19,7 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { Textarea } from '@/shared/components/textarea';
+import { submitAction } from '@/shared/submit-action';
 
 const GROUP_LABELS: Record<string, string> = {
   admin: 'Panel de administración',
@@ -81,11 +81,7 @@ export function RoleForm({ role, permissions, isOwnRole = false }: RoleFormProps
   const permissionGroups = groupPermissions(permissions);
 
   async function onSubmit(values: RoleFormSchema) {
-    const result = role ? await updateRole(values) : await createRole(values);
-
-    if (!result.success) {
-      toast.error(result.error);
-    }
+    await submitAction(() => (role ? updateRole(values) : createRole(values)));
   }
 
   return (

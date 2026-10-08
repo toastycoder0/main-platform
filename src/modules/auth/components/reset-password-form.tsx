@@ -1,7 +1,6 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import {
   type ResetPasswordSchema,
   resetPasswordSchema,
@@ -17,6 +16,7 @@ import {
   FieldSet,
 } from '@/shared/components/field';
 import { PasswordInput } from '@/shared/components/password-input';
+import { submitAction } from '@/shared/submit-action';
 
 interface ResetPasswordFormProps {
   token: string;
@@ -33,15 +33,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   });
 
   async function onSubmit(values: ResetPasswordSchema) {
-    try {
-      const result = await resetPasswordWithToken(values);
-
-      if (result && !result.success) {
-        toast.error(result.error);
-      }
-    } catch {
-      // En éxito `redirect()` rechaza la promesa; la navegación la gestiona Next.
-    }
+    await submitAction(() => resetPasswordWithToken(values));
   }
 
   return (

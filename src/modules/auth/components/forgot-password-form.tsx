@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import {
   type ForgotPasswordSchema,
   forgotPasswordSchema,
@@ -19,6 +18,7 @@ import {
   FieldSet,
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
+import { submitAction } from '@/shared/submit-action';
 
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);
@@ -32,14 +32,11 @@ export function ForgotPasswordForm() {
   });
 
   async function onSubmit(values: ForgotPasswordSchema) {
-    const result = await requestPasswordReset(values);
+    const result = await submitAction(() => requestPasswordReset(values));
 
-    if (result && !result.success) {
-      toast.error(result.error);
-      return;
+    if (result.success) {
+      setSent(true);
     }
-
-    setSent(true);
   }
 
   if (sent) {

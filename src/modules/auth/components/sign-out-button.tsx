@@ -2,8 +2,8 @@
 
 import { LoaderCircleIcon, LogOutIcon } from 'lucide-react';
 import { useTransition } from 'react';
-import { toast } from 'sonner';
 import { logout } from '@/modules/auth/infrastructure/auth.action';
+import { submitAction } from '@/shared/submit-action';
 
 type SignOutButtonProps = React.ComponentProps<'button'>;
 
@@ -14,11 +14,7 @@ export function SignOutButton({ onClick, children, ...props }: SignOutButtonProp
     onClick?.(e);
 
     startTransition(async () => {
-      const result = await logout();
-
-      if (!result.success) {
-        toast.error(result.error);
-      }
+      await submitAction(() => logout());
     });
   }
 
