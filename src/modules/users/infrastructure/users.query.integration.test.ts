@@ -89,6 +89,7 @@ beforeAll(async () => {
       firstName: `${scope}_rich`,
       lastName: 'Riches',
       email: `${scope}.rich@example.com`,
+      sortOrder: 0,
       banned: true,
       banReason: 'Motivo de prueba',
       banExpires,
@@ -109,6 +110,7 @@ beforeAll(async () => {
       firstName: `${scope}_bare`,
       lastName: 'Bares',
       email: `${scope}.bare@example.com`,
+      sortOrder: 1,
     })
     .returning({ id: user.id });
   const bareRow = insertedBare.at(0);
@@ -142,6 +144,7 @@ beforeAll(async () => {
       state: 'Estado',
       postalCode: '00001',
       isDefault: false,
+      sortOrder: 0,
     },
     {
       userId: richUserId,
@@ -155,6 +158,7 @@ beforeAll(async () => {
       postalCode: '00002',
       phone: '5500000000',
       isDefault: true,
+      sortOrder: 1,
     },
     {
       userId: bareUserId,
@@ -166,6 +170,7 @@ beforeAll(async () => {
       state: 'Estado',
       postalCode: '00003',
       isDefault: false,
+      sortOrder: 0,
     },
   ]);
 
@@ -179,6 +184,7 @@ beforeAll(async () => {
       taxRegime: '601',
       taxPostalCode: '00001',
       isDefault: true,
+      sortOrder: 0,
     },
   ]);
 
@@ -186,6 +192,7 @@ beforeAll(async () => {
     firstName: `${scope}user${String(index + 1).padStart(2, '0')}`,
     lastName: 'Paginacion',
     email: `${scope}.page${String(index + 1).padStart(2, '0')}@example.com`,
+    sortOrder: index + 2,
   }));
 
   const insertedList = await db.insert(user).values(listPayload).returning({ id: user.id });
@@ -205,14 +212,14 @@ afterAll(async () => {
 });
 
 describe('listUsers', () => {
-  it('returns the first page ordered by first name', async () => {
+  it('returns the first page in creation order', async () => {
     const result = await listUsers(testContext(), params());
 
     expect(result.total).toBe(14);
     expect(result.items).toHaveLength(10);
 
-    const names = result.items.map((item) => item.firstName);
-    expect(names).toEqual([...names].sort());
+    expect(result.items[0]?.firstName).toBe(`${scope}_rich`);
+    expect(result.items[1]?.firstName).toBe(`${scope}_bare`);
   });
 
   it('returns the remaining items on the second page', async () => {
@@ -303,13 +310,14 @@ describe('getUser', () => {
     expect(address?.phone).toBe('');
   });
 
-  it('lists default addresses first', async () => {
+  it('preserves the insertion order of addresses', async () => {
     const addresses = await listUserAddresses(testContext(), richUserId);
 
     expect(addresses).toHaveLength(2);
-    expect(addresses[0]?.name).toBe('Oficina');
-    expect(addresses[0]?.isDefault).toBe(true);
-    expect(addresses[1]?.name).toBe('Casa');
+    expect(addresses[0]?.name).toBe('Casa');
+    expect(addresses[0]?.isDefault).toBe(false);
+    expect(addresses[1]?.name).toBe('Oficina');
+    expect(addresses[1]?.isDefault).toBe(true);
   });
 
   it('returns no addresses for a user without them', async () => {

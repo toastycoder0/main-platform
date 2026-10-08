@@ -51,7 +51,12 @@ export async function syncUserAddresses(
   await tx.delete(userAddress).where(eq(userAddress.userId, userId));
 
   if (normalized.length > 0) {
-    await tx.insert(userAddress).values(normalized.map((item) => addressValues(userId, item)));
+    await tx.insert(userAddress).values(
+      normalized.map((item, index) => ({
+        ...addressValues(userId, item),
+        sortOrder: index,
+      })),
+    );
   }
 }
 
@@ -65,8 +70,11 @@ export async function syncUserTaxProfiles(
   await tx.delete(userTaxProfile).where(eq(userTaxProfile.userId, userId));
 
   if (normalized.length > 0) {
-    await tx
-      .insert(userTaxProfile)
-      .values(normalized.map((item) => taxProfileValues(userId, item)));
+    await tx.insert(userTaxProfile).values(
+      normalized.map((item, index) => ({
+        ...taxProfileValues(userId, item),
+        sortOrder: index,
+      })),
+    );
   }
 }

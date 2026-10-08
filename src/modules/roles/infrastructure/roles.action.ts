@@ -1,7 +1,7 @@
 'use server';
 
 import { randomBytes } from 'node:crypto';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
 import type { DatabaseClient } from '@/infrastructure/db';
@@ -60,9 +60,18 @@ export const createRole = run(
     const slug = await resolveUniqueRoleSlug(ctx.db, slugifyRoleName(name) || 'rol');
 
     await ctx.db.transaction(async (tx) => {
+      const [row] = await tx
+        .select({ value: sql<number>`coalesce(max(${role.sortOrder}), -1)` })
+        .from(role);
+
       const [inserted] = await tx
         .insert(role)
-        .values({ slug, name, description: description || null })
+        .values({
+          slug,
+          name,
+          description: description || null,
+          sortOrder: (row?.value ?? -1) + 1,
+        })
         .returning({ id: role.id });
 
       if (!inserted) {

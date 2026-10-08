@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, type SQL, sql } from 'drizzle-orm';
+import { asc, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import {
   role,
@@ -76,7 +76,7 @@ export async function listUsers(
       })
       .from(user)
       .where(where)
-      .orderBy(asc(user.firstName), asc(user.lastName), asc(user.id))
+      .orderBy(asc(user.sortOrder), asc(user.id))
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);
@@ -90,7 +90,7 @@ export async function listUsers(
           .from(userRole)
           .innerJoin(role, eq(role.id, userRole.roleId))
           .where(inArray(userRole.userId, ids))
-          .orderBy(asc(role.name))
+          .orderBy(asc(role.sortOrder), asc(role.id))
       : [];
 
   const rolesByUser = new Map<string, RoleOptionDTO[]>();
@@ -191,7 +191,7 @@ export async function listUserAddresses(
     .select()
     .from(userAddress)
     .where(eq(userAddress.userId, userId))
-    .orderBy(desc(userAddress.isDefault), asc(userAddress.createdAt));
+    .orderBy(asc(userAddress.sortOrder), asc(userAddress.id));
 
   return rows.map(mapAddress);
 }
@@ -204,7 +204,7 @@ export async function listUserTaxProfiles(
     .select()
     .from(userTaxProfile)
     .where(eq(userTaxProfile.userId, userId))
-    .orderBy(desc(userTaxProfile.isDefault), asc(userTaxProfile.createdAt));
+    .orderBy(asc(userTaxProfile.sortOrder), asc(userTaxProfile.id));
 
   return rows.map(mapTaxProfile);
 }

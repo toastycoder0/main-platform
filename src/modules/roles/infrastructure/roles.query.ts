@@ -77,7 +77,7 @@ export async function listRoles(
       .leftJoin(rolePermission, eq(rolePermission.roleId, role.id))
       .where(where)
       .groupBy(role.id)
-      .orderBy(asc(role.name), asc(role.slug))
+      .orderBy(asc(role.sortOrder), asc(role.id))
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);

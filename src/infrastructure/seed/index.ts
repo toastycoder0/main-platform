@@ -73,7 +73,7 @@ async function seedRole(permissionIds: string[]): Promise<string> {
   } else {
     const inserted = await db
       .insert(role)
-      .values({ slug: ROLE_SLUG, name: ROLE_NAME })
+      .values({ slug: ROLE_SLUG, name: ROLE_NAME, sortOrder: 0 })
       .returning({ id: role.id });
 
     const insertedRow = inserted.at(0);

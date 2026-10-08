@@ -224,6 +224,15 @@ export const createUser = run(
 
     try {
       await ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .select({ value: sql<number>`coalesce(max(${user.sortOrder}), -1)` })
+          .from(user);
+
+        await tx
+          .update(user)
+          .set({ sortOrder: (row?.value ?? -1) + 1 })
+          .where(eq(user.id, createdId));
+
         await syncUserRelations(tx, createdId, relations);
       });
     } catch (error) {
