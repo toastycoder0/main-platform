@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { type LoginSchema, loginSchema } from '@/modules/auth/application/auth.validation';
 import { login } from '@/modules/auth/infrastructure/auth.action';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import {
   Field,
@@ -14,7 +15,6 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
-import { submitAction } from '@/shared/submit-action';
 
 export function LoginForm() {
   const {

@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import {
   Field,
@@ -11,7 +12,6 @@ import {
   FieldLabel,
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
-import { submitAction } from '@/shared/submit-action';
 import type { ProfileDTO } from '../../application/users.types';
 import { type ProfileSchema, profileSchema } from '../../application/users.validation';
 import { updateProfile } from '../../infrastructure/profile.action';

@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form';
 import type { PermissionOptionDTO } from '@/modules/roles/application/roles.types';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
 import {
@@ -18,7 +19,6 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
-import { submitAction } from '@/shared/submit-action';
 import type { RoleOptionDTO, UserFormDTO } from '../application/users.types';
 import { type UserFormSchema, userFormSchema } from '../application/users.validation';
 import { createUser, updateUser } from '../infrastructure/users.action';

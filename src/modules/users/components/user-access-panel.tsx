@@ -2,6 +2,7 @@
 
 import { BanIcon, KeyIcon, ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { useState, useTransition } from 'react';
+import { submitAction } from '@/shared/actions/submit-action';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/select';
-import { submitAction } from '@/shared/submit-action';
 import { adminResetPassword, banUser, deleteUser, unbanUser } from '../infrastructure/users.action';
 
 const DURATION_OPTIONS = [

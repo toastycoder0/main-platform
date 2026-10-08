@@ -5,7 +5,7 @@ import { useQueryStates } from 'nuqs';
 import { useEffect, useState, useTransition } from 'react';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/shared/components/input-group';
 import { Spinner } from '@/shared/components/spinner';
-import { listParams } from '@/shared/list-params';
+import { listParams } from '@/shared/list/list-params';
 
 const DEBOUNCE_MS = 300;
 

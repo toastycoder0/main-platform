@@ -2,10 +2,10 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/components/field';
 import { PasswordInput } from '@/shared/components/password-input';
-import { submitAction } from '@/shared/submit-action';
 import {
   type ChangePasswordSchema,
   changePasswordSchema,

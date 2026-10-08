@@ -22,7 +22,7 @@ import {
   type ListParams,
   listParams,
   PAGE_SIZES,
-} from '@/shared/list-params';
+} from '@/shared/list/list-params';
 
 interface ListPaginationProps {
   basePath: string;

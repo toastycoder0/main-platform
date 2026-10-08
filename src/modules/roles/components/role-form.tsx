@@ -5,6 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import type { PermissionOptionDTO, RoleFormDTO } from '@/modules/roles/application/roles.types';
 import { type RoleFormSchema, roleFormSchema } from '@/modules/roles/application/roles.validation';
 import { createRole, updateRole } from '@/modules/roles/infrastructure/roles.action';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
 import {
@@ -19,7 +20,6 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { Textarea } from '@/shared/components/textarea';
-import { submitAction } from '@/shared/submit-action';
 
 const GROUP_LABELS: Record<string, string> = {
   admin: 'Panel de administración',

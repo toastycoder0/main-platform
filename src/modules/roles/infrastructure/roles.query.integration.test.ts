@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
 import { permission, role, rolePermission, user, userRole } from '@/infrastructure/db/schema';
-import type { ListParams } from '@/shared/list-params';
+import type { ListParams } from '@/shared/list/list-params';
 import { getRole, listPermissionOptions, listRoles, listUserRoleIds } from './roles.query';
 
 const scope = `listroles${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;

@@ -2,8 +2,8 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
-import { submitAction } from '@/shared/submit-action';
 import type { UserTaxProfileDTO } from '../../application/users.types';
 import {
   type AccountTaxProfilesSchema,

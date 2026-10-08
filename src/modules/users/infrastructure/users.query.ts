@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
+import { searchILike } from '@/infrastructure/db/list-query';
 import {
   role,
   user,
@@ -8,9 +9,8 @@ import {
   userRole,
   userTaxProfile,
 } from '@/infrastructure/db/schema';
-import type { ListParams } from '@/shared/list-params';
-import { searchILike } from '@/shared/list-query';
-import type { Paginated } from '@/shared/paginated';
+import type { ListParams } from '@/shared/list/list-params';
+import type { Paginated } from '@/shared/list/paginated';
 import type {
   PermissionOverrideDTO,
   ProfileDTO,

@@ -7,7 +7,7 @@ import { ListRowActions } from '@/shared/components/list-row-actions';
 import { ListCell, ListTable } from '@/shared/components/list-table';
 import { TableRow } from '@/shared/components/table';
 import { PERMISSIONS } from '@/shared/constants/permissions';
-import type { ListParams } from '@/shared/list-params';
+import type { ListParams } from '@/shared/list/list-params';
 import { listUsers } from '../infrastructure/users.query';
 
 const BASE_PATH = '/dashboard/users';

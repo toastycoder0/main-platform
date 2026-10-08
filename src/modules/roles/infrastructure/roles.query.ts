@@ -1,9 +1,9 @@
 import { asc, eq, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
+import { searchILike } from '@/infrastructure/db/list-query';
 import { permission, role, rolePermission, userRole } from '@/infrastructure/db/schema';
-import type { ListParams } from '@/shared/list-params';
-import { searchILike } from '@/shared/list-query';
-import type { Paginated } from '@/shared/paginated';
+import type { ListParams } from '@/shared/list/list-params';
+import type { Paginated } from '@/shared/list/paginated';
 import type { PermissionOptionDTO, RoleFormDTO, RoleListItemDTO } from '../application/roles.types';
 
 function buildWhere(params: ListParams): SQL | undefined {

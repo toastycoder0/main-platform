@@ -11,7 +11,7 @@ import {
   userRole,
   userTaxProfile,
 } from '@/infrastructure/db/schema';
-import type { ListParams } from '@/shared/list-params';
+import type { ListParams } from '@/shared/list/list-params';
 import {
   getProfile,
   getUser,

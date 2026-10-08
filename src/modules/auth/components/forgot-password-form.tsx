@@ -8,6 +8,7 @@ import {
   forgotPasswordSchema,
 } from '@/modules/auth/application/auth.validation';
 import { requestPasswordReset } from '@/modules/auth/infrastructure/auth.action';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import {
   Field,
@@ -18,7 +19,6 @@ import {
   FieldSet,
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
-import { submitAction } from '@/shared/submit-action';
 
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);

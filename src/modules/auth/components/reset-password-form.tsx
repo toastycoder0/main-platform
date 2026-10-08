@@ -6,6 +6,7 @@ import {
   resetPasswordSchema,
 } from '@/modules/auth/application/auth.validation';
 import { resetPasswordWithToken } from '@/modules/auth/infrastructure/auth.action';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import {
   Field,
@@ -16,7 +17,6 @@ import {
   FieldSet,
 } from '@/shared/components/field';
 import { PasswordInput } from '@/shared/components/password-input';
-import { submitAction } from '@/shared/submit-action';
 
 interface ResetPasswordFormProps {
   token: string;
