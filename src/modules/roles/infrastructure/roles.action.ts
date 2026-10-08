@@ -81,10 +81,6 @@ export const createRole = run(
 export const updateRole = run(
   { permission: PERMISSIONS.admin.roles.edit, input: updateRoleSchema },
   async (ctx, { id, name, description, permissionIds }) => {
-    if (!ctx.session) {
-      throw new AppError('unauthorized');
-    }
-
     const [existingRole] = await ctx.db
       .select({ id: role.id })
       .from(role)

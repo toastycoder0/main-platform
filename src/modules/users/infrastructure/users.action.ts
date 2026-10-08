@@ -249,10 +249,6 @@ export const createUser = run(
 export const updateUser = run(
   { permission: PERMISSIONS.admin.users.edit, input: updateUserSchema },
   async (ctx, data) => {
-    if (!ctx.session) {
-      throw new AppError('unauthorized');
-    }
-
     if (ctx.session.user.id === data.id) {
       throw new AppError('forbidden', 'No puedes editar tu propio usuario; usa tu perfil');
     }
@@ -346,10 +342,6 @@ async function assertUserExists(db: DbLike, id: string): Promise<void> {
 export const banUser = run(
   { permission: PERMISSIONS.admin.users.ban, input: banUserSchema },
   async (ctx, data) => {
-    if (!ctx.session) {
-      throw new AppError('unauthorized');
-    }
-
     if (ctx.session.user.id === data.id) {
       throw new AppError('forbidden', 'No puedes banear tu propia cuenta');
     }
@@ -376,10 +368,6 @@ export const banUser = run(
 export const unbanUser = run(
   { permission: PERMISSIONS.admin.users.ban, input: userParamsSchema },
   async (ctx, data) => {
-    if (!ctx.session) {
-      throw new AppError('unauthorized');
-    }
-
     if (ctx.session.user.id === data.id) {
       throw new AppError('forbidden', 'No puedes modificar tu propia cuenta');
     }
@@ -399,10 +387,6 @@ export const unbanUser = run(
 export const adminResetPassword = run(
   { permission: PERMISSIONS.admin.users.edit, input: adminResetPasswordSchema },
   async (ctx, data) => {
-    if (!ctx.session) {
-      throw new AppError('unauthorized');
-    }
-
     if (ctx.session.user.id === data.id) {
       throw new AppError('forbidden', 'Cambia tu contraseña desde tu perfil');
     }
@@ -431,10 +415,6 @@ export const adminResetPassword = run(
 export const deleteUser = run(
   { permission: PERMISSIONS.admin.users.delete, input: userParamsSchema },
   async (ctx, data) => {
-    if (!ctx.session) {
-      throw new AppError('unauthorized');
-    }
-
     if (ctx.session.user.id === data.id) {
       throw new AppError('forbidden', 'No puedes eliminar tu propia cuenta');
     }
