@@ -71,20 +71,12 @@ function refineFiscal(value: { cfdiUse: string; taxRegime: string }, ctx: z.Refi
 
 export const taxProfileSchema = taxProfileBaseSchema.superRefine(refineFiscal);
 
-export const accountAddressItemSchema = addressSchema.extend({
-  id: z.string().min(1, FIELD_ERRORS.required).optional(),
-});
-
 export const accountAddressesSchema = z.object({
-  addresses: z.array(accountAddressItemSchema).max(MAX_ADDRESSES),
+  addresses: z.array(addressSchema).max(MAX_ADDRESSES),
 });
-
-export const accountTaxProfileItemSchema = taxProfileBaseSchema
-  .extend({ id: z.string().min(1, FIELD_ERRORS.required).optional() })
-  .superRefine(refineFiscal);
 
 export const accountTaxProfilesSchema = z.object({
-  taxProfiles: z.array(accountTaxProfileItemSchema).max(MAX_TAX_PROFILES),
+  taxProfiles: z.array(taxProfileSchema).max(MAX_TAX_PROFILES),
 });
 
 export const permissionOverrideSchema = z.object({

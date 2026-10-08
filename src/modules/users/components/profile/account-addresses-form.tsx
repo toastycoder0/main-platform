@@ -19,7 +19,7 @@ interface AccountAddressesFormProps {
 export function AccountAddressesForm({ addresses }: AccountAddressesFormProps) {
   const form = useForm<AccountAddressesSchema>({
     resolver: zodResolver(accountAddressesSchema),
-    defaultValues: { addresses },
+    defaultValues: { addresses: addresses.map(({ id: _id, ...rest }) => rest) },
   });
 
   async function onSubmit(values: AccountAddressesSchema) {

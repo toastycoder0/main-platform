@@ -1,13 +1,10 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { DatabaseClient } from '@/infrastructure/db';
 import { userAddress, userTaxProfile } from '@/infrastructure/db/schema';
 import { normalizeDefaults } from '../application/users.defaults';
 import type { AddressSchema, TaxProfileSchema } from '../application/users.validation';
 
-type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;
-
-export type AddressItem = AddressSchema & { id?: string | undefined };
-export type TaxProfileItem = TaxProfileSchema & { id?: string | undefined };
+type DbLike = Pick<DatabaseClient, 'insert' | 'delete'>;
 
 function addressValues(userId: string, data: AddressSchema) {
   return {
@@ -40,85 +37,38 @@ function taxProfileValues(userId: string, data: TaxProfileSchema) {
 }
 
 /**
- * Persiste la colección completa de direcciones del usuario.
+ * Persiste la colección completa de direcciones del usuario con semántica de
+ * reemplazo: elimina las filas actuales del usuario e inserta las enviadas.
  *
- * Upsert preservando IDs: los ids provistos que pertenecen al usuario se
- * actualizan, los que no vienen se eliminan y el resto se insertan. Los ids
- * ajenos se ignoran (se insertan como nuevos), por lo que nunca se toca data
- * de otro usuario.
+ * La info no se referencia por id desde otras entidades (solo alimenta forms
+ * como prellenado), así que no se preservan ids.
  */
 export async function syncUserAddresses(
   tx: DbLike,
   userId: string,
-  items: AddressItem[],
+  items: AddressSchema[],
 ): Promise<void> {
   const normalized = normalizeDefaults(items);
-  const existing = await tx
-    .select({ id: userAddress.id })
-    .from(userAddress)
-    .where(eq(userAddress.userId, userId));
-  const ownedIds = new Set(existing.map((row) => row.id));
 
-  const keptIds = new Set(
-    normalized
-      .map((item) => item.id)
-      .filter((id): id is string => id !== undefined && ownedIds.has(id)),
-  );
+  await tx.delete(userAddress).where(eq(userAddress.userId, userId));
 
-  const toDelete = [...ownedIds].filter((id) => !keptIds.has(id));
-
-  if (toDelete.length > 0) {
-    await tx
-      .delete(userAddress)
-      .where(and(eq(userAddress.userId, userId), inArray(userAddress.id, toDelete)));
-  }
-
-  for (const item of normalized) {
-    if (item.id && ownedIds.has(item.id)) {
-      await tx
-        .update(userAddress)
-        .set(addressValues(userId, item))
-        .where(eq(userAddress.id, item.id));
-    } else {
-      await tx.insert(userAddress).values(addressValues(userId, item));
-    }
+  if (normalized.length > 0) {
+    await tx.insert(userAddress).values(normalized.map((item) => addressValues(userId, item)));
   }
 }
 
 export async function syncUserTaxProfiles(
   tx: DbLike,
   userId: string,
-  items: TaxProfileItem[],
+  items: TaxProfileSchema[],
 ): Promise<void> {
   const normalized = normalizeDefaults(items);
-  const existing = await tx
-    .select({ id: userTaxProfile.id })
-    .from(userTaxProfile)
-    .where(eq(userTaxProfile.userId, userId));
-  const ownedIds = new Set(existing.map((row) => row.id));
 
-  const keptIds = new Set(
-    normalized
-      .map((item) => item.id)
-      .filter((id): id is string => id !== undefined && ownedIds.has(id)),
-  );
+  await tx.delete(userTaxProfile).where(eq(userTaxProfile.userId, userId));
 
-  const toDelete = [...ownedIds].filter((id) => !keptIds.has(id));
-
-  if (toDelete.length > 0) {
+  if (normalized.length > 0) {
     await tx
-      .delete(userTaxProfile)
-      .where(and(eq(userTaxProfile.userId, userId), inArray(userTaxProfile.id, toDelete)));
-  }
-
-  for (const item of normalized) {
-    if (item.id && ownedIds.has(item.id)) {
-      await tx
-        .update(userTaxProfile)
-        .set(taxProfileValues(userId, item))
-        .where(eq(userTaxProfile.id, item.id));
-    } else {
-      await tx.insert(userTaxProfile).values(taxProfileValues(userId, item));
-    }
+      .insert(userTaxProfile)
+      .values(normalized.map((item) => taxProfileValues(userId, item)));
   }
 }

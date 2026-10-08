@@ -19,7 +19,7 @@ interface AccountTaxProfilesFormProps {
 export function AccountTaxProfilesForm({ taxProfiles }: AccountTaxProfilesFormProps) {
   const form = useForm<AccountTaxProfilesSchema>({
     resolver: zodResolver(accountTaxProfilesSchema),
-    defaultValues: { taxProfiles },
+    defaultValues: { taxProfiles: taxProfiles.map(({ id: _id, ...rest }) => rest) },
   });
 
   async function onSubmit(values: AccountTaxProfilesSchema) {
