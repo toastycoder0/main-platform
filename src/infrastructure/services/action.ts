@@ -53,27 +53,26 @@ function validateInput<TSchema extends z.ZodType>(
   return ok(parsed.data as z.infer<TSchema>);
 }
 
-function handleFailure(ctx: RequestContext | undefined, error: unknown): Result {
-  if (isNextRedirect(error)) {
-    throw error;
-  }
-  if (isAppError(error)) {
-    return fail(error.message);
-  }
-  ctx?.logger.error({ err: error }, 'Unhandled server action error');
-  return fail(new AppError('internal').message);
-}
-
-/**
+/*
  * Session-scoped configs (the default) guarantee `ctx.session` before the
  * handler runs; public configs may run unauthenticated.
+ *
+ * Handlers may return a value (which becomes `Result.data`) or `void`.
  */
+
 export function executeAction<TSchema extends z.ZodType>(
   deps: ActionDeps,
   config: SessionActionConfig<TSchema>,
   handler: (ctx: AuthenticatedContext, data: z.infer<TSchema>) => Promise<void>,
   payload?: unknown,
 ): Promise<Result>;
+
+export function executeAction<TSchema extends z.ZodType, TResult>(
+  deps: ActionDeps,
+  config: SessionActionConfig<TSchema>,
+  handler: (ctx: AuthenticatedContext, data: z.infer<TSchema>) => Promise<TResult>,
+  payload?: unknown,
+): Promise<Result<TResult>>;
 
 export function executeAction<TSchema extends z.ZodType>(
   deps: ActionDeps,
@@ -82,12 +81,19 @@ export function executeAction<TSchema extends z.ZodType>(
   payload?: unknown,
 ): Promise<Result>;
 
-export async function executeAction<TSchema extends z.ZodType>(
+export function executeAction<TSchema extends z.ZodType, TResult>(
+  deps: ActionDeps,
+  config: PublicActionConfig<TSchema>,
+  handler: (ctx: RequestContext, data: z.infer<TSchema>) => Promise<TResult>,
+  payload?: unknown,
+): Promise<Result<TResult>>;
+
+export async function executeAction<TSchema extends z.ZodType, TResult>(
   deps: ActionDeps,
   config: ActionConfig<TSchema>,
-  handler: (ctx: AuthenticatedContext, data: z.infer<TSchema>) => Promise<void>,
+  handler: (ctx: AuthenticatedContext, data: z.infer<TSchema>) => Promise<TResult>,
   payload?: unknown,
-): Promise<Result> {
+): Promise<Result<TResult>> {
   let ctx: RequestContext | undefined;
 
   try {
@@ -97,14 +103,21 @@ export async function executeAction<TSchema extends z.ZodType>(
     const input = validateInput(ctx, config.input, payload);
 
     if (!input.success) {
-      return fail(input.error);
+      return fail(input.error) as Result<TResult>;
     }
 
     // `guardAccess` guarantees a session for non-public configs; public
     // handlers are typed against the wider `RequestContext`.
-    await handler(ctx as AuthenticatedContext, input.data);
-    return ok(undefined);
+    const result = await handler(ctx as AuthenticatedContext, input.data);
+    return ok(result);
   } catch (error) {
-    return handleFailure(ctx, error);
+    if (isNextRedirect(error)) {
+      throw error;
+    }
+    if (isAppError(error)) {
+      return fail(error.message) as Result<TResult>;
+    }
+    ctx?.logger.error({ err: error }, 'Unhandled server action error');
+    return fail(new AppError('internal').message) as Result<TResult>;
   }
 }
