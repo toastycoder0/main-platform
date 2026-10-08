@@ -37,11 +37,9 @@ function taxProfileValues(userId: string, data: TaxProfileSchema) {
 }
 
 /**
- * Persiste la colección completa de direcciones del usuario con semántica de
- * reemplazo: elimina las filas actuales del usuario e inserta las enviadas.
- *
- * La info no se referencia por id desde otras entidades (solo alimenta forms
- * como prellenado), así que no se preservan ids.
+ * Persists the user's full address collection with replace semantics: deletes
+ * the current rows and inserts the submitted ones. Rows are not referenced by
+ * id elsewhere (they only prefill forms), so ids are not preserved.
  */
 export async function syncUserAddresses(
   tx: DbLike,

@@ -4,18 +4,10 @@ import { isNextRedirect } from '@/shared/errors';
 import { fail, ok, type Result } from '@/shared/result';
 
 /**
- * Ejecuta una Server Action desde el cliente.
- *
- * Espejo de `executeAction` (`infrastructure/services/action.ts`): mismo contrato
- * `Promise<Result>`. El error ya se muestra vía toast, así que el caller solo
- * debe leer `result.success` y nunca repetir el toast.
- *
- * - `fail` → la action devolvió un error ya enmascarado; se muestra y se propaga.
- * - `ok` → éxito. Si la acción llamó a `redirect()`, Next ya inició la navegación
- *   y el rechazo de la promesa se absorbe aquí. Con `successMessage` se emite un
- *   único toast de éxito desde este punto.
- * - Rechazo que no es un redirect (red, serialización) → toast genérico;
- *   nunca reporta éxito.
+ * Client counterpart of `executeAction`: same `Promise<Result>` contract, plus
+ * the user-facing toast. Callers only read `result.success` and never toast
+ * themselves. Redirect rejections count as success; other rejections surface as
+ * a generic error.
  */
 export async function submitAction(
   action: () => Promise<Result>,

@@ -208,7 +208,7 @@ beforeAll(async () => {
     expiresAt: new Date(Date.now() + 3_600_000),
   });
 
-  // better-auth lee la cookie de sesión firmada: `${token}.${base64(hmac-sha256(secret, token))}`
+  // better-auth reads the signed session cookie: `${token}.${base64(hmac-sha256(secret, token))}`
   const signature = createHmac('sha256', process.env.BETTER_AUTH_SECRET ?? 'test')
     .update(token)
     .digest('base64');

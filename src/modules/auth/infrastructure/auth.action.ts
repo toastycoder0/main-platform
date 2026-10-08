@@ -50,7 +50,7 @@ export const requestPasswordReset = run(
         body: { email },
       });
     } catch (error) {
-      // Respuesta genérica deliberada: no revela si el correo existe.
+      // Deliberately generic response: never reveals whether the email exists.
       ctx.logger.error({ err: error }, 'better-auth requestPasswordReset failed');
     }
   },

@@ -342,7 +342,7 @@ describe('listRoleOptions', () => {
     expect(ids).toContain(richRoleId);
     expect(ids).toContain(secondRoleId);
 
-    // `role_a` ordena antes que `role_b` en cualquier colación.
+    // `role_a` sorts before `role_b` under any collation.
     expect(ids.indexOf(richRoleId)).toBeGreaterThanOrEqual(0);
     expect(ids.indexOf(richRoleId)).toBeLessThan(ids.indexOf(secondRoleId));
   });

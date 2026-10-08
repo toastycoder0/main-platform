@@ -99,9 +99,9 @@ function ComboboxContent({
         align={align}
         alignOffset={alignOffset}
         anchor={anchor}
-        // Radix DismissableLayer (diálogo modal) fija `body { pointer-events: none }` y el
-        // popup, portaled a `<body>` fuera del diálogo, heredaría `none`: sería visible pero
-        // intocable. `pointer-events-auto` es un no-op cuando body no está deshabilitado.
+        // A modal Radix DismissableLayer sets `body { pointer-events: none }`; this
+        // popup portals to `<body>` outside the dialog and would inherit it, staying
+        // visible but unclickable. `pointer-events-auto` is a no-op otherwise.
         className='isolate z-50 pointer-events-auto'
       >
         <ComboboxPrimitive.Popup

@@ -23,9 +23,9 @@ export const auth = betterAuth({
     enabled: true,
     resetPasswordTokenExpiresIn: 3600,
     sendResetPassword({ user, token }) {
-      // Sin proveedor de correo configurado: el link se registra en el log.
-      // Cuando exista un proveedor (Resend/SMTP), se envía el correo aquí y se
-      // retorna la promesa del envío (better-auth espera Promise<void>).
+      // No mail provider configured yet: the link is logged instead. With one
+      // (Resend/SMTP), send the email here and return its promise (better-auth
+      // expects Promise<void>).
       const appUrl = env.APP_URL ?? 'http://localhost:3000';
       const url = `${appUrl}/auth/reset-password?token=${token}`;
 

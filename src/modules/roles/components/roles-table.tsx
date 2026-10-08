@@ -17,8 +17,6 @@ interface RolesTableProps {
 }
 
 export async function RolesTable({ params }: RolesTableProps) {
-  // Extracting ctx + permission checks could become a convention for building tables and actions easily;
-  // it's still too early to decide — better to plan with more cases first.
   const [ctx, parsed] = await Promise.all([createRequestContext(), params]);
   const canEdit = ctx.permissions.has(PERMISSIONS.admin.roles.edit);
   const { items, total } = await listRoles(ctx, parsed);

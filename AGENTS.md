@@ -54,6 +54,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Always use Tailwind CSS for styling
 - Icons from lucide-react. Explicit imports only, never use barrel imports
 - Prefer ESM and modern browser syntax
+- Comments in English, only when they explain non-obvious intent (the "why"). Never restate what the code already says.
 
 ## Organization
 

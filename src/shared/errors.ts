@@ -26,11 +26,9 @@ export function isAppError(error: unknown): error is AppError {
 }
 
 /**
- * Detecta el error interno que lanza `redirect()` de Next.js.
- *
- * Funciona tanto con el digest del servidor (`NEXT_REDIRECT;/ruta;307`) como con
- * el del cliente (`NEXT_REDIRECT;push;/ruta;307;`), rechazado por la promesa de
- * la Server Action cuando la navegación ya fue iniciada por Next.
+ * Detects the internal error thrown by Next.js `redirect()`, matching both the
+ * server digest (`NEXT_REDIRECT;/path;307`) and the client one
+ * (`NEXT_REDIRECT;push;/path;307;`) rejected by a Server Action promise.
  */
 export function isNextRedirect(error: unknown): boolean {
   if (typeof error !== 'object' || error === null || !('digest' in error)) {
