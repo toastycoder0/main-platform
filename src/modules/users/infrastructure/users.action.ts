@@ -1,7 +1,7 @@
 'use server';
 
 import { isAPIError } from 'better-auth/api';
-import { and, eq, inArray, like, ne, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, like, ne, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
@@ -10,6 +10,7 @@ import {
   permission,
   role,
   rolePermission,
+  session,
   user,
   userPermission,
   userRole,
@@ -91,7 +92,9 @@ async function assertEmailAvailable(
   excludeUserId?: string,
 ): Promise<void> {
   const match = sql`lower(${user.email}) = lower(${email})`;
-  const where = excludeUserId ? and(match, ne(user.id, excludeUserId)) : match;
+  const where = excludeUserId
+    ? and(isNull(user.deletedAt), match, ne(user.id, excludeUserId))
+    : and(isNull(user.deletedAt), match);
   const existing = await db.select({ id: user.id }).from(user).where(where).limit(1);
 
   if (existing[0]) {
@@ -265,7 +268,7 @@ export const updateUser = run(
     const existing = await ctx.db
       .select({ id: user.id })
       .from(user)
-      .where(eq(user.id, data.id))
+      .where(and(eq(user.id, data.id), isNull(user.deletedAt)))
       .limit(1);
 
     if (!existing[0]) {
@@ -341,7 +344,11 @@ function failBetterAuthAdmin(
 }
 
 async function assertUserExists(db: DbLike, id: string): Promise<void> {
-  const rows = await db.select({ id: user.id }).from(user).where(eq(user.id, id)).limit(1);
+  const rows = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(and(eq(user.id, id), isNull(user.deletedAt)))
+    .limit(1);
 
   if (!rows[0]) {
     throw new AppError('not_found');
@@ -430,11 +437,18 @@ export const deleteUser = run(
 
     await assertUserExists(ctx.db, data.id);
 
-    try {
-      await auth.api.removeUser({ body: { userId: data.id }, headers: await headers() });
-    } catch (error) {
-      failBetterAuthAdmin(error, ctx, data.id, 'removeUser');
-    }
+    await ctx.db.transaction(async (tx) => {
+      await tx
+        .update(user)
+        .set({
+          deletedAt: new Date(),
+          email: sql`${user.id} || ':' || ${user.email}`,
+          banned: true,
+        })
+        .where(eq(user.id, data.id));
+
+      await tx.delete(session).where(eq(session.userId, data.id));
+    });
 
     redirect('/dashboard/users');
   },

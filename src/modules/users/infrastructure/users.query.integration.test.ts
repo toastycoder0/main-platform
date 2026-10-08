@@ -29,6 +29,7 @@ const createdPermissionIds: string[] = [];
 
 let richUserId = '';
 let bareUserId = '';
+let deletedUserId = '';
 let richRoleId = '';
 let secondRoleId = '';
 let overridePermissionId = '';
@@ -197,6 +198,25 @@ beforeAll(async () => {
 
   const insertedList = await db.insert(user).values(listPayload).returning({ id: user.id });
   createdUserIds.push(...insertedList.map((row) => row.id));
+
+  const insertedDeleted = await db
+    .insert(user)
+    .values({
+      firstName: `${scope}_deleted`,
+      lastName: 'Deleted',
+      email: `${scope}.deleted@example.com`,
+      deletedAt: new Date(),
+      sortOrder: 99,
+    })
+    .returning({ id: user.id });
+  const deletedRow = insertedDeleted.at(0);
+
+  if (!deletedRow) {
+    throw new Error('Failed to create deleted test user');
+  }
+
+  deletedUserId = deletedRow.id;
+  createdUserIds.push(deletedUserId);
 });
 
 afterAll(async () => {
@@ -220,6 +240,13 @@ describe('listUsers', () => {
 
     expect(result.items[0]?.firstName).toBe(`${scope}_rich`);
     expect(result.items[1]?.firstName).toBe(`${scope}_bare`);
+  });
+
+  it('excludes soft-deleted users', async () => {
+    const result = await listUsers(testContext(), params());
+
+    expect(result.total).toBe(14);
+    expect(result.items.some((item) => item.id === deletedUserId)).toBe(false);
   });
 
   it('returns the remaining items on the second page', async () => {
@@ -282,6 +309,10 @@ describe('listUsers', () => {
 describe('getUser', () => {
   it('returns undefined for a missing user', async () => {
     expect(await getUser(testContext(), 'user_does_not_exist')).toBeUndefined();
+  });
+
+  it('returns undefined for a soft-deleted user', async () => {
+    expect(await getUser(testContext(), deletedUserId)).toBeUndefined();
   });
 
   it('returns the full form payload with relations', async () => {

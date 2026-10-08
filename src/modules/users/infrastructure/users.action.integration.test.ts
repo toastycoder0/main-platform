@@ -922,13 +922,15 @@ describe('adminResetPassword', () => {
 });
 
 describe('deleteUser', () => {
-  it('removes the user and cascades their data', async () => {
+  it('soft deletes the user, frees the email, revokes sessions and keeps related data', async () => {
+    const originalEmail = `${scope}.deletable@example.com`;
+
     const inserted = await db
       .insert(user)
       .values({
         firstName: 'Deletable',
         lastName: 'Test',
-        email: `${scope}.deletable@example.com`,
+        email: originalEmail,
       })
       .returning({ id: user.id });
     const row = inserted.at(0);
@@ -936,6 +938,12 @@ describe('deleteUser', () => {
     if (!row) {
       throw new Error('Failed to create deletable user');
     }
+
+    await db.insert(session).values({
+      userId: row.id,
+      token: `deletable_${scope}`,
+      expiresAt: new Date(Date.now() + 3_600_000),
+    });
 
     await db.insert(userAddress).values({
       userId: row.id,
@@ -951,14 +959,57 @@ describe('deleteUser', () => {
 
     await expect(deleteUser({ id: row.id })).rejects.toThrow();
 
-    const remaining = await db.select({ id: user.id }).from(user).where(eq(user.id, row.id));
-    expect(remaining).toHaveLength(0);
+    const [deleted] = await db
+      .select({ deletedAt: user.deletedAt, email: user.email, banned: user.banned })
+      .from(user)
+      .where(eq(user.id, row.id));
+
+    expect(deleted?.deletedAt).toBeInstanceOf(Date);
+    expect(deleted?.email).toBe(`${row.id}:${originalEmail}`);
+    expect(deleted?.banned).toBe(true);
+
+    const sessions = await db
+      .select({ id: session.id })
+      .from(session)
+      .where(eq(session.userId, row.id));
+    expect(sessions).toHaveLength(0);
 
     const addressRows = await db
       .select({ id: userAddress.id })
       .from(userAddress)
       .where(eq(userAddress.userId, row.id));
-    expect(addressRows).toHaveLength(0);
+    expect(addressRows).toHaveLength(1);
+  });
+
+  it('reuses the email of a soft-deleted user', async () => {
+    const originalEmail = `${scope}.reuse@example.com`;
+
+    const inserted = await db
+      .insert(user)
+      .values({ firstName: 'Reuse', lastName: 'Test', email: originalEmail })
+      .returning({ id: user.id });
+    const row = inserted.at(0);
+
+    if (!row) {
+      throw new Error('Failed to create reusable user');
+    }
+
+    await expect(deleteUser({ id: row.id })).rejects.toThrow();
+
+    await expect(
+      createUser({
+        ...validUserPayload,
+        email: originalEmail,
+        password: '',
+        roleIds: [],
+        overrides: [],
+        addresses: [],
+        taxProfiles: [],
+      }),
+    ).rejects.toThrow();
+
+    const rows = await db.select({ id: user.id }).from(user).where(eq(user.email, originalEmail));
+    expect(rows).toHaveLength(1);
   });
 
   it('rejects deleting the actor own account', async () => {

@@ -1,4 +1,4 @@
-import { asc, eq, inArray, type SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import {
   role,
@@ -22,7 +22,11 @@ import type {
 } from '../application/users.types';
 
 function buildWhere(params: ListParams): SQL | undefined {
-  return params.q ? searchILike([user.firstName, user.lastName, user.email], params.q) : undefined;
+  const search = params.q
+    ? searchILike([user.firstName, user.lastName, user.email], params.q)
+    : undefined;
+
+  return and(isNull(user.deletedAt), search);
 }
 
 function mapAddress(row: typeof userAddress.$inferSelect): UserAddressDTO {
@@ -134,7 +138,7 @@ export async function getUser(ctx: RequestContext, id: string): Promise<UserForm
       banExpires: user.banExpires,
     })
     .from(user)
-    .where(eq(user.id, id))
+    .where(and(eq(user.id, id), isNull(user.deletedAt)))
     .limit(1);
 
   const row = rows[0];
@@ -218,7 +222,7 @@ export async function getProfile(ctx: RequestContext, userId: string): Promise<P
       image: user.image,
     })
     .from(user)
-    .where(eq(user.id, userId))
+    .where(and(eq(user.id, userId), isNull(user.deletedAt)))
     .limit(1);
 
   return rows[0] ?? null;
