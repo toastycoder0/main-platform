@@ -70,7 +70,7 @@ export function OverridesSection({ permissionOptions }: OverridesSectionProps) {
   }));
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div data-collection='overrides' className='flex flex-col gap-4'>
       <CollectionHeader
         title='Permisos'
         description='Otorga o deniega permisos individuales. Una denegación prevalece sobre los permisos de los roles.'
@@ -137,7 +137,7 @@ export function AddressesCollection<T extends FieldValues>({ control }: Collecti
   });
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div data-collection='addresses' className='flex flex-col gap-4'>
       <CollectionHeader
         title='Direcciones'
         description='Direcciones de entrega o facturación.'
@@ -238,7 +238,7 @@ export function TaxProfilesCollection<T extends FieldValues>({ control }: Collec
   });
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div data-collection='taxProfiles' className='flex flex-col gap-4'>
       <CollectionHeader
         title='Perfiles de facturación'
         description='Datos fiscales (CFDI) para la emisión de facturas.'

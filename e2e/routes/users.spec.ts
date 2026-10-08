@@ -27,9 +27,6 @@ function collectConsoleErrors(page: Page): string[] {
       return;
     }
 
-    // Radix (aria-hidden al abrir modales) muta el DOM mientras React aún
-    // hidrata el navbar en streaming; en dev esto emite warnings de
-    // hidratación que no son errores de la app bajo prueba.
     if (message.text().includes('https://react.dev/link/hydration-mismatch')) {
       return;
     }
@@ -274,6 +271,46 @@ describe('Users list E2E', () => {
 
     await page.reload();
     expect(await page.getByLabel('Alias', { exact: true }).inputValue()).toBe(alias);
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(1);
+
+    const editedAlias = `${alias} editado`;
+    await page.getByLabel('Alias', { exact: true }).fill(editedAlias);
+    await saveCollection(page, '/account/billing');
+
+    await page.reload();
+    expect(await page.getByLabel('Alias', { exact: true }).inputValue()).toBe(editedAlias);
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(1);
+
+    await page.getByRole('button', { name: 'Agregar perfil' }).click();
+    const second = page.locator('[data-slot=collection-item]').nth(1);
+    await second.getByLabel('Alias', { exact: true }).fill('Segundo');
+    await second.getByLabel('Razón social', { exact: true }).fill('Segunda S.A. de C.V.');
+    await second.getByLabel('RFC', { exact: true }).fill('DEF123456789');
+    await second.getByLabel('Código postal fiscal', { exact: true }).fill('06000');
+
+    const cfdiSecond = second.getByLabel('Uso de CFDI', { exact: true });
+    await cfdiSecond.click();
+    await cfdiSecond.fill('mobiliario');
+    await page
+      .getByRole('option', { name: 'I02 - Mobiliario y equipo de oficina para inversiones' })
+      .click();
+
+    const regimeSecond = second.getByLabel('Régimen fiscal', { exact: true });
+    await regimeSecond.click();
+    await regimeSecond.fill('PEMEX');
+    await page.getByRole('option', { name: '617 - PEMEX' }).click();
+
+    await saveCollection(page, '/account/billing');
+
+    await page.reload();
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(2);
+
+    await page.getByRole('button', { name: 'Eliminar perfil fiscal 1' }).click();
+    await saveCollection(page, '/account/billing');
+
+    await page.reload();
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(1);
+    expect(await page.getByLabel('Alias', { exact: true }).inputValue()).toBe('Segundo');
     expect(consoleErrors).toEqual([]);
   });
 
@@ -359,6 +396,70 @@ describe('Users list E2E', () => {
     await deleteUserFromForm(page, email);
   });
 
+  it('manages the address and tax collections from the admin user form', async () => {
+    await loginAsAdmin(page);
+    const stamp = Date.now();
+    const email = await createUserThroughForm(page, stamp, 'Secret123');
+
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+
+    const addressItems = page.locator('[data-collection=addresses] [data-slot=collection-item]');
+    const taxItems = page.locator('[data-collection=taxProfiles] [data-slot=collection-item]');
+
+    await page.getByRole('button', { name: 'Agregar dirección' }).click();
+    await addressItems.last().getByLabel('Nombre', { exact: true }).fill('Casa Admin');
+    await addressItems.last().getByLabel('Calle', { exact: true }).fill('Av. Admin');
+    await addressItems.last().getByLabel('Número exterior', { exact: true }).fill('1');
+    await addressItems.last().getByLabel('Colonia', { exact: true }).fill('Centro');
+    await addressItems.last().getByLabel('Municipio', { exact: true }).fill('Municipio');
+    await addressItems.last().getByLabel('Estado', { exact: true }).fill('Estado');
+    await addressItems.last().getByLabel('Código postal', { exact: true }).fill('00001');
+
+    await page.getByRole('button', { name: 'Agregar perfil' }).click();
+    await taxItems.last().getByLabel('Alias', { exact: true }).fill('Empresa Admin');
+    await taxItems.last().getByLabel('Razón social', { exact: true }).fill('Admin S.A. de C.V.');
+    await taxItems.last().getByLabel('RFC', { exact: true }).fill('ABC123456789');
+    await taxItems.last().getByLabel('Código postal fiscal', { exact: true }).fill('00001');
+
+    const cfdi = taxItems.last().getByLabel('Uso de CFDI', { exact: true });
+    await cfdi.click();
+    await cfdi.fill('mobiliario');
+    await page
+      .getByRole('option', { name: 'I02 - Mobiliario y equipo de oficina para inversiones' })
+      .click();
+
+    const regime = taxItems.last().getByLabel('Régimen fiscal', { exact: true });
+    await regime.click();
+    await regime.fill('PEMEX');
+    await page.getByRole('option', { name: '617 - PEMEX' }).click();
+
+    await page.click('#user-form button[type="submit"]');
+    await page.waitForURL(`${BASE}/dashboard/users`);
+    await waitForTable(page);
+
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+
+    expect(await addressItems.count()).toBe(1);
+    expect(await page.locator('#addresses-0-name').inputValue()).toBe('Casa Admin');
+    expect(await taxItems.count()).toBe(1);
+    expect(await page.locator('#taxProfiles-0-alias').inputValue()).toBe('Empresa Admin');
+
+    await page.getByRole('button', { name: 'Eliminar dirección 1' }).click();
+    await page.getByRole('button', { name: 'Eliminar perfil fiscal 1' }).click();
+    await page.click('#user-form button[type="submit"]');
+    await page.waitForURL(`${BASE}/dashboard/users`);
+    await waitForTable(page);
+
+    await gotoUsersByEmail(page, email);
+    await openEditForm(page, `E2E Usuario ${stamp}`);
+    expect(await addressItems.count()).toBe(0);
+    expect(await taxItems.count()).toBe(0);
+
+    await deleteUserFromForm(page, email);
+  });
+
   it('manages an address from the own profile', async () => {
     await loginAsAdmin(page);
     const stamp = Date.now();
@@ -388,17 +489,37 @@ describe('Users list E2E', () => {
 
     await page.reload();
     expect(await page.getByLabel('Nombre', { exact: true }).inputValue()).toBe(addressName);
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(1);
 
     await page.getByLabel('Calle', { exact: true }).fill('Av. Insurgentes');
     await saveCollection(page, '/account/addresses');
 
     await page.reload();
     expect(await page.getByLabel('Calle', { exact: true }).inputValue()).toBe('Av. Insurgentes');
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(1);
 
-    await page
-      .getByRole('button', { name: /Eliminar dirección/ })
-      .first()
-      .click();
+    await page.getByRole('button', { name: 'Agregar dirección' }).click();
+    const second = page.locator('[data-slot=collection-item]').nth(1);
+    await second.getByLabel('Nombre', { exact: true }).fill('Oficina');
+    await second.getByLabel('Calle', { exact: true }).fill('Av. Universidad');
+    await second.getByLabel('Número exterior', { exact: true }).fill('500');
+    await second.getByLabel('Colonia', { exact: true }).fill('Del Valle');
+    await second.getByLabel('Municipio', { exact: true }).fill('Benito Juárez');
+    await second.getByLabel('Estado', { exact: true }).fill('Ciudad de México');
+    await second.getByLabel('Código postal', { exact: true }).fill('03100');
+    await saveCollection(page, '/account/addresses');
+
+    await page.reload();
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(2);
+
+    await page.getByRole('button', { name: 'Eliminar dirección 1' }).click();
+    await saveCollection(page, '/account/addresses');
+
+    await page.reload();
+    expect(await page.locator('[data-slot=collection-item]').count()).toBe(1);
+    expect(await page.getByLabel('Nombre', { exact: true }).inputValue()).toBe('Oficina');
+
+    await page.getByRole('button', { name: 'Eliminar dirección 1' }).click();
     await saveCollection(page, '/account/addresses');
 
     await page.reload();
