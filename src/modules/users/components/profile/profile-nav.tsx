@@ -1,8 +1,14 @@
 'use client';
 
-import { ChevronDownIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/select';
 import { cn } from '@/shared/utils/cn';
 
 const SECTIONS: { href: string; label: string; exact?: boolean }[] = [
@@ -49,23 +55,19 @@ export function ProfileNav() {
         })}
       </nav>
 
-      <div className='relative md:hidden'>
-        <label htmlFor='account-section' className='sr-only'>
-          Sección de la cuenta
-        </label>
-        <select
-          id='account-section'
-          value={activeHref}
-          onChange={(event) => router.push(event.target.value)}
-          className='h-9 w-full appearance-none rounded-md border border-input bg-transparent pr-8 pl-2.5 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
-        >
-          {SECTIONS.map((section) => (
-            <option key={section.href} value={section.href}>
-              {section.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon className='pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground' />
+      <div className='md:hidden'>
+        <Select value={activeHref} onValueChange={(value) => router.push(value)}>
+          <SelectTrigger className='w-full' aria-label='Sección de la cuenta' id='account-section'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className='z-70'>
+            {SECTIONS.map((section) => (
+              <SelectItem key={section.href} value={section.href}>
+                {section.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </>
   );
