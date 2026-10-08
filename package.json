@@ -19,6 +19,8 @@
     "db:seed": "tsx --env-file=.env src/infrastructure/seed/index.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/s3-request-presigner": "^3.1147.0",
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.9.1",
     "@shadcn/react": "^0.3.0",
