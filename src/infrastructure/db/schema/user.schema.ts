@@ -62,7 +62,6 @@ export const userTaxProfile = snakeCase.table('user_tax_profile', {
   cfdiUse: text('cfdi_use').notNull(),
   taxRegime: text('tax_regime').notNull(),
   taxPostalCode: text('tax_postal_code').notNull(),
-  rfcUrl: text('rfc_url'),
   isDefault: boolean('is_default').notNull().default(false),
   ...ordering,
   ...timestamps,

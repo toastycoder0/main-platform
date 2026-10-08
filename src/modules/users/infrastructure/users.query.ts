@@ -9,6 +9,7 @@ import {
   userRole,
   userTaxProfile,
 } from '@/infrastructure/db/schema';
+import { listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type {
@@ -45,7 +46,7 @@ function mapAddress(row: typeof userAddress.$inferSelect): UserAddressDTO {
   };
 }
 
-function mapTaxProfile(row: typeof userTaxProfile.$inferSelect): UserTaxProfileDTO {
+function mapTaxProfile(row: typeof userTaxProfile.$inferSelect, rfcUrl: string): UserTaxProfileDTO {
   return {
     id: row.id,
     alias: row.alias,
@@ -54,7 +55,7 @@ function mapTaxProfile(row: typeof userTaxProfile.$inferSelect): UserTaxProfileD
     cfdiUse: row.cfdiUse,
     taxRegime: row.taxRegime,
     taxPostalCode: row.taxPostalCode,
-    rfcUrl: row.rfcUrl ?? '',
+    rfcUrl,
     isDefault: row.isDefault,
   };
 }
@@ -204,13 +205,18 @@ export async function listUserTaxProfiles(
   ctx: RequestContext,
   userId: string,
 ): Promise<UserTaxProfileDTO[]> {
-  const rows = await ctx.db
-    .select()
-    .from(userTaxProfile)
-    .where(eq(userTaxProfile.userId, userId))
-    .orderBy(asc(userTaxProfile.sortOrder), asc(userTaxProfile.id));
+  const [rows, files] = await Promise.all([
+    ctx.db
+      .select()
+      .from(userTaxProfile)
+      .where(eq(userTaxProfile.userId, userId))
+      .orderBy(asc(userTaxProfile.sortOrder), asc(userTaxProfile.id)),
+    listOwnerFiles(ctx.db, { entity: 'user', scope: 'taxDocument', ownerId: userId }),
+  ]);
 
-  return rows.map(mapTaxProfile);
+  const urlByOrder = new Map(files.map((item) => [item.sortOrder, item.url]));
+
+  return rows.map((row) => mapTaxProfile(row, urlByOrder.get(row.sortOrder) ?? ''));
 }
 
 export async function getProfile(ctx: RequestContext, userId: string): Promise<ProfileDTO | null> {

@@ -291,12 +291,6 @@ export function TaxProfilesCollection<T extends FieldValues>({ control }: Collec
                 label='Código postal fiscal'
                 placeholder='00000'
               />
-              <ControlledFileUploader
-                control={taxControl}
-                name={`taxProfiles.${index}.rfcUrl`}
-                fileType='tax-document'
-                label='Cédula del RFC (opcional)'
-              />
               <ControlledCombobox
                 control={taxControl}
                 name={`taxProfiles.${index}.cfdiUse`}
@@ -318,6 +312,16 @@ export function TaxProfilesCollection<T extends FieldValues>({ control }: Collec
               name={`taxProfiles.${index}.isDefault`}
               label='Perfil fiscal predeterminado'
             />
+
+            <div className='mt-4 border-t pt-4'>
+              <ControlledFileUploader
+                control={taxControl}
+                name={`taxProfiles.${index}.rfcUrl`}
+                entity='user'
+                scope='taxDocument'
+                label='Cédula del RFC (opcional)'
+              />
+            </div>
           </CardContent>
         </Card>
       ))}

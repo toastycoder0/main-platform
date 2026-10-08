@@ -22,8 +22,7 @@ import {
 } from '@/shared/components/attachment';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/shared/components/field';
 import { Spinner } from '@/shared/components/spinner';
-import type { FileTypeSlug } from '@/shared/constants/file-registry';
-import { FILE_REGISTRY } from '@/shared/constants/file-registry';
+import { type FileEntity, getScopeConfig } from '@/shared/constants/file-registry';
 import { cn } from '@/shared/utils/cn';
 
 interface FileItem {
@@ -167,17 +166,26 @@ function fileIsValid(file: File | null, allowedTypes: string[], maxSize: number)
 export function ControlledFileUploader<T extends FieldValues>({
   control,
   name,
-  fileType,
+  entity,
+  scope,
   label,
   description,
 }: {
   control: Control<T>;
   name: string;
-  fileType: FileTypeSlug;
+  entity: FileEntity;
+  scope: string;
   label?: string;
   description?: string;
 }) {
-  const config = FILE_REGISTRY[fileType];
+  const config = getScopeConfig(entity, scope);
+
+  if (!config) {
+    throw new Error(`Unknown file scope: ${entity}.${scope}`);
+  }
+
+  const { allowedTypes, maxCount, maxSize } = config;
+
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<FileItem[]>([]);
@@ -186,7 +194,8 @@ export function ControlledFileUploader<T extends FieldValues>({
 
   async function upload(file: File): Promise<string | null> {
     const result = await requestUploadUrl({
-      fileType,
+      entity,
+      scope,
       fileName: file.name,
       contentType: file.type,
       size: file.size,
@@ -204,7 +213,7 @@ export function ControlledFileUploader<T extends FieldValues>({
       return null;
     }
 
-    const confirm = await confirmUpload({ fileKey: result.data.tempKey, fileType });
+    const confirm = await confirmUpload({ fileKey: result.data.tempKey });
     return confirm.success ? result.data.tempKey : null;
   }
 
@@ -232,9 +241,9 @@ export function ControlledFileUploader<T extends FieldValues>({
       onChangeRef.current('');
     }
 
-    for (let i = 0; i < files.length && items.length < config.maxCount; i++) {
+    for (let i = 0; i < files.length && items.length < maxCount; i++) {
       const file = files.item(i);
-      if (fileIsValid(file, config.allowedTypes, config.maxSize)) {
+      if (fileIsValid(file, allowedTypes, maxSize)) {
         await addFile(file);
       }
     }
@@ -273,9 +282,9 @@ export function ControlledFileUploader<T extends FieldValues>({
             {description && <FieldDescription>{description}</FieldDescription>}
 
             <FileUploader
-              accept={config.allowedTypes.join(',')}
-              maxCount={config.maxCount}
-              maxSize={config.maxSize}
+              accept={allowedTypes.join(',')}
+              maxCount={maxCount}
+              maxSize={maxSize}
               fileInputRef={fileInputRef}
               inputId={inputId}
               items={entries}
@@ -284,10 +293,10 @@ export function ControlledFileUploader<T extends FieldValues>({
             />
 
             <input
-              accept={config.allowedTypes.join(',')}
+              accept={allowedTypes.join(',')}
               className='hidden'
               id={inputId}
-              multiple={config.maxCount > 1}
+              multiple={maxCount > 1}
               ref={fileInputRef}
               type='file'
               onChange={(e) => {

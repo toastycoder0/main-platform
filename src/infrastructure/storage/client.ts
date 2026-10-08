@@ -1,6 +1,7 @@
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -13,6 +14,7 @@ export interface StorageClient {
   fileExists(key: string): Promise<boolean>;
   copyFile(sourceKey: string, destKey: string): Promise<void>;
   deleteFile(key: string): Promise<void>;
+  deleteFiles(keys: string[]): Promise<void>;
   getPublicUrl(key: string): string;
 }
 
@@ -59,6 +61,18 @@ export function createStorageClient(): StorageClient {
     async deleteFile(key: string): Promise<void> {
       const command = new DeleteObjectCommand({ Bucket: env.CLOUD_BUCKET, Key: key });
       await s3.send(command);
+    },
+
+    async deleteFiles(keys: string[]): Promise<void> {
+      // R2 caps a single DeleteObjects request at 1000 keys.
+      for (let i = 0; i < keys.length; i += 1000) {
+        const batch = keys.slice(i, i + 1000).map((Key) => ({ Key }));
+        const command = new DeleteObjectsCommand({
+          Bucket: env.CLOUD_BUCKET,
+          Delete: { Objects: batch },
+        });
+        await s3.send(command);
+      }
     },
 
     getPublicUrl(key: string): string {

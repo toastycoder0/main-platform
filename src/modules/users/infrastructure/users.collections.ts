@@ -31,7 +31,6 @@ function taxProfileValues(userId: string, data: TaxProfileSchema) {
     cfdiUse: data.cfdiUse,
     taxRegime: data.taxRegime,
     taxPostalCode: data.taxPostalCode,
-    rfcUrl: data.rfcUrl || null,
     isDefault: data.isDefault,
   };
 }

@@ -116,8 +116,12 @@ async function seedTaxProfiles(aliases: string[], defaultAlias?: string) {
   await db.insert(userTaxProfile).values(
     aliases.map((alias) => ({
       userId: actorUserId,
-      ...validTaxProfile(),
       alias,
+      legalName: 'Empresa S.A. de C.V.',
+      rfc: 'ABC123456789',
+      cfdiUse: 'G03',
+      taxRegime: '601',
+      taxPostalCode: '00001',
       isDefault: alias === defaultAlias,
     })),
   );
@@ -449,7 +453,7 @@ describe('saveOwnTaxProfiles', () => {
     expect(await listActorTaxProfiles()).toHaveLength(0);
   });
 
-  it('inserts profiles mapping empty rfcUrl to null and enforcing a single default', async () => {
+  it('inserts profiles enforcing a single default', async () => {
     await expect(
       saveOwnTaxProfiles({
         taxProfiles: [
@@ -464,7 +468,6 @@ describe('saveOwnTaxProfiles', () => {
     expect(rows).toHaveLength(2);
     expect(rows.filter((item) => item.isDefault)).toHaveLength(1);
     expect(rows.find((item) => item.isDefault)?.alias).toBe('Uno');
-    expect(rows[0]?.rfcUrl).toBeNull();
   });
 
   it('replaces the collection removing the profiles that are not present', async () => {

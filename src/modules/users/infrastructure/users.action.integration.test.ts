@@ -294,7 +294,6 @@ describe('createUser', () => {
       .from(userTaxProfile)
       .where(eq(userTaxProfile.userId, created?.id ?? ''));
     expect(taxRows).toHaveLength(1);
-    expect(taxRows[0]?.rfcUrl).toBeNull();
   });
 
   it('creates a user without credentials and with a plain better-auth role', async () => {
@@ -634,7 +633,6 @@ describe('updateUser', () => {
       .where(eq(userTaxProfile.userId, target.id));
     expect(taxProfiles).toHaveLength(1);
     expect(taxProfiles[0]?.alias).toBe('Empresa');
-    expect(taxProfiles[0]?.rfcUrl).toBeNull();
   });
 
   it('clears all collections with empty payloads', async () => {

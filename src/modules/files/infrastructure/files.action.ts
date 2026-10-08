@@ -1,10 +1,11 @@
 'use server';
 
+import { eq } from 'drizzle-orm';
+import { file } from '@/infrastructure/db/schema';
 import { run } from '@/infrastructure/services/next-action';
 import { storageClient } from '@/infrastructure/storage/client';
-import { extractExtension, generateFileKey, generateTempKey } from '@/infrastructure/storage/keys';
-import { FILE_REGISTRY } from '@/shared/constants/file-registry';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { extractExtension, generateTempKey } from '@/infrastructure/storage/keys';
+import { getScopeConfig } from '@/shared/constants/file-registry';
 import { AppError } from '@/shared/errors';
 import type { FileUploadResponse } from '../application/files.types';
 import {
@@ -13,45 +14,46 @@ import {
   requestUploadSchema,
 } from '../application/files.validation';
 
-export const requestUploadUrl = run(
-  { permission: PERMISSIONS.admin.files.upload, input: requestUploadSchema },
-  async (_ctx, data) => {
-    const ext = extractExtension(data.fileName);
-    const config = FILE_REGISTRY[data.fileType];
+export const requestUploadUrl = run({ input: requestUploadSchema }, async (ctx, data) => {
+  const config = getScopeConfig(data.entity, data.scope);
 
-    if (data.size > config.maxSize) {
-      throw new AppError(
-        'invalid_input',
-        `El archivo excede el tamaño máximo de ${config.maxSize / 1024 / 1024}MB`,
-      );
-    }
+  if (!config) {
+    throw new AppError('invalid_input', 'El tipo de archivo no es válido');
+  }
 
-    if (config.allowedTypes.length > 0 && !config.allowedTypes.includes(data.contentType)) {
-      throw new AppError('invalid_input', 'El tipo de archivo no está permitido');
-    }
+  if (data.size > config.maxSize) {
+    throw new AppError(
+      'invalid_input',
+      `El archivo excede el tamaño máximo de ${config.maxSize / 1024 / 1024}MB`,
+    );
+  }
 
-    const tempKey = generateTempKey(ext);
-    const finalKey = generateFileKey(config.path, ext);
-    const uploadUrl = await storageClient.getPresignedUploadUrl(tempKey, data.contentType);
+  if (config.allowedTypes.length > 0 && !config.allowedTypes.includes(data.contentType)) {
+    throw new AppError('invalid_input', 'El tipo de archivo no está permitido');
+  }
 
-    return { uploadUrl, tempKey, finalKey } satisfies FileUploadResponse;
-  },
-);
+  const tempKey = generateTempKey(extractExtension(data.fileName));
+  const uploadUrl = await storageClient.getPresignedUploadUrl(tempKey, data.contentType);
 
-export const confirmUpload = run(
-  { permission: PERMISSIONS.admin.files.upload, input: confirmUploadSchema },
-  async (_ctx, data) => {
-    const exists = await storageClient.fileExists(data.fileKey);
+  await ctx.db.insert(file).values({
+    tempKey,
+    entity: data.entity,
+    scope: data.scope,
+    ownerId: null,
+  });
 
-    if (!exists) {
-      throw new AppError('invalid_input', 'El archivo no se encontró en el almacenamiento');
-    }
-  },
-);
+  return { uploadUrl, tempKey } satisfies FileUploadResponse;
+});
 
-export const deleteTempUpload = run(
-  { permission: PERMISSIONS.admin.files.upload, input: deleteTempUploadSchema },
-  async (_ctx, data) => {
-    await storageClient.deleteFile(data.fileKey);
-  },
-);
+export const confirmUpload = run({ input: confirmUploadSchema }, async (_ctx, data) => {
+  const exists = await storageClient.fileExists(data.fileKey);
+
+  if (!exists) {
+    throw new AppError('invalid_input', 'El archivo no se encontró en el almacenamiento');
+  }
+});
+
+export const deleteTempUpload = run({ input: deleteTempUploadSchema }, async (ctx, data) => {
+  await storageClient.deleteFile(data.fileKey);
+  await ctx.db.delete(file).where(eq(file.tempKey, data.fileKey));
+});
