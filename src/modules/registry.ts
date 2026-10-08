@@ -1,4 +1,5 @@
 import { authManifest } from './auth/manifest';
+import { filesManifest } from './files/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
 import { rolesManifest } from './roles/manifest';
 import { usersManifest } from './users/manifest';
@@ -8,7 +9,7 @@ import { usersManifest } from './users/manifest';
 // build-time codegen or server-side resolution) is a future consideration —
 // the pure registry functions below already accept `ModuleManifest[]`, so
 // that migration only has to change how this list is populated.
-const manifests: ModuleManifest[] = [authManifest, rolesManifest, usersManifest];
+const manifests: ModuleManifest[] = [authManifest, filesManifest, rolesManifest, usersManifest];
 
 interface SectionMeta {
   rootPath: string;

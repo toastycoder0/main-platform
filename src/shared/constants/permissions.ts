@@ -13,5 +13,8 @@ export const PERMISSIONS = {
       create: 'admin.roles.create',
       edit: 'admin.roles.edit',
     },
+    files: {
+      upload: 'admin.files.upload',
+    },
   },
 } as const;

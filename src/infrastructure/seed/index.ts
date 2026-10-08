@@ -18,6 +18,7 @@ const INITIAL_PERMISSIONS = [
   { slug: admin.roles.access, name: 'Acceso a gestión de roles', type: 'access' as const },
   { slug: admin.roles.create, name: 'Crear roles', type: 'action' as const },
   { slug: admin.roles.edit, name: 'Editar roles', type: 'action' as const },
+  { slug: admin.files.upload, name: 'Subir archivos', type: 'action' as const },
 ];
 
 const ROLE_SLUG = 'super_admin';
