@@ -4,6 +4,7 @@ import type { Control, FieldValues } from 'react-hook-form';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import type { PermissionOptionDTO } from '@/modules/roles/application/roles.types';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
+import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { CFDI_USE_OPTIONS, FISCAL_REGIME_OPTIONS } from '../application/users.cfdi';
 import type {
   AddressSchema,
@@ -290,11 +291,11 @@ export function TaxProfilesCollection<T extends FieldValues>({ control }: Collec
                 label='Código postal fiscal'
                 placeholder='00000'
               />
-              <ControlledInput
+              <ControlledFileUploader
                 control={taxControl}
                 name={`taxProfiles.${index}.rfcUrl`}
-                label='URL del RFC (opcional)'
-                placeholder='https://…'
+                fileType='tax-document'
+                label='Cédula del RFC (opcional)'
               />
               <ControlledCombobox
                 control={taxControl}
