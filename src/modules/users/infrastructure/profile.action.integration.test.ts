@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
 import { account, session, user, userAddress, userTaxProfile } from '@/infrastructure/db/schema';
+import { MAX_ADDRESSES, MAX_TAX_PROFILES } from '../application/users.validation';
 import {
   changeOwnPassword,
   saveOwnAddresses,
@@ -77,6 +78,49 @@ function validAddress() {
     phone: '',
     isDefault: false,
   };
+}
+
+function validTaxProfile() {
+  return {
+    alias: 'Empresa',
+    legalName: 'Empresa S.A. de C.V.',
+    rfc: 'ABC123456789',
+    cfdiUse: 'G03',
+    taxRegime: '601',
+    taxPostalCode: '00001',
+    rfcUrl: '',
+    isDefault: false,
+  };
+}
+
+function listActorAddresses() {
+  return db.select().from(userAddress).where(eq(userAddress.userId, actorUserId));
+}
+
+function listActorTaxProfiles() {
+  return db.select().from(userTaxProfile).where(eq(userTaxProfile.userId, actorUserId));
+}
+
+async function seedAddresses(names: string[], defaultName?: string) {
+  await db.insert(userAddress).values(
+    names.map((name) => ({
+      userId: actorUserId,
+      ...validAddress(),
+      name,
+      isDefault: name === defaultName,
+    })),
+  );
+}
+
+async function seedTaxProfiles(aliases: string[], defaultAlias?: string) {
+  await db.insert(userTaxProfile).values(
+    aliases.map((alias) => ({
+      userId: actorUserId,
+      ...validTaxProfile(),
+      alias,
+      isDefault: alias === defaultAlias,
+    })),
+  );
 }
 
 beforeAll(async () => {
@@ -213,7 +257,37 @@ describe('saveOwnAddresses', () => {
     await db.delete(userAddress).where(eq(userAddress.userId, actorUserId));
   });
 
-  it('inserts addresses and enforces a single default', async () => {
+  it('rejects when there is no session without persisting', async () => {
+    state.ctx = { ...testContext(), session: null };
+
+    const result = await saveOwnAddresses({ addresses: [validAddress()] });
+
+    expect(result.success).toBe(false);
+    expect(await listActorAddresses()).toHaveLength(0);
+  });
+
+  it('rejects invalid input without persisting', async () => {
+    const result = await saveOwnAddresses({
+      addresses: [{ ...validAddress(), postalCode: 'abc' }],
+    });
+
+    expect(result.success).toBe(false);
+    expect(await listActorAddresses()).toHaveLength(0);
+  });
+
+  it('rejects more than the maximum number of addresses', async () => {
+    const addresses = Array.from({ length: MAX_ADDRESSES + 1 }, (_, index) => ({
+      ...validAddress(),
+      name: `Dir ${index}`,
+    }));
+
+    const result = await saveOwnAddresses({ addresses });
+
+    expect(result.success).toBe(false);
+    expect(await listActorAddresses()).toHaveLength(0);
+  });
+
+  it('inserts addresses mapping empty optionals to null and enforcing a single default', async () => {
     await expect(
       saveOwnAddresses({
         addresses: [
@@ -223,162 +297,274 @@ describe('saveOwnAddresses', () => {
       }),
     ).rejects.toThrow();
 
-    const rows = await db.select().from(userAddress).where(eq(userAddress.userId, actorUserId));
+    const rows = await listActorAddresses();
 
     expect(rows).toHaveLength(2);
 
     const defaults = rows.filter((item) => item.isDefault);
     expect(defaults).toHaveLength(1);
     expect(defaults[0]?.name).toBe('Casa');
+
+    const casa = rows.find((item) => item.name === 'Casa');
+    expect(casa?.interiorNumber).toBeNull();
+    expect(casa?.phone).toBeNull();
   });
 
-  it('updates existing addresses preserving ids and removes the missing ones', async () => {
-    const seeded = await db
-      .insert(userAddress)
-      .values([
-        { userId: actorUserId, ...validAddress(), name: 'Primera' },
-        { userId: actorUserId, ...validAddress(), name: 'Segunda' },
-      ])
-      .returning({ id: userAddress.id });
+  it('replaces the collection removing the addresses that are not present', async () => {
+    await seedAddresses(['A', 'B']);
 
-    const kept = seeded[0];
-    const removed = seeded[1];
+    await expect(
+      saveOwnAddresses({ addresses: [{ ...validAddress(), name: 'Solo' }] }),
+    ).rejects.toThrow();
 
-    if (!kept || !removed) {
-      throw new Error('Failed to seed addresses');
-    }
+    const rows = await listActorAddresses();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.name).toBe('Solo');
+  });
+
+  it('handles a mixed update, add and remove in a single save', async () => {
+    await seedAddresses(['A', 'B'], 'A');
 
     await expect(
       saveOwnAddresses({
-        addresses: [{ id: kept.id, ...validAddress(), name: 'Primera editada' }],
+        addresses: [
+          { ...validAddress(), name: 'A editada', isDefault: true },
+          { ...validAddress(), name: 'C' },
+        ],
       }),
     ).rejects.toThrow();
 
-    const rows = await db.select().from(userAddress).where(eq(userAddress.userId, actorUserId));
+    const rows = await listActorAddresses();
+    const names = rows.map((item) => item.name).sort();
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.id).toBe(kept.id);
-    expect(rows[0]?.name).toBe('Primera editada');
-
-    const gone = await db
-      .select({ id: userAddress.id })
-      .from(userAddress)
-      .where(eq(userAddress.id, removed.id));
-    expect(gone).toHaveLength(0);
+    expect(names).toEqual(['A editada', 'C']);
+    expect(rows.filter((item) => item.isDefault)).toHaveLength(1);
+    expect(rows.find((item) => item.isDefault)?.name).toBe('A editada');
   });
 
-  it('ignores ids owned by another user', async () => {
-    const foreign = await createForeignAddress();
+  it('clears all addresses with an empty payload', async () => {
+    await seedAddresses(['A', 'B']);
+
+    await expect(saveOwnAddresses({ addresses: [] })).rejects.toThrow();
+
+    expect(await listActorAddresses()).toHaveLength(0);
+  });
+
+  it('moves the default to another address', async () => {
+    await seedAddresses(['A', 'B'], 'A');
 
     await expect(
-      saveOwnAddresses({ addresses: [{ id: foreign, ...validAddress(), name: 'Intento' }] }),
+      saveOwnAddresses({
+        addresses: [
+          { ...validAddress(), name: 'A' },
+          { ...validAddress(), name: 'B', isDefault: true },
+        ],
+      }),
     ).rejects.toThrow();
 
-    const actorRows = await db
+    const rows = await listActorAddresses();
+    const defaults = rows.filter((item) => item.isDefault);
+
+    expect(defaults).toHaveLength(1);
+    expect(defaults[0]?.name).toBe('B');
+  });
+
+  it('leaves no default when the default address is removed', async () => {
+    await seedAddresses(['A', 'B'], 'A');
+
+    await expect(
+      saveOwnAddresses({ addresses: [{ ...validAddress(), name: 'B' }] }),
+    ).rejects.toThrow();
+
+    const rows = await listActorAddresses();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.name).toBe('B');
+    expect(rows[0]?.isDefault).toBe(false);
+  });
+
+  it('is idempotent for the same payload', async () => {
+    const addresses = [
+      { ...validAddress(), name: 'A', isDefault: true },
+      { ...validAddress(), name: 'B' },
+    ];
+
+    await expect(saveOwnAddresses({ addresses })).rejects.toThrow();
+    await expect(saveOwnAddresses({ addresses })).rejects.toThrow();
+
+    const rows = await listActorAddresses();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((item) => item.name).sort()).toEqual(['A', 'B']);
+  });
+
+  it('does not touch another user addresses', async () => {
+    const foreign = await createForeignUserWithAddress();
+
+    await expect(
+      saveOwnAddresses({ addresses: [{ ...validAddress(), name: 'Propia' }] }),
+    ).rejects.toThrow();
+
+    const foreignRows = await db
       .select()
       .from(userAddress)
-      .where(eq(userAddress.userId, actorUserId));
+      .where(eq(userAddress.userId, foreign.userId));
 
-    expect(actorRows).toHaveLength(1);
-    expect(actorRows[0]?.name).toBe('Intento');
-
-    const foreignRow = await db.select().from(userAddress).where(eq(userAddress.id, foreign));
-    expect(foreignRow).toHaveLength(1);
-    expect(foreignRow[0]?.name).toBe('Ajena');
+    expect(foreignRows).toHaveLength(1);
+    expect(foreignRows[0]?.id).toBe(foreign.addressId);
+    expect(foreignRows[0]?.name).toBe('Ajena');
   });
 });
 
 describe('saveOwnTaxProfiles', () => {
-  const validTaxProfile = {
-    alias: 'Empresa',
-    legalName: 'Empresa S.A. de C.V.',
-    rfc: 'ABC123456789',
-    cfdiUse: 'G03',
-    taxRegime: '601',
-    taxPostalCode: '00001',
-    rfcUrl: '',
-    isDefault: true,
-  };
-
   beforeEach(async () => {
     await db.delete(userTaxProfile).where(eq(userTaxProfile.userId, actorUserId));
   });
 
-  it('inserts profiles and enforces a single default', async () => {
+  it('rejects when there is no session without persisting', async () => {
+    state.ctx = { ...testContext(), session: null };
+
+    const result = await saveOwnTaxProfiles({ taxProfiles: [validTaxProfile()] });
+
+    expect(result.success).toBe(false);
+    expect(await listActorTaxProfiles()).toHaveLength(0);
+  });
+
+  it('rejects an invalid fiscal regime without persisting', async () => {
+    const result = await saveOwnTaxProfiles({
+      taxProfiles: [{ ...validTaxProfile(), taxRegime: '999' }],
+    });
+
+    expect(result.success).toBe(false);
+    expect(await listActorTaxProfiles()).toHaveLength(0);
+  });
+
+  it('rejects more than the maximum number of profiles', async () => {
+    const taxProfiles = Array.from({ length: MAX_TAX_PROFILES + 1 }, (_, index) => ({
+      ...validTaxProfile(),
+      alias: `Perfil ${index}`,
+    }));
+
+    const result = await saveOwnTaxProfiles({ taxProfiles });
+
+    expect(result.success).toBe(false);
+    expect(await listActorTaxProfiles()).toHaveLength(0);
+  });
+
+  it('inserts profiles mapping empty rfcUrl to null and enforcing a single default', async () => {
     await expect(
       saveOwnTaxProfiles({
-        taxProfiles: [validTaxProfile, { ...validTaxProfile, alias: 'Dos', isDefault: true }],
+        taxProfiles: [
+          { ...validTaxProfile(), alias: 'Uno', isDefault: true },
+          { ...validTaxProfile(), alias: 'Dos', isDefault: true },
+        ],
       }),
     ).rejects.toThrow();
 
-    const rows = await db
-      .select()
-      .from(userTaxProfile)
-      .where(eq(userTaxProfile.userId, actorUserId));
+    const rows = await listActorTaxProfiles();
 
     expect(rows).toHaveLength(2);
     expect(rows.filter((item) => item.isDefault)).toHaveLength(1);
+    expect(rows.find((item) => item.isDefault)?.alias).toBe('Uno');
     expect(rows[0]?.rfcUrl).toBeNull();
   });
 
-  it('updates an existing profile preserving its id', async () => {
-    const seeded = await db
-      .insert(userTaxProfile)
-      .values({ userId: actorUserId, ...validTaxProfile })
-      .returning({ id: userTaxProfile.id });
-    const profile = seeded[0];
+  it('replaces the collection removing the profiles that are not present', async () => {
+    await seedTaxProfiles(['A', 'B']);
 
-    if (!profile) {
-      throw new Error('Failed to seed tax profile');
-    }
+    await expect(
+      saveOwnTaxProfiles({ taxProfiles: [{ ...validTaxProfile(), alias: 'Solo' }] }),
+    ).rejects.toThrow();
+
+    const rows = await listActorTaxProfiles();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.alias).toBe('Solo');
+  });
+
+  it('handles a mixed update, add and remove in a single save', async () => {
+    await seedTaxProfiles(['A', 'B'], 'A');
 
     await expect(
       saveOwnTaxProfiles({
-        taxProfiles: [{ id: profile.id, ...validTaxProfile, alias: 'Editado' }],
+        taxProfiles: [
+          { ...validTaxProfile(), alias: 'A editada', isDefault: true },
+          { ...validTaxProfile(), alias: 'C' },
+        ],
       }),
     ).rejects.toThrow();
 
-    const rows = await db
-      .select()
-      .from(userTaxProfile)
-      .where(eq(userTaxProfile.userId, actorUserId));
-
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.id).toBe(profile.id);
-    expect(rows[0]?.alias).toBe('Editado');
+    const rows = await listActorTaxProfiles();
+    expect(rows.map((item) => item.alias).sort()).toEqual(['A editada', 'C']);
+    expect(rows.filter((item) => item.isDefault)).toHaveLength(1);
   });
 
-  it('ignores ids owned by another user', async () => {
-    const foreign = await createForeignTaxProfile();
+  it('clears all profiles with an empty payload', async () => {
+    await seedTaxProfiles(['A', 'B']);
+
+    await expect(saveOwnTaxProfiles({ taxProfiles: [] })).rejects.toThrow();
+
+    expect(await listActorTaxProfiles()).toHaveLength(0);
+  });
+
+  it('moves the default to another profile', async () => {
+    await seedTaxProfiles(['A', 'B'], 'A');
 
     await expect(
-      saveOwnTaxProfiles({ taxProfiles: [{ id: foreign, ...validTaxProfile, alias: 'Intento' }] }),
+      saveOwnTaxProfiles({
+        taxProfiles: [
+          { ...validTaxProfile(), alias: 'A' },
+          { ...validTaxProfile(), alias: 'B', isDefault: true },
+        ],
+      }),
     ).rejects.toThrow();
 
-    const actorRows = await db
+    const rows = await listActorTaxProfiles();
+    const defaults = rows.filter((item) => item.isDefault);
+
+    expect(defaults).toHaveLength(1);
+    expect(defaults[0]?.alias).toBe('B');
+  });
+
+  it('is idempotent for the same payload', async () => {
+    const taxProfiles = [
+      { ...validTaxProfile(), alias: 'A', isDefault: true },
+      { ...validTaxProfile(), alias: 'B' },
+    ];
+
+    await expect(saveOwnTaxProfiles({ taxProfiles })).rejects.toThrow();
+    await expect(saveOwnTaxProfiles({ taxProfiles })).rejects.toThrow();
+
+    const rows = await listActorTaxProfiles();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((item) => item.alias).sort()).toEqual(['A', 'B']);
+  });
+
+  it('does not touch another user profiles', async () => {
+    const foreign = await createForeignUserWithTaxProfile();
+
+    await expect(
+      saveOwnTaxProfiles({ taxProfiles: [{ ...validTaxProfile(), alias: 'Propia' }] }),
+    ).rejects.toThrow();
+
+    const foreignRows = await db
       .select()
       .from(userTaxProfile)
-      .where(eq(userTaxProfile.userId, actorUserId));
+      .where(eq(userTaxProfile.userId, foreign.userId));
 
-    expect(actorRows).toHaveLength(1);
-    expect(actorRows[0]?.alias).toBe('Intento');
-
-    const foreignRow = await db.select().from(userTaxProfile).where(eq(userTaxProfile.id, foreign));
-    expect(foreignRow).toHaveLength(1);
-    expect(foreignRow[0]?.alias).toBe('Ajena');
+    expect(foreignRows).toHaveLength(1);
+    expect(foreignRows[0]?.id).toBe(foreign.taxProfileId);
+    expect(foreignRows[0]?.alias).toBe('Ajena');
   });
 });
 
-let foreignAddressCounter = 0;
+let foreignCounter = 0;
 
-async function createForeignAddress(): Promise<string> {
-  foreignAddressCounter += 1;
+async function createForeignUser(): Promise<string> {
+  foreignCounter += 1;
   const inserted = await db
     .insert(user)
     .values({
       firstName: 'Foreign',
       lastName: 'Owner',
-      email: `${scope}.foreign${foreignAddressCounter}@example.com`,
+      email: `${scope}.foreign${foreignCounter}@example.com`,
     })
     .returning({ id: user.id });
   const owner = inserted.at(0);
@@ -388,11 +574,15 @@ async function createForeignAddress(): Promise<string> {
   }
 
   createdUserIds.push(owner.id);
+  return owner.id;
+}
 
+async function createForeignUserWithAddress(): Promise<{ userId: string; addressId: string }> {
+  const userId = await createForeignUser();
   const addressRows = await db
     .insert(userAddress)
     .values({
-      userId: owner.id,
+      userId,
       name: 'Ajena',
       street: 'Calle Ajena',
       exteriorNumber: '2',
@@ -409,33 +599,18 @@ async function createForeignAddress(): Promise<string> {
     throw new Error('Failed to create foreign address');
   }
 
-  return address.id;
+  return { userId, addressId: address.id };
 }
 
-let foreignTaxCounter = 0;
-
-async function createForeignTaxProfile(): Promise<string> {
-  foreignTaxCounter += 1;
-  const inserted = await db
-    .insert(user)
-    .values({
-      firstName: 'ForeignTax',
-      lastName: 'Owner',
-      email: `${scope}.foreigntax${foreignTaxCounter}@example.com`,
-    })
-    .returning({ id: user.id });
-  const owner = inserted.at(0);
-
-  if (!owner) {
-    throw new Error('Failed to create foreign owner');
-  }
-
-  createdUserIds.push(owner.id);
-
+async function createForeignUserWithTaxProfile(): Promise<{
+  userId: string;
+  taxProfileId: string;
+}> {
+  const userId = await createForeignUser();
   const taxRows = await db
     .insert(userTaxProfile)
     .values({
-      userId: owner.id,
+      userId,
       alias: 'Ajena',
       legalName: 'Ajena S.A.',
       rfc: 'XYZ010101XYZ',
@@ -451,5 +626,5 @@ async function createForeignTaxProfile(): Promise<string> {
     throw new Error('Failed to create foreign tax profile');
   }
 
-  return taxProfile.id;
+  return { userId, taxProfileId: taxProfile.id };
 }

@@ -16,6 +16,7 @@ import {
   userTaxProfile,
 } from '@/infrastructure/db/schema';
 import { PERMISSIONS } from '@/shared/constants/permissions';
+import { MAX_ADDRESSES, MAX_TAX_PROFILES } from '../application/users.validation';
 import {
   adminResetPassword,
   banUser,
@@ -378,6 +379,63 @@ describe('createUser', () => {
       error: 'La lista de permisos contiene elementos inválidos',
     });
   });
+
+  it('creates the user enforcing a single default address and tax profile', async () => {
+    const payload = {
+      ...validUserPayload,
+      email: `${scope}.defaults@example.com`,
+      password: '',
+      roleIds: [],
+      overrides: [],
+      addresses: [
+        { ...validAddress(), name: 'Primera', isDefault: true },
+        { ...validAddress(), name: 'Segunda', isDefault: true },
+      ],
+      taxProfiles: [
+        { ...validTaxProfile(), alias: 'Uno', isDefault: true },
+        { ...validTaxProfile(), alias: 'Dos', isDefault: true },
+      ],
+    };
+
+    await expect(createUser(payload)).rejects.toThrow();
+
+    const [created] = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.email, payload.email))
+      .limit(1);
+    const createdId = created?.id ?? '';
+
+    const addresses = await db.select().from(userAddress).where(eq(userAddress.userId, createdId));
+    expect(addresses).toHaveLength(2);
+    expect(addresses.filter((item) => item.isDefault)).toHaveLength(1);
+    expect(addresses.find((item) => item.isDefault)?.name).toBe('Primera');
+
+    const taxProfiles = await db
+      .select()
+      .from(userTaxProfile)
+      .where(eq(userTaxProfile.userId, createdId));
+    expect(taxProfiles).toHaveLength(2);
+    expect(taxProfiles.filter((item) => item.isDefault)).toHaveLength(1);
+    expect(taxProfiles.find((item) => item.isDefault)?.alias).toBe('Uno');
+  });
+
+  it('rejects more than the maximum number of addresses', async () => {
+    const result = await createUser({
+      ...validUserPayload,
+      email: `${scope}.toomany@example.com`,
+      password: '',
+      roleIds: [],
+      overrides: [],
+      addresses: Array.from({ length: MAX_ADDRESSES + 1 }, (_, index) => ({
+        ...validAddress(),
+        name: `Dirección ${index}`,
+      })),
+      taxProfiles: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('updateUser', () => {
@@ -535,6 +593,187 @@ describe('updateUser', () => {
     });
 
     await db.update(user).set({ role: 'admin' }).where(eq(user.id, actorUserId));
+  });
+
+  it('replaces addresses and tax profiles removing the absent ones and mapping optionals to null', async () => {
+    const target = await seedTargetUser();
+
+    await db.insert(userTaxProfile).values({
+      userId: target.id,
+      alias: 'Vieja',
+      legalName: 'Vieja S.A.',
+      rfc: 'AAA000000AAA',
+      cfdiUse: 'G03',
+      taxRegime: '601',
+      taxPostalCode: '00001',
+      isDefault: false,
+    });
+
+    await expect(
+      updateUser({
+        id: target.id,
+        firstName: 'Target',
+        lastName: 'Original',
+        email: target.email,
+        roleIds: [],
+        overrides: [],
+        addresses: [validAddress()],
+        taxProfiles: [validTaxProfile()],
+      }),
+    ).rejects.toThrow();
+
+    const addresses = await db.select().from(userAddress).where(eq(userAddress.userId, target.id));
+    expect(addresses).toHaveLength(1);
+    expect(addresses[0]?.name).toBe('Oficina');
+    expect(addresses[0]?.interiorNumber).toBeNull();
+    expect(addresses[0]?.phone).toBeNull();
+
+    const taxProfiles = await db
+      .select()
+      .from(userTaxProfile)
+      .where(eq(userTaxProfile.userId, target.id));
+    expect(taxProfiles).toHaveLength(1);
+    expect(taxProfiles[0]?.alias).toBe('Empresa');
+    expect(taxProfiles[0]?.rfcUrl).toBeNull();
+  });
+
+  it('clears all collections with empty payloads', async () => {
+    const target = await seedTargetUser();
+
+    await db.insert(userTaxProfile).values({
+      userId: target.id,
+      alias: 'Vieja',
+      legalName: 'Vieja S.A.',
+      rfc: 'AAA000000AAA',
+      cfdiUse: 'G03',
+      taxRegime: '601',
+      taxPostalCode: '00001',
+      isDefault: false,
+    });
+
+    await expect(
+      updateUser({
+        id: target.id,
+        firstName: 'Target',
+        lastName: 'Original',
+        email: target.email,
+        roleIds: [],
+        overrides: [],
+        addresses: [],
+        taxProfiles: [],
+      }),
+    ).rejects.toThrow();
+
+    expect(
+      await db.select().from(userAddress).where(eq(userAddress.userId, target.id)),
+    ).toHaveLength(0);
+    expect(
+      await db.select().from(userTaxProfile).where(eq(userTaxProfile.userId, target.id)),
+    ).toHaveLength(0);
+  });
+
+  it('enforces a single default on update', async () => {
+    const target = await seedTargetUser();
+
+    await expect(
+      updateUser({
+        id: target.id,
+        firstName: 'Target',
+        lastName: 'Original',
+        email: target.email,
+        roleIds: [],
+        overrides: [],
+        addresses: [
+          { ...validAddress(), name: 'Primera', isDefault: true },
+          { ...validAddress(), name: 'Segunda', isDefault: true },
+        ],
+        taxProfiles: [],
+      }),
+    ).rejects.toThrow();
+
+    const addresses = await db.select().from(userAddress).where(eq(userAddress.userId, target.id));
+    expect(addresses.filter((item) => item.isDefault)).toHaveLength(1);
+    expect(addresses.find((item) => item.isDefault)?.name).toBe('Primera');
+  });
+
+  it('is idempotent for repeated updates', async () => {
+    const target = await seedTargetUser();
+    const payload = {
+      id: target.id,
+      firstName: 'Target',
+      lastName: 'Original',
+      email: target.email,
+      roleIds: [],
+      overrides: [],
+      addresses: [validAddress()],
+      taxProfiles: [validTaxProfile()],
+    };
+
+    await expect(updateUser(payload)).rejects.toThrow();
+    await expect(updateUser(payload)).rejects.toThrow();
+
+    expect(
+      await db.select().from(userAddress).where(eq(userAddress.userId, target.id)),
+    ).toHaveLength(1);
+    expect(
+      await db.select().from(userTaxProfile).where(eq(userTaxProfile.userId, target.id)),
+    ).toHaveLength(1);
+  });
+
+  it('rejects more than the maximum number of tax profiles', async () => {
+    const target = await seedTargetUser();
+
+    const result = await updateUser({
+      id: target.id,
+      firstName: 'Target',
+      lastName: 'Original',
+      email: target.email,
+      roleIds: [],
+      overrides: [],
+      addresses: [],
+      taxProfiles: Array.from({ length: MAX_TAX_PROFILES + 1 }, (_, index) => ({
+        ...validTaxProfile(),
+        alias: `Perfil ${index}`,
+      })),
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('does not touch another user collections', async () => {
+    const first = await seedTargetUser();
+    const second = await seedTargetUser();
+
+    await db.insert(userAddress).values({
+      userId: second.id,
+      name: 'De B',
+      street: 'Calle B',
+      exteriorNumber: '2',
+      colony: 'Centro',
+      municipality: 'Municipio',
+      state: 'Estado',
+      postalCode: '00002',
+      isDefault: false,
+    });
+
+    await expect(
+      updateUser({
+        id: first.id,
+        firstName: 'Target',
+        lastName: 'Original',
+        email: first.email,
+        roleIds: [],
+        overrides: [],
+        addresses: [validAddress()],
+        taxProfiles: [],
+      }),
+    ).rejects.toThrow();
+
+    const secondAddresses = await db
+      .select()
+      .from(userAddress)
+      .where(eq(userAddress.userId, second.id));
+    expect(secondAddresses.map((item) => item.name).sort()).toEqual(['De B', 'Vieja']);
   });
 });
 

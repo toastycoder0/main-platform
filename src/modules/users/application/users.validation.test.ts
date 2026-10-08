@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import {
+  accountAddressesSchema,
+  accountTaxProfilesSchema,
   addressSchema,
   adminResetPasswordSchema,
   banUserSchema,
   changePasswordSchema,
   createUserSchema,
+  MAX_ADDRESSES,
+  MAX_TAX_PROFILES,
   permissionOverrideSchema,
   profileSchema,
   taxProfileSchema,
@@ -396,5 +400,65 @@ describe('userParamsSchema', () => {
 
   it('fails validation when the route id is empty', () => {
     expect(userParamsSchema.safeParse({ id: '' }).success).toBe(false);
+  });
+});
+
+describe('accountAddressesSchema', () => {
+  it('accepts an empty collection', () => {
+    expect(accountAddressesSchema.safeParse({ addresses: [] }).success).toBe(true);
+  });
+
+  it('accepts a collection up to the maximum', () => {
+    const addresses = Array.from({ length: MAX_ADDRESSES }, () => validAddress);
+    expect(accountAddressesSchema.safeParse({ addresses }).success).toBe(true);
+  });
+
+  it('rejects a collection above the maximum', () => {
+    const addresses = Array.from({ length: MAX_ADDRESSES + 1 }, () => validAddress);
+    expect(accountAddressesSchema.safeParse({ addresses }).success).toBe(false);
+  });
+
+  it('rejects an invalid address item', () => {
+    const result = accountAddressesSchema.safeParse({
+      addresses: [{ ...validAddress, postalCode: 'nope' }],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('strips an unknown key such as a stray id', () => {
+    const result = accountAddressesSchema.safeParse({
+      addresses: [{ id: 'addr_1', ...validAddress }],
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.addresses.at(0)).not.toHaveProperty('id');
+    }
+  });
+});
+
+describe('accountTaxProfilesSchema', () => {
+  it('accepts an empty collection', () => {
+    expect(accountTaxProfilesSchema.safeParse({ taxProfiles: [] }).success).toBe(true);
+  });
+
+  it('accepts a collection up to the maximum', () => {
+    const taxProfiles = Array.from({ length: MAX_TAX_PROFILES }, () => validTaxProfile);
+    expect(accountTaxProfilesSchema.safeParse({ taxProfiles }).success).toBe(true);
+  });
+
+  it('rejects a collection above the maximum', () => {
+    const taxProfiles = Array.from({ length: MAX_TAX_PROFILES + 1 }, () => validTaxProfile);
+    expect(accountTaxProfilesSchema.safeParse({ taxProfiles }).success).toBe(false);
+  });
+
+  it('applies the fiscal refinements to each item', () => {
+    const result = accountTaxProfilesSchema.safeParse({
+      taxProfiles: [{ ...validTaxProfile, cfdiUse: 'X99' }],
+    });
+
+    expect(result.success).toBe(false);
   });
 });
