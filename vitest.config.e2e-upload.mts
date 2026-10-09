@@ -12,13 +12,11 @@ export default defineConfig({
     },
   },
   test: {
+    include: ['./e2e-upload/**/*.spec.ts'],
     environment: 'node',
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/e2e/**',
-      '**/e2e-upload/**',
-      '**/*.integration.test.ts',
-    ],
+    setupFiles: [],
+    globalSetup: ['./e2e-upload/global-setup.ts', './e2e-upload/global-teardown.ts'],
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
   },
 });

@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.config.integration.mts",
     "test:e2e": "vitest run --config vitest.config.e2e.mts",
+    "test:e2e:upload": "vitest run --config vitest.config.e2e-upload.mts",
     "format": "biome format --write",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
