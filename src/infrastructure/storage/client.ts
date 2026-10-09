@@ -21,7 +21,7 @@ export interface StorageClient {
 export function createStorageClient(): StorageClient {
   const s3 = new S3Client({
     region: 'auto',
-    endpoint: `https://${env.CLOUD_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint: env.CLOUD_ENDPOINT ?? `https://${env.CLOUD_ACCOUNT_ID}.r2.cloudflarestorage.com`,
     credentials: {
       accessKeyId: env.CLOUD_ACCESS_KEY_ID,
       secretAccessKey: env.CLOUD_SECRET_ACCESS_KEY,
