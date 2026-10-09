@@ -4,7 +4,11 @@ import { file, user } from '@/infrastructure/db/schema';
 import { storageClient } from '@/infrastructure/storage/client';
 import { extractExtension, generateFileKey, isTempKey } from '@/infrastructure/storage/keys';
 import { storageKeyToUrl, urlToStorageKey } from '@/infrastructure/storage/urls';
-import { type FileOwnerType, getScopeConfig } from '@/shared/constants/file-registry';
+import {
+  type FileOwnerType,
+  getScopeConfig,
+  type ScopeConfig,
+} from '@/shared/constants/file-registry';
 import { AppError } from '@/shared/errors';
 import type { FileDTO, FileLocator } from '../application/files.types';
 
@@ -58,6 +62,46 @@ async function resolveRef(db: DbLike, ref: string): Promise<FileRow | undefined>
   return rows[0];
 }
 
+async function attachRef(
+  db: DbLike,
+  config: ScopeConfig,
+  locator: FileLocator,
+  ref: string,
+  index: number,
+  actorId: string,
+): Promise<void> {
+  const row = await resolveRef(db, ref);
+
+  if (!row) {
+    return;
+  }
+
+  // A pending upload can only be claimed by the user who requested it.
+  if (isTempKey(ref) && row.createdBy !== actorId) {
+    throw new AppError('forbidden', 'El archivo no pertenece al usuario');
+  }
+
+  let finalKey = row.key;
+
+  if (isTempKey(ref)) {
+    finalKey = generateFileKey(`${config.path}/${locator.ownerId}`, extractExtension(ref));
+    await storageClient.copyFile(ref, finalKey);
+    await storageClient.deleteFile(ref);
+  }
+
+  await db
+    .update(file)
+    .set({
+      entity: locator.entity,
+      scope: locator.scope,
+      ownerId: locator.ownerId,
+      sortOrder: index,
+      key: finalKey,
+      tempKey: null,
+    })
+    .where(eq(file.id, row.id));
+}
+
 /**
  * Replaces the complete file set of a locator: detaches everything currently
  * owned by (entity, scope, ownerId), then re-attaches the submitted refs in
@@ -65,11 +109,20 @@ async function resolveRef(db: DbLike, ref: string): Promise<FileRow | undefined>
  * them eligible for garbage collection. Refs are positional: index `i` becomes
  * the `sortOrder`, so callers must submit the full collection including gaps.
  */
-export async function syncFiles(db: DbLike, locator: FileLocator, refs: string[]): Promise<void> {
+export async function syncFiles(
+  db: DbLike,
+  locator: FileLocator,
+  refs: string[],
+  actorId: string,
+): Promise<void> {
   const config = getScopeConfig(locator.entity, locator.scope);
 
   if (!config) {
     throw new AppError('invalid_input', 'El tipo de archivo no es válido');
+  }
+
+  if (refs.filter((ref) => ref !== '').length > config.maxCount) {
+    throw new AppError('invalid_input', `No se permiten más de ${config.maxCount} archivos`);
   }
 
   await assertOwnerExists(db, config.ownerType, locator.ownerId);
@@ -88,35 +141,9 @@ export async function syncFiles(db: DbLike, locator: FileLocator, refs: string[]
   for (let index = 0; index < refs.length; index++) {
     const ref = refs[index];
 
-    if (!ref) {
-      continue;
+    if (ref) {
+      await attachRef(db, config, locator, ref, index, actorId);
     }
-
-    const row = await resolveRef(db, ref);
-
-    if (!row) {
-      continue;
-    }
-
-    let finalKey = row.key;
-
-    if (isTempKey(ref)) {
-      finalKey = generateFileKey(`${config.path}/${locator.ownerId}`, extractExtension(ref));
-      await storageClient.copyFile(ref, finalKey);
-      await storageClient.deleteFile(ref);
-    }
-
-    await db
-      .update(file)
-      .set({
-        entity: locator.entity,
-        scope: locator.scope,
-        ownerId: locator.ownerId,
-        sortOrder: index,
-        key: finalKey,
-        tempKey: null,
-      })
-      .where(eq(file.id, row.id));
   }
 }
 

@@ -62,8 +62,8 @@ async function insertFile(values: Partial<typeof file.$inferInsert>): Promise<st
   return row.id;
 }
 
-function insertPendingFile(): Promise<string> {
-  return insertFile({ tempKey: `_temp/${randomUUID()}.pdf` });
+function insertPendingFile(createdBy = userId): Promise<string> {
+  return insertFile({ tempKey: `_temp/${randomUUID()}.pdf`, createdBy });
 }
 
 async function readFile(id: string): Promise<typeof file.$inferSelect | undefined> {
@@ -93,7 +93,7 @@ describe('syncFiles', () => {
       throw new Error('Pending file lost its temp key');
     }
 
-    await syncFiles(db, locator(), [tempKey]);
+    await syncFiles(db, locator(), [tempKey], userId);
 
     const row = await readFile(id);
 
@@ -111,7 +111,7 @@ describe('syncFiles', () => {
       throw new Error('Pending file lost its temp key');
     }
 
-    await syncFiles(db, locator(), [tempKey]);
+    await syncFiles(db, locator(), [tempKey], userId);
     const key = (await readFile(id))?.key;
 
     if (!key) {
@@ -119,7 +119,7 @@ describe('syncFiles', () => {
     }
 
     const copyCallsBefore = vi.mocked(storageClient.copyFile).mock.calls.length;
-    await syncFiles(db, locator(), [publicUrl(key)]);
+    await syncFiles(db, locator(), [publicUrl(key)], userId);
 
     expect(vi.mocked(storageClient.copyFile).mock.calls.length).toBe(copyCallsBefore);
     expect((await readFile(id))?.ownerId).toBe(userId);
@@ -133,7 +133,7 @@ describe('syncFiles', () => {
       throw new Error('Pending file lost its temp key');
     }
 
-    await syncFiles(db, locator(), ['', tempKey]);
+    await syncFiles(db, locator(), ['', tempKey], userId);
 
     const row = await readFile(id);
     expect(row?.ownerId).toBe(userId);
@@ -142,12 +142,12 @@ describe('syncFiles', () => {
 
   it('detaches files removed from the submitted set', async () => {
     const firstTemp = `_temp/${randomUUID()}.pdf`;
-    const firstId = await insertFile({ tempKey: firstTemp });
-    await syncFiles(db, locator(), [firstTemp]);
+    const firstId = await insertFile({ tempKey: firstTemp, createdBy: userId });
+    await syncFiles(db, locator(), [firstTemp], userId);
 
     const secondTemp = `_temp/${randomUUID()}.pdf`;
-    await insertFile({ tempKey: secondTemp });
-    await syncFiles(db, locator(), [secondTemp]);
+    await insertFile({ tempKey: secondTemp, createdBy: userId });
+    await syncFiles(db, locator(), [secondTemp], userId);
 
     const owned = await db
       .select({ id: file.id })
@@ -167,14 +167,14 @@ describe('syncFiles', () => {
       throw new Error('Pending file lost its temp key');
     }
 
-    await syncFiles(db, locator(), [tempKey]);
+    await syncFiles(db, locator(), [tempKey], userId);
     const key = (await readFile(id))?.key;
 
     if (!key) {
       throw new Error('File was not linked');
     }
 
-    await syncFiles(db, locator(otherId), [publicUrl(key)]);
+    await syncFiles(db, locator(otherId), [publicUrl(key)], userId);
 
     const row = await readFile(id);
     expect(row?.ownerId).toBe(otherId);
@@ -183,7 +183,7 @@ describe('syncFiles', () => {
   });
 
   it('detaches everything when the submitted set is empty', async () => {
-    await syncFiles(db, locator(), []);
+    await syncFiles(db, locator(), [], userId);
 
     const owned = await db
       .select({ id: file.id })
@@ -195,12 +195,29 @@ describe('syncFiles', () => {
 
   it('ignores unknown refs', async () => {
     await expect(
-      syncFiles(db, locator(), ['https://foreign.example.com/not-ours.pdf']),
+      syncFiles(db, locator(), ['https://foreign.example.com/not-ours.pdf'], userId),
     ).resolves.toBeUndefined();
   });
 
   it('rejects when the owner does not exist', async () => {
-    await expect(syncFiles(db, locator('user_missing'), [])).rejects.toThrow();
+    await expect(syncFiles(db, locator('user_missing'), [], userId)).rejects.toThrow();
+  });
+
+  it('rejects claiming a pending upload created by another user', async () => {
+    const id = await insertPendingFile('user_someone_else');
+    const tempKey = (await readFile(id))?.tempKey;
+
+    if (!tempKey) {
+      throw new Error('Pending file lost its temp key');
+    }
+
+    await expect(syncFiles(db, locator(), [tempKey], userId)).rejects.toThrow();
+  });
+
+  it('rejects more than the maximum number of files', async () => {
+    const refs = Array.from({ length: 11 }, () => `_temp/${randomUUID()}.pdf`);
+
+    await expect(syncFiles(db, locator(), refs, userId)).rejects.toThrow();
   });
 });
 

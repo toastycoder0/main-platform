@@ -120,6 +120,7 @@ async function resolveBetterAuthRole(db: DbLike, roleIds: string[]): Promise<'ad
 async function syncUserRelations(
   db: DbLike,
   userId: string,
+  actorId: string,
   data: RelationsPayload,
 ): Promise<void> {
   await db.delete(userRole).where(eq(userRole.userId, userId));
@@ -143,7 +144,7 @@ async function syncUserRelations(
 
   await syncUserAddresses(db, userId, data.addresses);
   await syncUserTaxProfiles(db, userId, data.taxProfiles);
-  await syncTaxProfileFiles(db, userId, data.taxProfiles);
+  await syncTaxProfileFiles(db, userId, actorId, data.taxProfiles);
 }
 
 function toRelationsPayload(data: {
@@ -238,7 +239,7 @@ export const createUser = run(
           .set({ sortOrder: (row?.value ?? -1) + 1 })
           .where(eq(user.id, createdId));
 
-        await syncUserRelations(tx, createdId, relations);
+        await syncUserRelations(tx, createdId, ctx.session.user.id, relations);
       });
     } catch (error) {
       ctx.logger.error({ err: error, userId: createdId }, 'User relations insert failed');
@@ -306,7 +307,7 @@ export const updateUser = run(
     }
 
     await ctx.db.transaction(async (tx) => {
-      await syncUserRelations(tx, data.id, relations);
+      await syncUserRelations(tx, data.id, ctx.session.user.id, relations);
     });
 
     redirect('/dashboard/users');

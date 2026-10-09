@@ -29,7 +29,7 @@ vi.mock('@/infrastructure/storage/client', () => ({
 
 const createdTempKeys: string[] = [];
 
-function testContext(): RequestContext {
+function testContext(userId = 'user_files_action'): RequestContext {
   const logger: RequestContext['logger'] = {
     info: vi.fn(),
     warn: vi.fn(),
@@ -44,7 +44,7 @@ function testContext(): RequestContext {
     db,
     session: {
       user: {
-        id: 'user_files_action',
+        id: userId,
         email: 'files@action.test',
         firstName: 'Files',
         lastName: 'Action',
@@ -94,6 +94,7 @@ describe('requestUploadUrl', () => {
 
     expect(rows).toHaveLength(1);
     expect(rows[0]?.ownerId).toBeNull();
+    expect(rows[0]?.createdBy).toBe('user_files_action');
   });
 
   it('rejects a disallowed content type', async () => {
@@ -137,5 +138,24 @@ describe('deleteTempUpload', () => {
 
     const rows = await db.select().from(file).where(eq(file.tempKey, tempKey));
     expect(rows).toHaveLength(0);
+  });
+
+  it('does not remove a pending row created by another user', async () => {
+    const requested = await requestPdf();
+
+    if (!requested.success) {
+      throw new Error('Expected the upload request to succeed');
+    }
+
+    const tempKey = requested.data.tempKey;
+    createdTempKeys.push(tempKey);
+
+    state.ctx = testContext('user_someone_else');
+
+    const removed = await deleteTempUpload({ fileKey: tempKey });
+    expect(removed.success).toBe(true);
+
+    const rows = await db.select().from(file).where(eq(file.tempKey, tempKey));
+    expect(rows).toHaveLength(1);
   });
 });

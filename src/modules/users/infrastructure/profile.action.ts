@@ -81,7 +81,7 @@ export const saveOwnAddresses = run({ input: accountAddressesSchema }, async (ct
 export const saveOwnTaxProfiles = run({ input: accountTaxProfilesSchema }, async (ctx, data) => {
   await ctx.db.transaction(async (tx) => {
     await syncUserTaxProfiles(tx, ctx.session.user.id, data.taxProfiles);
-    await syncTaxProfileFiles(tx, ctx.session.user.id, data.taxProfiles);
+    await syncTaxProfileFiles(tx, ctx.session.user.id, ctx.session.user.id, data.taxProfiles);
   });
 
   redirect('/account/billing');

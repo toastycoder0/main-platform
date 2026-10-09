@@ -15,6 +15,7 @@ export const file = snakeCase.table(
       .$defaultFn(() => generateId('file')),
     key: text(),
     tempKey: text().unique(),
+    createdBy: text(),
     entity: text().notNull(),
     scope: text().notNull(),
     ownerId: text(),

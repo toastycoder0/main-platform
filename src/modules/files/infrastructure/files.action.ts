@@ -1,6 +1,6 @@
 'use server';
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { file } from '@/infrastructure/db/schema';
 import { run } from '@/infrastructure/services/next-action';
 import { storageClient } from '@/infrastructure/storage/client';
@@ -37,6 +37,7 @@ export const requestUploadUrl = run({ input: requestUploadSchema }, async (ctx, 
 
   await ctx.db.insert(file).values({
     tempKey,
+    createdBy: ctx.session.user.id,
     entity: data.entity,
     scope: data.scope,
     ownerId: null,
@@ -54,6 +55,17 @@ export const confirmUpload = run({ input: confirmUploadSchema }, async (_ctx, da
 });
 
 export const deleteTempUpload = run({ input: deleteTempUploadSchema }, async (ctx, data) => {
+  const rows = await ctx.db
+    .select({ id: file.id })
+    .from(file)
+    .where(and(eq(file.tempKey, data.fileKey), eq(file.createdBy, ctx.session.user.id)))
+    .limit(1);
+  const row = rows[0];
+
+  if (!row) {
+    return;
+  }
+
   await storageClient.deleteFile(data.fileKey);
-  await ctx.db.delete(file).where(eq(file.tempKey, data.fileKey));
+  await ctx.db.delete(file).where(eq(file.id, row.id));
 });

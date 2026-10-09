@@ -12,11 +12,13 @@ type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;
 export async function syncTaxProfileFiles(
   db: DbLike,
   userId: string,
+  actorId: string,
   taxProfiles: TaxProfileSchema[],
 ): Promise<void> {
   await syncFiles(
     db,
     { entity: 'user', scope: 'taxDocument', ownerId: userId },
     taxProfiles.map((profile) => profile.rfcUrl),
+    actorId,
   );
 }
