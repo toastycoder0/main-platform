@@ -19,6 +19,7 @@ import {
   AttachmentGroup,
   AttachmentMedia,
   AttachmentTitle,
+  AttachmentTrigger,
 } from '@/shared/components/attachment';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/shared/components/field';
 import { Spinner } from '@/shared/components/spinner';
@@ -116,42 +117,71 @@ export function FileUploader({
       {allItems.length > 0 && (
         <AttachmentGroup>
           {allItems.map((item) => (
-            <Attachment key={item.tempKey} state={item.state} size='sm'>
-              <AttachmentMedia>
-                {item.state === 'uploading' || item.state === 'processing' ? (
-                  <Spinner />
-                ) : (
-                  <FileTextIcon />
-                )}
-              </AttachmentMedia>
-              <AttachmentContent>
-                <AttachmentTitle>{item.fileName}</AttachmentTitle>
-                <AttachmentDescription>
-                  {item.state === 'uploading' && 'Subiendo…'}
-                  {item.state === 'processing' && 'Procesando…'}
-                  {item.state === 'done' &&
-                    (item.fileSize > 0 ? `${(item.fileSize / 1024).toFixed(0)} KB` : 'Adjunto')}
-                  {item.state === 'error' && 'Error al subir'}
-                </AttachmentDescription>
-              </AttachmentContent>
-              <AttachmentActions>
-                {item.state === 'error' && (
-                  <AttachmentAction aria-label='Reintentar'>
-                    <UploadIcon />
-                  </AttachmentAction>
-                )}
-                <AttachmentAction
-                  aria-label={`Eliminar ${item.fileName}`}
-                  onClick={() => onRemove?.(item)}
-                >
-                  <XIcon />
-                </AttachmentAction>
-              </AttachmentActions>
-            </Attachment>
+            <FileAttachment key={item.tempKey} item={item} onRemove={onRemove} />
           ))}
         </AttachmentGroup>
       )}
     </div>
+  );
+}
+
+function isBusy(state: FileItem['state']): boolean {
+  return state === 'uploading' || state === 'processing';
+}
+
+function attachmentStatus(item: FileItem): string {
+  if (item.state === 'uploading') {
+    return 'Subiendo…';
+  }
+  if (item.state === 'processing') {
+    return 'Procesando…';
+  }
+  if (item.state === 'error') {
+    return 'Error al subir';
+  }
+  return item.fileSize > 0 ? `${(item.fileSize / 1024).toFixed(0)} KB` : 'Adjunto';
+}
+
+// Only already-persisted files expose a public URL; freshly uploaded files are
+// still under `_temp/` and become openable after the form is saved.
+function openableHref(item: FileItem): string | undefined {
+  return item.state === 'done' && !isTempKey(item.tempKey) ? item.tempKey : undefined;
+}
+
+function FileAttachment({
+  item,
+  onRemove,
+}: {
+  item: FileItem;
+  onRemove?: ((item: FileItem) => void) | undefined;
+}) {
+  const href = openableHref(item);
+
+  return (
+    <Attachment state={item.state} size='sm'>
+      {href && (
+        <AttachmentTrigger asChild>
+          <a href={href} rel='noreferrer' target='_blank'>
+            <span className='sr-only'>Abrir {item.fileName}</span>
+          </a>
+        </AttachmentTrigger>
+      )}
+      <AttachmentMedia>{isBusy(item.state) ? <Spinner /> : <FileTextIcon />}</AttachmentMedia>
+      <AttachmentContent>
+        <AttachmentTitle>{item.fileName}</AttachmentTitle>
+        <AttachmentDescription>{attachmentStatus(item)}</AttachmentDescription>
+      </AttachmentContent>
+      <AttachmentActions>
+        {item.state === 'error' && (
+          <AttachmentAction aria-label='Reintentar'>
+            <UploadIcon />
+          </AttachmentAction>
+        )}
+        <AttachmentAction aria-label={`Eliminar ${item.fileName}`} onClick={() => onRemove?.(item)}>
+          <XIcon />
+        </AttachmentAction>
+      </AttachmentActions>
+    </Attachment>
   );
 }
 
