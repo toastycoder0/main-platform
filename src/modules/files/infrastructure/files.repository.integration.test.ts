@@ -16,13 +16,35 @@ vi.mock('@/infrastructure/storage/client', () => ({
   },
 }));
 
+import { storageClient } from '@/infrastructure/storage/client';
+
 const scope = `filesrepo${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 const createdFileIds: string[] = [];
+const createdUserIds: string[] = [];
 
 let userId = '';
 
-function locator(): FileLocator {
-  return { entity: 'user', scope: 'taxDocument', ownerId: userId };
+function locator(ownerId = userId): FileLocator {
+  return { entity: 'user', scope: 'taxDocument', ownerId };
+}
+
+function publicUrl(key: string): string {
+  return `http://test.com/${key}`;
+}
+
+async function createUser(label: string): Promise<string> {
+  const rows = await db
+    .insert(user)
+    .values({ firstName: label, lastName: 'Owner', email: `${scope}.${label}@repo.test` })
+    .returning({ id: user.id });
+  const row = rows.at(0);
+
+  if (!row) {
+    throw new Error('Failed to create test owner');
+  }
+
+  createdUserIds.push(row.id);
+  return row.id;
 }
 
 async function insertFile(values: Partial<typeof file.$inferInsert>): Promise<string> {
@@ -44,18 +66,12 @@ function insertPendingFile(): Promise<string> {
   return insertFile({ tempKey: `_temp/${randomUUID()}.pdf` });
 }
 
+async function readFile(id: string): Promise<typeof file.$inferSelect | undefined> {
+  return (await db.select().from(file).where(eq(file.id, id)).limit(1))[0];
+}
+
 beforeAll(async () => {
-  const rows = await db
-    .insert(user)
-    .values({ firstName: 'Files', lastName: 'Repo', email: `${scope}@repo.test` })
-    .returning({ id: user.id });
-  const row = rows.at(0);
-
-  if (!row) {
-    throw new Error('Failed to create test owner');
-  }
-
-  userId = row.id;
+  userId = await createUser('primary');
 });
 
 afterAll(async () => {
@@ -63,15 +79,15 @@ afterAll(async () => {
     await db.delete(file).where(inArray(file.id, createdFileIds));
   }
 
-  if (userId) {
-    await db.delete(user).where(eq(user.id, userId));
+  if (createdUserIds.length > 0) {
+    await db.delete(user).where(inArray(user.id, createdUserIds));
   }
 });
 
 describe('syncFiles', () => {
   it('links a pending temp file to its owner', async () => {
     const id = await insertPendingFile();
-    const tempKey = (await db.select().from(file).where(eq(file.id, id)).limit(1))[0]?.tempKey;
+    const tempKey = (await readFile(id))?.tempKey;
 
     if (!tempKey) {
       throw new Error('Pending file lost its temp key');
@@ -79,12 +95,49 @@ describe('syncFiles', () => {
 
     await syncFiles(db, locator(), [tempKey]);
 
-    const [row] = await db.select().from(file).where(eq(file.id, id)).limit(1);
+    const row = await readFile(id);
 
     expect(row?.ownerId).toBe(userId);
     expect(row?.tempKey).toBeNull();
     expect(row?.key).toContain(`users/taxes/${userId}/`);
     expect(row?.sortOrder).toBe(0);
+  });
+
+  it('re-links an already stored file by its public URL without copying again', async () => {
+    const id = await insertPendingFile();
+    const tempKey = (await readFile(id))?.tempKey;
+
+    if (!tempKey) {
+      throw new Error('Pending file lost its temp key');
+    }
+
+    await syncFiles(db, locator(), [tempKey]);
+    const key = (await readFile(id))?.key;
+
+    if (!key) {
+      throw new Error('File was not linked');
+    }
+
+    const copyCallsBefore = vi.mocked(storageClient.copyFile).mock.calls.length;
+    await syncFiles(db, locator(), [publicUrl(key)]);
+
+    expect(vi.mocked(storageClient.copyFile).mock.calls.length).toBe(copyCallsBefore);
+    expect((await readFile(id))?.ownerId).toBe(userId);
+  });
+
+  it('preserves positional sort order across empty refs', async () => {
+    const id = await insertPendingFile();
+    const tempKey = (await readFile(id))?.tempKey;
+
+    if (!tempKey) {
+      throw new Error('Pending file lost its temp key');
+    }
+
+    await syncFiles(db, locator(), ['', tempKey]);
+
+    const row = await readFile(id);
+    expect(row?.ownerId).toBe(userId);
+    expect(row?.sortOrder).toBe(1);
   });
 
   it('detaches files removed from the submitted set', async () => {
@@ -96,14 +149,37 @@ describe('syncFiles', () => {
     await insertFile({ tempKey: secondTemp });
     await syncFiles(db, locator(), [secondTemp]);
 
-    const [first] = await db.select().from(file).where(eq(file.id, firstId)).limit(1);
     const owned = await db
       .select({ id: file.id })
       .from(file)
       .where(and(eq(file.entity, 'user'), eq(file.scope, 'taxDocument'), eq(file.ownerId, userId)));
 
-    expect(first?.ownerId).toBeNull();
+    expect((await readFile(firstId))?.ownerId).toBeNull();
     expect(owned).toHaveLength(1);
+  });
+
+  it('re-parents a file to another owner', async () => {
+    const otherId = await createUser('secondary');
+    const id = await insertPendingFile();
+    const tempKey = (await readFile(id))?.tempKey;
+
+    if (!tempKey) {
+      throw new Error('Pending file lost its temp key');
+    }
+
+    await syncFiles(db, locator(), [tempKey]);
+    const key = (await readFile(id))?.key;
+
+    if (!key) {
+      throw new Error('File was not linked');
+    }
+
+    await syncFiles(db, locator(otherId), [publicUrl(key)]);
+
+    const row = await readFile(id);
+    expect(row?.ownerId).toBe(otherId);
+    expect(row?.entity).toBe('user');
+    expect(row?.scope).toBe('taxDocument');
   });
 
   it('detaches everything when the submitted set is empty', async () => {
@@ -115,6 +191,16 @@ describe('syncFiles', () => {
       .where(and(eq(file.scope, 'taxDocument'), eq(file.ownerId, userId)));
 
     expect(owned).toHaveLength(0);
+  });
+
+  it('ignores unknown refs', async () => {
+    await expect(
+      syncFiles(db, locator(), ['https://foreign.example.com/not-ours.pdf']),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects when the owner does not exist', async () => {
+    await expect(syncFiles(db, locator('user_missing'), [])).rejects.toThrow();
   });
 });
 
