@@ -16,5 +16,11 @@ export const PERMISSIONS = {
     files: {
       upload: 'admin.files.upload',
     },
+    categories: {
+      access: 'admin.categories.access',
+      create: 'admin.categories.create',
+      edit: 'admin.categories.edit',
+      delete: 'admin.categories.delete',
+    },
   },
 } as const;
