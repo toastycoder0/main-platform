@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 import { getSession } from '@/modules/auth/infrastructure/auth.query';
 import { Footer } from '@/shared/components/footer';
-import { Navbar } from '@/shared/components/navbar';
+import { Navbar, NavbarShell } from '@/shared/components/navbar';
 import { NavbarSkeleton } from '@/shared/components/navbar/navbar-skeleton';
 
 interface PublicLayoutProps {
@@ -35,9 +35,11 @@ async function PublicNavbar() {
 function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <>
-      <Suspense fallback={<NavbarSkeleton />}>
-        <PublicNavbar />
-      </Suspense>
+      <NavbarShell>
+        <Suspense fallback={<NavbarSkeleton />}>
+          <PublicNavbar />
+        </Suspense>
+      </NavbarShell>
       <main className='mx-auto max-w-360 px-4 py-6 md:px-6'>{children}</main>
       <Footer />
     </>

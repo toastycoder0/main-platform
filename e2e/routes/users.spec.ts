@@ -23,15 +23,9 @@ function collectConsoleErrors(page: Page): string[] {
   const errors: string[] = [];
 
   page.on('console', (message) => {
-    if (message.type() !== 'error') {
-      return;
+    if (message.type() === 'error') {
+      errors.push(message.text());
     }
-
-    if (message.text().includes('https://react.dev/link/hydration-mismatch')) {
-      return;
-    }
-
-    errors.push(message.text());
   });
 
   return errors;

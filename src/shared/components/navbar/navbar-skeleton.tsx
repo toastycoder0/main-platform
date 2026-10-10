@@ -2,7 +2,7 @@ import { Skeleton } from '@/shared/components/skeleton';
 
 export function NavbarSkeleton() {
   return (
-    <header aria-busy='true' className='sticky top-0 z-40 border-b border-neutral-200 bg-white'>
+    <div aria-busy='true'>
       <span className='sr-only'>Cargando navegación…</span>
 
       <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-1.5 md:flex'>
@@ -28,10 +28,6 @@ export function NavbarSkeleton() {
         <Skeleton className='h-8 w-8' />
         <Skeleton className='h-8 w-8' />
       </div>
-
-      <div className='fixed top-3 left-4 z-60 md:hidden' aria-hidden='true'>
-        <Skeleton className='h-8 w-28' />
-      </div>
-    </header>
+    </div>
   );
 }

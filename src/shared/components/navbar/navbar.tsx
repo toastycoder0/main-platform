@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 import { buttonVariants } from '@/shared/components/button';
 import { Input } from '@/shared/components/input';
-import { LogoLarge } from '@/shared/components/logo-large';
 import { NavigationMenu, NavigationMenuList } from '@/shared/components/navigation-menu';
 import {
   Sheet,
@@ -18,6 +17,7 @@ import {
 import { NavLinks } from './category-dropdown';
 import { MobileNavPanel } from './mobile-panel';
 import type { NavLink } from './nav-link';
+import { NavbarLogo } from './navbar-logo';
 import { DesktopUserArea, MobileAuthArea } from './user-area';
 
 export interface NavbarProps {
@@ -73,11 +73,7 @@ export function Navbar({
     </form>
   );
 
-  const logo = (
-    <Link href='/' aria-label='Ir al inicio' className='shrink-0'>
-      <LogoLarge className='h-8 w-auto' />
-    </Link>
-  );
+  const logo = <NavbarLogo />;
 
   const cartButton = (
     <Link
@@ -96,69 +92,65 @@ export function Navbar({
 
   return (
     <>
-      <header className='sticky top-0 z-40 border-b border-neutral-200 bg-white'>
-        <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-1.5 md:flex'>
-          <div className='flex-1'>{logo}</div>
-          <div className='w-72 lg:w-xl shrink-0'>{searchBar}</div>
+      <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-1.5 md:flex'>
+        <div className='flex-1'>{logo}</div>
+        <div className='w-72 lg:w-xl shrink-0'>{searchBar}</div>
 
-          <div className='flex flex-1 items-center justify-end gap-3'>
-            <DesktopUserArea
-              isAuthenticated={isAuthenticated}
-              userName={userName}
-              userEmail={userEmail}
-            />
-            {showCart && isAuthenticated && cartButton}
-          </div>
+        <div className='flex flex-1 items-center justify-end gap-3'>
+          <DesktopUserArea
+            isAuthenticated={isAuthenticated}
+            userName={userName}
+            userEmail={userEmail}
+          />
+          {showCart && isAuthenticated && cartButton}
         </div>
+      </div>
 
-        {navLinks?.length && (
-          <div className='mx-auto hidden max-w-7xl flex-wrap justify-center px-4 pb-1.5 md:flex'>
-            <NavigationMenu className='max-w-max'>
-              <NavigationMenuList>
-                <NavLinks links={navLinks} />
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
-        )}
-
-        <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
-          <div className='flex items-center gap-1'>
-            {showCart && isAuthenticated && cartButton}
-            <Sheet>
-              <SheetTrigger asChild>
-                <button
-                  type='button'
-                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  aria-label='Abrir menú'
-                >
-                  <Menu className='size-5' />
-                </button>
-              </SheetTrigger>
-              <SheetContent side='left' className='flex w-full max-w-full flex-col p-0'>
-                <SheetHeader className='sr-only'>
-                  <SheetTitle>Menú de navegación</SheetTitle>
-                </SheetHeader>
-
-                <div className='flex-1 overflow-y-auto px-4 pt-16'>
-                  {searchBar}
-
-                  <MobileNavPanel navLinks={navLinks ?? []} />
-                </div>
-
-                <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                  <MobileAuthArea
-                    isAuthenticated={isAuthenticated}
-                    userName={userName}
-                    userEmail={userEmail}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+      {navLinks?.length && (
+        <div className='mx-auto hidden max-w-7xl flex-wrap justify-center px-4 pb-1.5 md:flex'>
+          <NavigationMenu className='max-w-max'>
+            <NavigationMenuList>
+              <NavLinks links={navLinks} />
+            </NavigationMenuList>
+          </NavigationMenu>
         </div>
-      </header>
+      )}
 
-      <div className='fixed top-3 left-4 z-60 md:hidden'>{logo}</div>
+      <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
+        <div className='flex items-center gap-1'>
+          {showCart && isAuthenticated && cartButton}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type='button'
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                aria-label='Abrir menú'
+              >
+                <Menu className='size-5' />
+              </button>
+            </SheetTrigger>
+            <SheetContent side='left' className='flex w-full max-w-full flex-col p-0'>
+              <SheetHeader className='sr-only'>
+                <SheetTitle>Menú de navegación</SheetTitle>
+              </SheetHeader>
+
+              <div className='flex-1 overflow-y-auto px-4 pt-16'>
+                {searchBar}
+
+                <MobileNavPanel navLinks={navLinks ?? []} />
+              </div>
+
+              <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
+                <MobileAuthArea
+                  isAuthenticated={isAuthenticated}
+                  userName={userName}
+                  userEmail={userEmail}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
     </>
   );
 }
