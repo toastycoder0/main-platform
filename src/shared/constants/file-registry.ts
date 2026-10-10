@@ -31,6 +31,15 @@ export const FILE_REGISTRY = {
       maxCount: 10,
     },
   },
+  category: {
+    image: {
+      path: 'categories/images',
+      ownerType: 'category',
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      maxSize: 5 * MB,
+      maxCount: 1,
+    },
+  },
 } satisfies Record<string, Record<string, ScopeConfig>>;
 
 export type FileEntity = keyof typeof FILE_REGISTRY;
