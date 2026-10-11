@@ -21,6 +21,10 @@ vi.mock('@/infrastructure/context/next-factory', () => ({
   },
 }));
 
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
 const createdRoleIds: string[] = [];
 const createdUserIds: string[] = [];
 const createdPermissionIds: string[] = [];

@@ -2,6 +2,7 @@
 
 import { randomBytes } from 'node:crypto';
 import { eq, inArray, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
 import type { DatabaseClient } from '@/infrastructure/db';
@@ -83,6 +84,7 @@ export const createRole = run(
         .values(requestedIds.map((permissionId) => ({ roleId: inserted.id, permissionId })));
     });
 
+    revalidatePath('/dashboard/roles');
     redirect('/dashboard/roles');
   },
 );
@@ -142,6 +144,7 @@ export const updateRole = run(
         .values(requestedIds.map((permissionId) => ({ roleId: id, permissionId })));
     });
 
+    revalidatePath('/dashboard/roles');
     redirect('/dashboard/roles');
   },
 );

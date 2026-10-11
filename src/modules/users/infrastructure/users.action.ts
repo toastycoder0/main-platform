@@ -2,6 +2,7 @@
 
 import { isAPIError } from 'better-auth/api';
 import { and, eq, inArray, isNull, like, ne, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
@@ -255,6 +256,7 @@ export const createUser = run(
       throw error;
     }
 
+    revalidatePath('/dashboard/users');
     redirect('/dashboard/users');
   },
 );
@@ -308,6 +310,7 @@ export const updateUser = run(
       await syncUserRelations(tx, data.id, ctx.session.user.id, relations);
     });
 
+    revalidatePath('/dashboard/users');
     redirect('/dashboard/users');
   },
 );
@@ -378,6 +381,8 @@ export const banUser = run(
       failBetterAuthAdmin(error, ctx, data.id, 'banUser');
     }
 
+    revalidatePath(`/dashboard/users/form/${data.id}`);
+    revalidatePath('/dashboard/users');
     redirect(`/dashboard/users/form/${data.id}`);
   },
 );
@@ -397,6 +402,8 @@ export const unbanUser = run(
       failBetterAuthAdmin(error, ctx, data.id, 'unbanUser');
     }
 
+    revalidatePath(`/dashboard/users/form/${data.id}`);
+    revalidatePath('/dashboard/users');
     redirect(`/dashboard/users/form/${data.id}`);
   },
 );
@@ -425,6 +432,8 @@ export const adminResetPassword = run(
       ctx.logger.warn({ err: error, userId: data.id }, 'Failed to revoke sessions after reset');
     }
 
+    revalidatePath(`/dashboard/users/form/${data.id}`);
+    revalidatePath('/dashboard/users');
     redirect(`/dashboard/users/form/${data.id}`);
   },
 );
@@ -451,6 +460,7 @@ export const deleteUser = run(
       await tx.delete(session).where(eq(session.userId, data.id));
     });
 
+    revalidatePath('/dashboard/users');
     redirect('/dashboard/users');
   },
 );

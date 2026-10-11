@@ -42,6 +42,10 @@ vi.mock('@/infrastructure/context/next-factory', () => ({
   },
 }));
 
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
 vi.mock('next/headers', () => ({
   headers: async () => state.headers,
 }));
