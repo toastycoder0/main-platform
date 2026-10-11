@@ -35,6 +35,18 @@ const INITIAL_PERMISSIONS = [
   { slug: admin.tags.create, name: 'Crear etiquetas', type: 'action' as const },
   { slug: admin.tags.edit, name: 'Editar etiquetas', type: 'action' as const },
   { slug: admin.tags.delete, name: 'Archivar etiquetas', type: 'action' as const },
+  {
+    slug: admin.productUnits.access,
+    name: 'Acceso a gestión de unidades de medida',
+    type: 'access' as const,
+  },
+  { slug: admin.productUnits.create, name: 'Crear unidades de medida', type: 'action' as const },
+  { slug: admin.productUnits.edit, name: 'Editar unidades de medida', type: 'action' as const },
+  {
+    slug: admin.productUnits.delete,
+    name: 'Archivar unidades de medida',
+    type: 'action' as const,
+  },
 ];
 
 const ROLE_SLUG = 'super_admin';

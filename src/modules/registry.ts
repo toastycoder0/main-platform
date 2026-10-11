@@ -3,6 +3,7 @@ import { brandsManifest } from './brands/manifest';
 import { categoriesManifest } from './categories/manifest';
 import { filesManifest } from './files/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
+import { productUnitsManifest } from './product-units/manifest';
 import { rolesManifest } from './roles/manifest';
 import { tagsManifest } from './tags/manifest';
 import { usersManifest } from './users/manifest';
@@ -17,6 +18,7 @@ const manifests: ModuleManifest[] = [
   brandsManifest,
   categoriesManifest,
   filesManifest,
+  productUnitsManifest,
   rolesManifest,
   tagsManifest,
   usersManifest,
