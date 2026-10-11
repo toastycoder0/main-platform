@@ -40,5 +40,11 @@ export const PERMISSIONS = {
       edit: 'admin.productUnits.edit',
       delete: 'admin.productUnits.delete',
     },
+    documentTypes: {
+      access: 'admin.documentTypes.access',
+      create: 'admin.documentTypes.create',
+      edit: 'admin.documentTypes.edit',
+      delete: 'admin.documentTypes.delete',
+    },
   },
 } as const;

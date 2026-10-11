@@ -47,6 +47,18 @@ const INITIAL_PERMISSIONS = [
     name: 'Archivar unidades de medida',
     type: 'action' as const,
   },
+  {
+    slug: admin.documentTypes.access,
+    name: 'Acceso a gestión de tipos de documento',
+    type: 'access' as const,
+  },
+  { slug: admin.documentTypes.create, name: 'Crear tipos de documento', type: 'action' as const },
+  { slug: admin.documentTypes.edit, name: 'Editar tipos de documento', type: 'action' as const },
+  {
+    slug: admin.documentTypes.delete,
+    name: 'Archivar tipos de documento',
+    type: 'action' as const,
+  },
 ];
 
 const ROLE_SLUG = 'super_admin';

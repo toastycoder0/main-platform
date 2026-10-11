@@ -1,6 +1,7 @@
 export * from './auth.schema';
 export * from './brand.schema';
 export * from './category.schema';
+export * from './document-type.schema';
 export * from './file.schema';
 export * from './permission.schema';
 export * from './product-unit.schema';
