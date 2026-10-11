@@ -1,6 +1,6 @@
 import type { Page } from 'playwright';
 import { describe, expect, it } from 'vitest';
-import { BASE, createBrowser, createPage, loginAs } from './test-utils/browser';
+import { BASE, createBrowser, createPage, loginAs } from '../test-utils/browser';
 
 const ADMIN_EMAIL = 'admin@e2e.test';
 const ADMIN_PASS = 'Pass1234';

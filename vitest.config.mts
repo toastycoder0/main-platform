@@ -13,12 +13,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/e2e/**',
-      '**/e2e-upload/**',
-      '**/*.integration.test.ts',
-    ],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/*.integration.test.ts'],
   },
 });
