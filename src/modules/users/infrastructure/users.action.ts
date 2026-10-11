@@ -5,7 +5,6 @@ import { and, eq, inArray, isNull, like, ne, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
-import type { DatabaseClient } from '@/infrastructure/db';
 import {
   permission,
   role,
@@ -17,6 +16,7 @@ import {
 } from '@/infrastructure/db/schema';
 import { run } from '@/infrastructure/services/next-action';
 import { auth } from '@/modules/auth/infrastructure/auth.config';
+import type { DbLike } from '@/modules/files/infrastructure/files.repository';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
 import type {
@@ -33,8 +33,6 @@ import {
 } from '../application/users.validation';
 import { syncUserAddresses, syncUserTaxProfiles } from './users.collections';
 import { syncTaxProfileFiles } from './users.files';
-
-type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;
 
 interface RelationsPayload {
   roleIds: string[];

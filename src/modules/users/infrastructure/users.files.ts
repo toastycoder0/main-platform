@@ -1,8 +1,6 @@
-import type { DatabaseClient } from '@/infrastructure/db';
+import type { DbLike } from '@/modules/files/infrastructure/files.repository';
 import { syncFiles } from '@/modules/files/infrastructure/files.repository';
 import type { TaxProfileSchema } from '../application/users.validation';
-
-type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;
 
 /**
  * Syncs the RFC documents of every tax profile of a user. The user is the owner
