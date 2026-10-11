@@ -4,7 +4,7 @@ import { FileTextIcon, UploadIcon, XIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
-import { isTempKey } from '@/infrastructure/storage/keys';
+import { extractExtension, isTempKey } from '@/infrastructure/storage/keys';
 import {
   confirmUpload,
   deleteTempUpload,
@@ -148,6 +148,20 @@ function attachmentStatus(item: FileItem): string {
 // still under `_temp/` and become openable after the form is saved.
 function openableHref(item: FileItem): string | undefined {
   return item.state === 'done' && !isTempKey(item.tempKey) ? item.tempKey : undefined;
+}
+
+function buildExistingFile(formValue: string, allowedTypes: string[]): FileItem {
+  const isImageScope = allowedTypes.some((t) => t.startsWith('image/'));
+  const ext = extractExtension(formValue);
+  const name = ext ? `${isImageScope ? 'imagen' : 'documento'}.${ext}` : 'Archivo adjunto';
+
+  return {
+    state: 'done',
+    fileName: name,
+    fileSize: 0,
+    tempKey: formValue,
+    fileType: isImageScope ? 'image/unknown' : undefined,
+  };
 }
 
 function FileAttachment({
@@ -326,17 +340,9 @@ export function ControlledFileUploader<T extends FieldValues>({
         formValueRef.current = formValue;
         const hasExisting = formValue !== '' && !isTempKey(formValue);
 
-        const isImageScope = allowedTypes.some((t) => t.startsWith('image/'));
-        const existingFileType = isImageScope ? 'image/unknown' : undefined;
-        const existingEntry: FileItem = {
-          state: 'done',
-          fileName: 'Archivo adjunto',
-          fileSize: 0,
-          tempKey: formValue,
-          fileType: existingFileType,
-        };
-
-        const entries: FileItem[] = hasExisting ? [...items, existingEntry] : items;
+        const entries: FileItem[] = hasExisting
+          ? [...items, buildExistingFile(formValue, allowedTypes)]
+          : items;
 
         return (
           <Field orientation='vertical' data-invalid={fieldState.invalid}>
