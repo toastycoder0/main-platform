@@ -31,8 +31,8 @@ interface FileItem {
   fileName: string;
   fileSize: number;
   tempKey: string;
-  fileType?: string;
-  previewUrl?: string;
+  fileType?: string | undefined;
+  previewUrl?: string | undefined;
 }
 
 export function FileUploader({
@@ -150,22 +150,6 @@ function openableHref(item: FileItem): string | undefined {
   return item.state === 'done' && !isTempKey(item.tempKey) ? item.tempKey : undefined;
 }
 
-function attachmentMedia(item: FileItem) {
-  if (isBusy(item.state)) {
-    return <Spinner />;
-  }
-
-  const isImage = Boolean(item.fileType?.startsWith('image/'));
-  const href = openableHref(item);
-  const src = isImage ? (href ?? item.previewUrl) : undefined;
-
-  if (src) {
-    return <img src={src} alt={item.fileName} />;
-  }
-
-  return <FileTextIcon />;
-}
-
 function FileAttachment({
   item,
   onRemove,
@@ -176,24 +160,21 @@ function FileAttachment({
   const href = openableHref(item);
   const isImage = Boolean(item.fileType?.startsWith('image/'));
   const previewSrc = isImage ? (href ?? item.previewUrl) : undefined;
-  const attachmentWidth = isImage && previewSrc ? 'w-48 max-w-full' : undefined;
 
   return (
     <Attachment
       state={item.state}
-      orientation={isImage ? 'vertical' : 'horizontal'}
-      size='sm'
-      className={attachmentWidth}
+      orientation={isImage ? 'vertical' : undefined}
+      size={isImage ? undefined : 'sm'}
     >
-      {href && (
-        <AttachmentTrigger asChild>
-          <a href={href} rel='noreferrer' target='_blank'>
-            <span className='sr-only'>Abrir {item.fileName}</span>
-          </a>
-        </AttachmentTrigger>
-      )}
       <AttachmentMedia variant={previewSrc ? 'image' : 'icon'}>
-        {attachmentMedia(item)}
+        {isBusy(item.state) ? (
+          <Spinner />
+        ) : previewSrc ? (
+          <img src={previewSrc} alt={item.fileName} />
+        ) : (
+          <FileTextIcon />
+        )}
       </AttachmentMedia>
       <AttachmentContent>
         <AttachmentTitle>{item.fileName}</AttachmentTitle>
@@ -209,6 +190,13 @@ function FileAttachment({
           <XIcon />
         </AttachmentAction>
       </AttachmentActions>
+      {href && (
+        <AttachmentTrigger asChild>
+          <a href={href} target='_blank' rel='noreferrer' aria-label={`Abrir ${item.fileName}`}>
+            <span className='sr-only'>Abrir {item.fileName}</span>
+          </a>
+        </AttachmentTrigger>
+      )}
     </Attachment>
   );
 }
@@ -338,12 +326,17 @@ export function ControlledFileUploader<T extends FieldValues>({
         formValueRef.current = formValue;
         const hasExisting = formValue !== '' && !isTempKey(formValue);
 
-        const entries: FileItem[] = hasExisting
-          ? [
-              ...items,
-              { state: 'done', fileName: 'Archivo adjunto', fileSize: 0, tempKey: formValue },
-            ]
-          : items;
+        const isImageScope = allowedTypes.some((t) => t.startsWith('image/'));
+        const existingFileType = isImageScope ? 'image/unknown' : undefined;
+        const existingEntry: FileItem = {
+          state: 'done',
+          fileName: 'Archivo adjunto',
+          fileSize: 0,
+          tempKey: formValue,
+          fileType: existingFileType,
+        };
+
+        const entries: FileItem[] = hasExisting ? [...items, existingEntry] : items;
 
         return (
           <Field orientation='vertical' data-invalid={fieldState.invalid}>
