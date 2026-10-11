@@ -22,7 +22,6 @@ import { ListEmptyState } from '@/shared/components/list-empty';
 import { cn } from '@/shared/utils/cn';
 import {
   buildCategoryTree,
-  type CategoryTreeNode,
   type FlattenedCategoryRow,
   flattenVisibleRows,
 } from '../application/categories.tree';
@@ -207,19 +206,7 @@ export function CategoriesTreeView({ rows }: CategoriesTreeViewProps) {
   const router = useRouter();
   const treeNodes = buildCategoryTree(rows);
 
-  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    const state: Record<string, boolean> = {};
-    function initExpanded(nodeList: CategoryTreeNode<CategoryTreeRow>[], depth: number) {
-      for (const node of nodeList) {
-        state[node.id] = depth < 2;
-        if (node.children.length > 0) {
-          initExpanded(node.children, depth + 1);
-        }
-      }
-    }
-    initExpanded(treeNodes, 0);
-    return state;
-  });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const visibleRows = flattenVisibleRows(treeNodes, expanded);
 
