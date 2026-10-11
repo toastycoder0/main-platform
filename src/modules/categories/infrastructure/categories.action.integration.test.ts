@@ -17,6 +17,10 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
+}));
+
 const scope = `catact${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
 const state = vi.hoisted(() => ({

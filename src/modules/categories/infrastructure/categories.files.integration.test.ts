@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
@@ -128,7 +128,7 @@ describe('syncCategoryImage', () => {
     const rows = await db
       .select({ ownerId: file.ownerId, key: file.key })
       .from(file)
-      .where(eq(file.tempKey, tempKey))
+      .where(and(eq(file.ownerId, categoryId), eq(file.entity, 'category'), eq(file.scope, 'image')))
       .limit(1);
     expect(rows[0]?.ownerId).toBe(categoryId);
     expect(rows[0]?.key).toBeTruthy();
@@ -147,13 +147,19 @@ describe('syncCategoryImage', () => {
     });
     createdFileIds.push(newTempKey);
 
+    const [oldFileBefore] = await db
+      .select({ id: file.id })
+      .from(file)
+      .where(eq(file.tempKey, tempKey))
+      .limit(1);
+
     // First sync
     await syncCategoryImage(db, categoryId, 'cat_files_test', tempKey);
 
     const [oldRow] = await db
       .select({ ownerId: file.ownerId })
       .from(file)
-      .where(eq(file.tempKey, tempKey))
+      .where(eq(file.id, oldFileBefore!.id))
       .limit(1);
     expect(oldRow?.ownerId).toBe(categoryId);
 
@@ -163,7 +169,7 @@ describe('syncCategoryImage', () => {
     const [detached] = await db
       .select({ ownerId: file.ownerId })
       .from(file)
-      .where(eq(file.tempKey, tempKey))
+      .where(eq(file.id, oldFileBefore!.id))
       .limit(1);
     expect(detached?.ownerId).toBeNull();
   });
