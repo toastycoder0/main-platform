@@ -15,12 +15,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Complex changes (refactors, new features, architectural decisions) require confirming understanding before acting.
 - Do not assume implicit requirements. If information is missing, ask for it.
 
-## Architecture and Server-First Approach
+## Server-First Approach
 
-- **Server-First Focus:** The application follows a strict server-first approach. The frontend is exclusively responsible for receiving and sending data.
-- **State Management:** Avoid using optimistic states. Any exception must be explicitly discussed and planned in advance.
-- **Data Flow and Mutations:** Most operations must be handled on the server using URL parameters. The UI should simply refresh the page and invalidate/clear the cache to reflect updates.
-- **Backend Architecture:** The backend must use a decoupled architecture based on context (`ctx`) and dependency injection.
+- **State Management:** Avoid optimistic states. Any exception must be explicitly discussed and planned in advance.
+- **Data Flow:** Most operations are handled server-side via URL parameters. The UI refreshes the page and invalidates cache to reflect updates — no client-side mutation.
 
 ## URL State & Performance (Suspense & Loaders)
 
@@ -31,14 +29,89 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - Wrap granular async data-fetching components in React `<Suspense>` boundaries with lightweight, precise fallback skeletons.
   - Use React's `useTransition` when triggering URL updates to block accidental double-submissions and show localized spinner indicators.
 
-## Secure Server Actions Protocol
+## Module System
 
-- **Public Endpoint Mindset:** Treat every Server Action (`'use server'`) as a completely exposed, un-trusted public HTTP POST endpoint. Never assume execution safety based on UI visibility or client-side guards.
-- **Layered Execution Wrapper:** All Server Actions must be defined through a type-safe wrapper or utility. Direct raw async functions exported as actions are forbidden. Execution must strictly execute in this order:
-  1. **Authentication Check:** Extract session context inside the action handler; immediately halt if unauthenticated.
-  2. **Authorization & Ownership Check:** Verify the active user context has explicit access rights to mutate or touch the requested record IDs.
-  3. **Input Schema Validation:** Parse the incoming payload using a strict schema (e.g., Zod).
-- **Data Leakage & Error Masking:** Never return raw database records or backend model entities to the client; explicitly filter output through a Data Transfer Object (DTO) structure. Catch internal execution blocks and mask system-level database logs/stack traces into generic, safe user-facing error formats.
+Every feature lives in `src/modules/<name>/`. Most follow a 3-layer structure; some are infrastructure-only (e.g. `files/` provides storage — no UI needed):
+
+```
+src/modules/<name>/
+├── manifest.ts                    # Nav contributions + route labels
+├── application/                   # Pure domain: types, validation, helpers
+├── infrastructure/                # Queries, actions, repos, external adapters
+└── components/                    # UI (server tables, client forms) — optional
+```
+
+### Manifest & Registry
+
+- A `manifest.ts` exports a `ModuleManifest` with `contributions` keyed by `SectionId` (`public`, `auth`, `dashboard`, `warehouse`, `driver`).
+- `NavItem[]` provides sidebar entries with `{ id, label, href, icon, permission, group? }`. `routeLabels` maps paths (including `[id]` dynamic segments) to breadcrumb/page-title labels.
+- Register the manifest in `src/modules/registry.ts` by adding it to the `manifests` array. The registry's `getNav()` and `resolveBreadcrumbs()` automatically pick it up.
+
+### 3-Layer Architecture
+
+**`application/`** — pure domain logic. No infrastructure imports allowed.
+- `<name>.types.ts` — DTO interfaces (never raw DB rows to the client)
+- `<name>.validation.ts` — Zod schemas + `z.infer` types; include a `*ParamsSchema` for route params
+- `<name>.defaults.ts`, `<name>.slug.ts`, etc. — pure helpers with colocated `.test.ts` files
+
+**`infrastructure/`** — data access, server actions, external adapters. Imports from `application/`.
+- `<name>.query.ts` — read functions, `ctx: RequestContext` as first arg, return DTOs or `Paginated<T>`. No `'use server'`. (Exception: `auth.query.ts` `getSession()` reads `next/headers` directly.)
+- `<name>.action.ts` — Server Actions. Starts with `'use server'`. Every export must use the `run()` wrapper (`src/infrastructure/services/next-action.ts`).
+- `<name>.repository.ts` — data writes extracted when actions grow complex
+- `<name>.config.ts`, `<name>.handler.ts` — external adapters (auth, cron routes)
+
+**`components/`** — UI built on **shadcn/ui** primitives, split by runtime:
+- Server components: `createRequestContext()`, call module queries, render shared list primitives (`ListTable`, `ListSkeleton`, `ListToolbar`, `ListCreateButton`, etc.)
+- Client components (`'use client'`): react-hook-form + `zodResolver` over module schemas, using shadcn primitives (`Input`, `Select`, `Button`, `Dialog`, etc.) and `Field`-family wrappers (`Field`, `FieldLabel`, `FieldContent`, `FieldError`) from `@/shared/components/field`, call actions via `submitAction()`
+
+### Securing Server Actions
+
+All actions use `run()` from `@/infrastructure/services/next-action.ts` — a mandatory wrapper that enforces:
+1. Session authentication
+2. Permission check
+3. Zod input validation
+
+Usage: `run({ permission: PERMISSIONS.admin.<entity>.create, input: createSchema }, handler)`.
+- `{ access: 'public' }` for unauthenticated endpoints (e.g. login)
+- Handlers receive `ctx: AuthenticatedContext` and parsed `data`
+- `AppError` throws become `Result.fail()`; unknown errors are masked to a generic message after logging
+- Client calls via `submitAction(() => action(payload))` from `@/shared/actions/submit-action.ts`
+- Mutations end with `redirect()` and/or `revalidatePath()`
+
+### Shared Infrastructure
+
+| Resource | Path | Role |
+|---|---|---|
+| `PERMISSIONS` | `@/shared/constants/permissions.ts` | Permission slugs (`admin.<entity>.access/create/edit/delete`) |
+| `FIELD_ERRORS` | `@/shared/constants/error-messages.ts` | Spanish validation messages |
+| `AppError` | `@/shared/errors.ts` | Typed errors (unauthorized, forbidden, not_found, invalid_input, internal) |
+| `Result`, `ok`, `fail` | `@/shared/result.ts` | Uniform action return contract |
+| `run()` | `@/infrastructure/services/next-action.ts` | Mandatory action wrapper (auth → perm → schema → handler) |
+| `listParams`, `loadListParams` | `@/shared/list/list-params.ts` | nuqs-based URL state for list pages |
+| `searchILike` | `@/infrastructure/db/list-query.ts` | Case-insensitive multi-column search |
+| `ordering`, `generateId`, `timestamps` | `@/infrastructure/db/order.ts`, `id.ts`, `time.ts` | Schema building blocks |
+| File sync | `@/modules/files/infrastructure/` | `syncFiles`, `listOwnerFiles` with `(entity, scope, ownerId)` |
+
+### Pattern: Creating a New Module
+
+1. Scaffold `src/modules/<name>/` with the 4 files (`manifest.ts`, `application/`, `infrastructure/`, `components/`)
+2. Write `manifest.ts` — import a `LucideIcon`, `PERMISSIONS`, fill `nav` and `routeLabels`
+3. Register in `src/modules/registry.ts` — add import + entry to `manifests[]`
+4. Add permissions to `@/shared/constants/permissions.ts`
+5. Add DB schema (`src/infrastructure/db/schema/<name>.schema.ts`) if new tables are needed; export from `schema/index.ts`
+6. Build application layer: types (DTOs), validation (Zod schemas with `FIELD_ERRORS`), pure helpers
+7. Build infrastructure layer: query (pure async, `ctx` first arg), action (`'use server'` + `run()`), optional repo
+8. Wire app pages: `/dashboard/<entity>` (list, Suspense + skeleton), `/dashboard/<entity>/new`, `/dashboard/<entity>/form/[id]`
+9. Build components: server table (shared list primitives), client form (react-hook-form + `submitAction`)
+10. Validate: `pnpm build`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`
+
+### Conventions
+
+- Module name prefixes files: `users.*`, `categories.*`. DB id prefixes: `cat_`, `user_`, `file_`, etc.
+- Spanish UI strings, English code identifiers
+- Queries order by `sort_order ASC, id ASC`. `sortOrder` never exposed in DTOs or UI.
+- Cross-module imports allowed: e.g. users imports `auth.config`
+- App pages are thin: create context, guard permission, validate params, call query, render component. No business logic.
 
 ## Strict Data Validation Rules
 
@@ -56,19 +129,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Prefer ESM and modern browser syntax
 - Comments in English, only when they explain non-obvious intent (the "why"). Never restate what the code already says.
 
-## Database Schema
-
-- Ordering columns use the shared `ordering` helper (`src/infrastructure/db/order.ts`): `sortOrder` → `sort_order`, `integer not null default 0`.
-- Always order such lists with a unique tiebreaker: `sort_order ASC, id ASC`.
-- Order values are auto-generated and internal: `max + 1` for global scopes, array index for owner-preserved collections. Never expose them in DTOs, validation or UI.
-
-## Organization
-
-- Small components with a single responsibility
-- Prefer composition over complex configurations
-- Avoid premature abstractions
-- Shared code must live in clear directories such as `components`, `layouts`, `lib`, or `utils`
-
 ## TypeScript Rules
 
 - Avoid `any` and `unknown`
@@ -81,10 +141,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Do not duplicate classes if a component can be extracted
 - Prioritize readability over visual micro-optimizations
 - Accessibility is not optional: use semantic HTML, ARIA roles when applicable, and managed focus
+- **shadcn/ui is the primary component library.** All UI is built using shadcn components. Custom UI code is only written when justified (complex composition, specific logic not covered by shadcn). The shared list primitives (`ListTable`, `ListToolbar`, `ListCreateButton`, etc.) and form components already cover most needs for a module.
 
-## Custom Feature Rules
+## Validation Commands
 
-Every time a new feature is developed, you must run the following validation commands in order:
+Every time a new feature is developed, you must run the following in order:
 
 - `pnpm build`
 - `pnpm lint`
