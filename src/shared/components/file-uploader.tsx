@@ -150,6 +150,22 @@ function openableHref(item: FileItem): string | undefined {
   return item.state === 'done' && !isTempKey(item.tempKey) ? item.tempKey : undefined;
 }
 
+function attachmentMedia(item: FileItem) {
+  if (isBusy(item.state)) {
+    return <Spinner />;
+  }
+
+  const isImage = Boolean(item.fileType?.startsWith('image/'));
+  const href = openableHref(item);
+  const src = isImage ? (href ?? item.previewUrl) : undefined;
+
+  if (src) {
+    return <img src={src} alt={item.fileName} />;
+  }
+
+  return <FileTextIcon />;
+}
+
 function FileAttachment({
   item,
   onRemove,
@@ -160,9 +176,15 @@ function FileAttachment({
   const href = openableHref(item);
   const isImage = Boolean(item.fileType?.startsWith('image/'));
   const previewSrc = isImage ? (href ?? item.previewUrl) : undefined;
+  const attachmentWidth = isImage && previewSrc ? 'w-48 max-w-full' : undefined;
 
   return (
-    <Attachment state={item.state} orientation={isImage ? 'vertical' : 'horizontal'} size='sm'>
+    <Attachment
+      state={item.state}
+      orientation={isImage ? 'vertical' : 'horizontal'}
+      size='sm'
+      className={attachmentWidth}
+    >
       {href && (
         <AttachmentTrigger asChild>
           <a href={href} rel='noreferrer' target='_blank'>
@@ -171,13 +193,7 @@ function FileAttachment({
         </AttachmentTrigger>
       )}
       <AttachmentMedia variant={previewSrc ? 'image' : 'icon'}>
-        {isBusy(item.state) ? (
-          <Spinner />
-        ) : previewSrc ? (
-          <img src={previewSrc} alt={item.fileName} />
-        ) : (
-          <FileTextIcon />
-        )}
+        {attachmentMedia(item)}
       </AttachmentMedia>
       <AttachmentContent>
         <AttachmentTitle>{item.fileName}</AttachmentTitle>
