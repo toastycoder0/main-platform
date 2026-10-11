@@ -31,6 +31,8 @@ interface FileItem {
   fileName: string;
   fileSize: number;
   tempKey: string;
+  fileType?: string;
+  previewUrl?: string;
 }
 
 export function FileUploader({
@@ -156,6 +158,8 @@ function FileAttachment({
   onRemove?: ((item: FileItem) => void) | undefined;
 }) {
   const href = openableHref(item);
+  const isImage = Boolean(item.fileType?.startsWith('image/'));
+  const previewSrc = isImage ? (href ?? item.previewUrl) : undefined;
 
   return (
     <Attachment state={item.state} size='sm'>
@@ -166,7 +170,15 @@ function FileAttachment({
           </a>
         </AttachmentTrigger>
       )}
-      <AttachmentMedia>{isBusy(item.state) ? <Spinner /> : <FileTextIcon />}</AttachmentMedia>
+      <AttachmentMedia variant={previewSrc ? 'image' : 'icon'}>
+        {isBusy(item.state) ? (
+          <Spinner />
+        ) : previewSrc ? (
+          <img src={previewSrc} alt={item.fileName} />
+        ) : (
+          <FileTextIcon />
+        )}
+      </AttachmentMedia>
       <AttachmentContent>
         <AttachmentTitle>{item.fileName}</AttachmentTitle>
         <AttachmentDescription>{attachmentStatus(item)}</AttachmentDescription>
@@ -249,9 +261,17 @@ export function ControlledFileUploader<T extends FieldValues>({
 
   async function addFile(file: File): Promise<void> {
     const id = crypto.randomUUID();
+    const previewUrl = URL.createObjectURL(file);
     setItems((cur) => [
       ...cur,
-      { state: 'uploading', fileName: file.name, fileSize: file.size, tempKey: id },
+      {
+        state: 'uploading',
+        fileName: file.name,
+        fileSize: file.size,
+        tempKey: id,
+        fileType: file.type,
+        previewUrl,
+      },
     ]);
 
     const tempKey = await upload(file);
@@ -280,6 +300,9 @@ export function ControlledFileUploader<T extends FieldValues>({
   }
 
   function handleRemove(item: FileItem): void {
+    if (item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
     if (isTempKey(item.tempKey)) {
       deleteTempUpload({ fileKey: item.tempKey }).catch(() => undefined);
     }
