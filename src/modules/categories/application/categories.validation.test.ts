@@ -41,6 +41,13 @@ describe('createCategorySchema', () => {
     expect(createCategorySchema.safeParse({ name: 'Pisos', isActive: false }).success).toBe(true);
   });
 
+  it('accepts image as optional string', () => {
+    expect(createCategorySchema.safeParse({ name: 'Pisos', image: 'temp_key_123' }).success).toBe(
+      true,
+    );
+    expect(createCategorySchema.safeParse({ name: 'Pisos' }).success).toBe(true);
+  });
+
   it('fails validation when name is empty', () => {
     const result = createCategorySchema.safeParse({ name: '   ' });
 
@@ -49,6 +56,31 @@ describe('createCategorySchema', () => {
     if (!result.success) {
       const errors = z.flattenError(result.error).fieldErrors;
       expect(errors.name).toContain(FIELD_ERRORS.name);
+    }
+  });
+
+  it('fails validation when name exceeds 100 characters', () => {
+    const result = createCategorySchema.safeParse({ name: 'a'.repeat(101) });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      const errors = z.flattenError(result.error).fieldErrors;
+      expect(errors.name).toContain(FIELD_ERRORS.name);
+    }
+  });
+
+  it('fails validation when description exceeds 500 characters', () => {
+    const result = createCategorySchema.safeParse({
+      name: 'Pisos',
+      description: 'a'.repeat(501),
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      const errors = z.flattenError(result.error).fieldErrors;
+      expect(errors.description).toContain(FIELD_ERRORS.description);
     }
   });
 });
@@ -75,6 +107,23 @@ describe('updateCategorySchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('allows a nullable parentId', () => {
+    expect(
+      updateCategorySchema.safeParse({ id: 'cat_1', name: 'Pisos', parentId: 'cat_2' }).success,
+    ).toBe(true);
+    expect(
+      updateCategorySchema.safeParse({ id: 'cat_1', name: 'Pisos', parentId: null }).success,
+    ).toBe(true);
+    expect(updateCategorySchema.safeParse({ id: 'cat_1', name: 'Pisos' }).success).toBe(true);
+  });
+
+  it('accepts image as optional string', () => {
+    expect(
+      updateCategorySchema.safeParse({ id: 'cat_1', name: 'Pisos', image: 'temp_key_123' }).success,
+    ).toBe(true);
+    expect(updateCategorySchema.safeParse({ id: 'cat_1', name: 'Pisos' }).success).toBe(true);
+  });
+
   it('fails validation when id is empty', () => {
     const result = updateCategorySchema.safeParse({ id: '', name: 'Pisos' });
 
@@ -94,6 +143,32 @@ describe('updateCategorySchema', () => {
     if (!result.success) {
       const errors = z.flattenError(result.error).fieldErrors;
       expect(errors.name).toContain(FIELD_ERRORS.name);
+    }
+  });
+
+  it('fails validation when name exceeds 100 characters', () => {
+    const result = updateCategorySchema.safeParse({ id: 'cat_1', name: 'a'.repeat(101) });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      const errors = z.flattenError(result.error).fieldErrors;
+      expect(errors.name).toContain(FIELD_ERRORS.name);
+    }
+  });
+
+  it('fails validation when description exceeds 500 characters', () => {
+    const result = updateCategorySchema.safeParse({
+      id: 'cat_1',
+      name: 'Pisos',
+      description: 'a'.repeat(501),
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      const errors = z.flattenError(result.error).fieldErrors;
+      expect(errors.description).toContain(FIELD_ERRORS.description);
     }
   });
 });

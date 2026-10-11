@@ -225,6 +225,26 @@ describe('updateCategory', () => {
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
   });
+
+  it('moves the category when parentId changes', async () => {
+    const parentId = await seedCategory({ name: `${scope}_move_target` });
+    const childId = await seedCategory();
+
+    const result = await updateCategory({
+      id: childId,
+      name: `${scope}_moved`,
+      parentId,
+    });
+
+    expect(result.success).toBe(true);
+
+    const [row] = await db
+      .select({ parentId: category.parentId })
+      .from(category)
+      .where(eq(category.id, childId))
+      .limit(1);
+    expect(row?.parentId).toBe(parentId);
+  });
 });
 
 describe('archiveCategory', () => {
