@@ -4,6 +4,7 @@ import { categoriesManifest } from './categories/manifest';
 import { filesManifest } from './files/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
 import { rolesManifest } from './roles/manifest';
+import { tagsManifest } from './tags/manifest';
 import { usersManifest } from './users/manifest';
 
 // Composition root: modules register here manually via their manifests.
@@ -17,6 +18,7 @@ const manifests: ModuleManifest[] = [
   categoriesManifest,
   filesManifest,
   rolesManifest,
+  tagsManifest,
   usersManifest,
 ];
 
