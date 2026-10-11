@@ -106,7 +106,11 @@ describe('Categories E2E', () => {
     await waitForTree(page);
 
     // Open edit from dropdown
-    await page.getByLabel('Acciones').click();
+    await page
+      .getByRole('treeitem')
+      .filter({ hasText: categoryName })
+      .getByLabel('Acciones')
+      .click();
     await page.getByRole('menuitem', { name: 'Editar' }).click();
     await page.waitForURL('**/dashboard/categories/form/**');
     await page.waitForSelector('#category-form');
@@ -136,7 +140,11 @@ describe('Categories E2E', () => {
     await waitForTree(page);
 
     // Open edit from dropdown
-    await page.getByLabel('Acciones').click();
+    await page
+      .getByRole('treeitem')
+      .filter({ hasText: categoryName })
+      .getByLabel('Acciones')
+      .click();
     await page.getByRole('menuitem', { name: 'Editar' }).click();
     await page.waitForURL('**/dashboard/categories/form/**');
     await page.waitForSelector('#category-form');
@@ -164,7 +172,11 @@ describe('Categories E2E', () => {
     await waitForTree(page);
 
     // Toggle active via dropdown
-    await page.getByLabel('Acciones').click();
+    await page
+      .getByRole('treeitem')
+      .filter({ hasText: categoryName })
+      .getByLabel('Acciones')
+      .click();
     await page.getByRole('menuitem', { name: 'Desactivar' }).click();
     await page.getByText('Inactiva').waitFor();
   });
