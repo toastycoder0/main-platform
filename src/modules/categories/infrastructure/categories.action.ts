@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import {
@@ -25,6 +26,7 @@ export const createCategory = run(
   async (ctx, data) => {
     await createCategoryRepo(ctx, data);
     revalidatePath('/dashboard/categories');
+    redirect('/dashboard/categories');
   },
 );
 
@@ -33,6 +35,7 @@ export const updateCategory = run(
   async (ctx, data) => {
     await updateCategoryRepo(ctx, data.id, data);
     revalidatePath('/dashboard/categories');
+    redirect('/dashboard/categories');
   },
 );
 

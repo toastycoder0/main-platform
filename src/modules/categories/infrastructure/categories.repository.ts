@@ -9,6 +9,7 @@ import type {
   CreateCategorySchema,
   UpdateCategorySchema,
 } from '../application/categories.validation';
+import { findCategoryById } from './categories.query';
 
 type CategoryRow = typeof category.$inferSelect;
 type TransactionClient = { execute: (query: SQL) => Promise<unknown> };
@@ -123,20 +124,6 @@ export async function createCategory(
   ctx.logger.info({ categoryId: id }, 'Category created');
 
   return created;
-}
-
-export async function findCategoryById(ctx: RequestContext, id: string): Promise<CategoryRow> {
-  const [row] = await ctx.db
-    .select()
-    .from(category)
-    .where(and(eq(category.id, id), isNull(category.deletedAt)))
-    .limit(1);
-
-  if (!row) {
-    throw new AppError('not_found');
-  }
-
-  return row;
 }
 
 export async function updateCategory(
@@ -331,42 +318,4 @@ export async function toggleCategoryActive(
   await ctx.db.update(category).set({ isActive }).where(eq(category.id, categoryId));
 
   ctx.logger.info({ categoryId, isActive }, 'Category active toggled');
-}
-
-export interface CategoryTreeQueryRow {
-  id: string;
-  parentId: string | null;
-  slug: string;
-  name: string;
-  description: string | null;
-  path: string;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export async function getCategoryTree(ctx: RequestContext): Promise<CategoryTreeQueryRow[]> {
-  const rows = await ctx.db
-    .select({
-      id: category.id,
-      parentId: category.parentId,
-      slug: category.slug,
-      name: category.name,
-      description: category.description,
-      path: category.path,
-      isActive: category.isActive,
-      sortOrder: category.sortOrder,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-    })
-    .from(category)
-    .where(isNull(category.deletedAt))
-    .orderBy(asc(category.parentId), asc(category.sortOrder), asc(category.id));
-
-  return rows.map((r) => ({
-    ...r,
-    parentId: r.parentId ?? null,
-    description: r.description ?? null,
-  }));
 }

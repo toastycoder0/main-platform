@@ -19,6 +19,14 @@ const INITIAL_PERMISSIONS = [
   { slug: admin.roles.create, name: 'Crear roles', type: 'action' as const },
   { slug: admin.roles.edit, name: 'Editar roles', type: 'action' as const },
   { slug: admin.files.upload, name: 'Subir archivos', type: 'action' as const },
+  {
+    slug: admin.categories.access,
+    name: 'Acceso a gestión de categorías',
+    type: 'access' as const,
+  },
+  { slug: admin.categories.create, name: 'Crear categorías', type: 'action' as const },
+  { slug: admin.categories.edit, name: 'Editar categorías', type: 'action' as const },
+  { slug: admin.categories.delete, name: 'Archivar categorías', type: 'action' as const },
 ];
 
 const ROLE_SLUG = 'super_admin';

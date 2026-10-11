@@ -7,7 +7,7 @@ export const categoryParamsSchema = z.object({
 });
 
 const categoryFieldsSchema = {
-  name: z.string().trim().min(1, FIELD_ERRORS.name),
+  name: z.string().trim().min(1, FIELD_ERRORS.name).max(100, FIELD_ERRORS.name),
   description: z.string().trim().max(500, FIELD_ERRORS.description).nullable().optional(),
   isActive: z.boolean().optional(),
 };
