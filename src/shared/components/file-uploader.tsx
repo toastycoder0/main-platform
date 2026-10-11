@@ -162,7 +162,7 @@ function FileAttachment({
   const previewSrc = isImage ? (href ?? item.previewUrl) : undefined;
 
   return (
-    <Attachment state={item.state} size='sm'>
+    <Attachment state={item.state} orientation={isImage ? 'vertical' : 'horizontal'} size='sm'>
       {href && (
         <AttachmentTrigger asChild>
           <a href={href} rel='noreferrer' target='_blank'>
