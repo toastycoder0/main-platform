@@ -68,7 +68,9 @@ describe('Categories E2E', () => {
     await page.goto(`${BASE}/dashboard/categories`);
     await page.waitForSelector('h1:has-text("Gestión de categorías")');
 
-    expect(await page.getByText('No se encontraron categorías').isVisible()).toBe(true);
+    // Wait for the tree to resolve (either skeleton or actual tree)
+    // then ensure empty state is visible
+    await page.waitForSelector('[data-slot=list-empty]');
     expect(consoleErrors).toEqual([]);
   });
 
@@ -153,7 +155,7 @@ describe('Categories E2E', () => {
     await page.getByRole('button', { name: 'Archivar categoría' }).click();
     await page.getByRole('button', { name: 'Archivar', exact: true }).click();
     await page.waitForURL(`${BASE}/dashboard/categories`);
-    await page.waitForSelector('[data-slot=list-empty]');
+    await page.waitForSelector('[role=tree]');
     expect(await page.getByText(categoryName).count()).toBe(0);
   });
 
