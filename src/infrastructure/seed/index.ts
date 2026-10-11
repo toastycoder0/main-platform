@@ -27,6 +27,10 @@ const INITIAL_PERMISSIONS = [
   { slug: admin.categories.create, name: 'Crear categorías', type: 'action' as const },
   { slug: admin.categories.edit, name: 'Editar categorías', type: 'action' as const },
   { slug: admin.categories.delete, name: 'Archivar categorías', type: 'action' as const },
+  { slug: admin.brands.access, name: 'Acceso a gestión de marcas', type: 'access' as const },
+  { slug: admin.brands.create, name: 'Crear marcas', type: 'action' as const },
+  { slug: admin.brands.edit, name: 'Editar marcas', type: 'action' as const },
+  { slug: admin.brands.delete, name: 'Archivar marcas', type: 'action' as const },
 ];
 
 const ROLE_SLUG = 'super_admin';

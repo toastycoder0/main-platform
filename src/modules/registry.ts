@@ -1,4 +1,5 @@
 import { authManifest } from './auth/manifest';
+import { brandsManifest } from './brands/manifest';
 import { categoriesManifest } from './categories/manifest';
 import { filesManifest } from './files/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
@@ -12,6 +13,7 @@ import { usersManifest } from './users/manifest';
 // that migration only has to change how this list is populated.
 const manifests: ModuleManifest[] = [
   authManifest,
+  brandsManifest,
   categoriesManifest,
   filesManifest,
   rolesManifest,

@@ -22,5 +22,11 @@ export const PERMISSIONS = {
       edit: 'admin.categories.edit',
       delete: 'admin.categories.delete',
     },
+    brands: {
+      access: 'admin.brands.access',
+      create: 'admin.brands.create',
+      edit: 'admin.brands.edit',
+      delete: 'admin.brands.delete',
+    },
   },
 } as const;
