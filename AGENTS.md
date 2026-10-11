@@ -126,6 +126,7 @@ Usage: `run({ permission: PERMISSIONS.admin.<entity>.create, input: createSchema
 - TypeScript is mandatory
 - Always use Tailwind CSS for styling
 - Icons from lucide-react. Explicit imports only, never use barrel imports
+- **Images:** Use `<img>` (not Next.js `<Image/>`) wrapped in `<picture>` for semantic correctness
 - Prefer ESM and modern browser syntax
 - Comments in English, only when they explain non-obvious intent (the "why"). Never restate what the code already says.
 
