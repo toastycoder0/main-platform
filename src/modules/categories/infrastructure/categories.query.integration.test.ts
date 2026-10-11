@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
@@ -186,7 +186,17 @@ describe('listCategoryOptions', () => {
 
     expect(names).toContain(`${scope} Alpha`);
     expect(names).not.toContain(`${scope} Beta`);
-    expect(names).toEqual([...names].sort());
+
+    // The ORDER BY uses the database collation (en_US.utf8), which does not
+    // match JS code-point sorting for labels containing '_' or spaces. Assert
+    // the returned order against Postgres' own collation instead.
+    const sortedRows = await db.execute<{ sorted: string[] }>(
+      sql`SELECT array_agg(name ORDER BY name) AS sorted FROM unnest(ARRAY[${sql.join(
+        names.map((n) => sql`${n}`),
+        sql`, `,
+      )}]::text[]) AS t(name)`,
+    );
+    expect(names).toEqual(sortedRows[0]?.sorted);
   });
 
   it('excludes the specified id', async () => {
