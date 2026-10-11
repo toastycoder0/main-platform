@@ -11,12 +11,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { submitAction } from '@/shared/actions/submit-action';
+import { Button } from '@/shared/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/dropdown-menu';
+import { ListEmptyState } from '@/shared/components/list-empty';
 import { cn } from '@/shared/utils/cn';
 import {
   buildCategoryTree,
@@ -82,47 +84,33 @@ function RowActions({ row, isFirst, isLast, handleToggleActive, handleReorder }:
         <PlusIcon className='size-4' />
       </Link>
 
-      <button
-        type='button'
-        className={cn(
-          'shrink-0 size-7 flex items-center justify-center rounded transition-colors',
-          isFirst
-            ? 'text-muted-foreground/50 cursor-not-allowed'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-        )}
-        onClick={() => !isFirst && handleReorder(row.node.id, 'up')}
+      <Button
+        variant='ghost'
+        size='icon-sm'
         disabled={isFirst}
+        onClick={() => !isFirst && handleReorder(row.node.id, 'up')}
         aria-label='Mover arriba'
         title={isFirst ? 'Ya está al principio' : 'Mover arriba'}
       >
         <ArrowUpIcon className='size-4' />
-      </button>
+      </Button>
 
-      <button
-        type='button'
-        className={cn(
-          'shrink-0 size-7 flex items-center justify-center rounded transition-colors',
-          isLast
-            ? 'text-muted-foreground/50 cursor-not-allowed'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-        )}
-        onClick={() => !isLast && handleReorder(row.node.id, 'down')}
+      <Button
+        variant='ghost'
+        size='icon-sm'
         disabled={isLast}
+        onClick={() => !isLast && handleReorder(row.node.id, 'down')}
         aria-label='Mover abajo'
         title={isLast ? 'Ya está al final' : 'Mover abajo'}
       >
         <ArrowDownIcon className='size-4' />
-      </button>
+      </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type='button'
-            className='shrink-0 size-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors'
-            aria-label='Acciones'
-          >
+          <Button variant='ghost' size='icon-sm' aria-label='Acciones'>
             <MoreHorizontalIcon className='size-4' />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
           <DropdownMenuItem asChild>
@@ -256,7 +244,7 @@ export function CategoriesTreeView({ rows }: CategoriesTreeViewProps) {
   );
 
   if (visibleRows.length === 0) {
-    return <p className='text-muted-foreground text-sm'>No hay categorías registradas.</p>;
+    return <ListEmptyState entity='categorías' outOfRange={false} />;
   }
 
   return (

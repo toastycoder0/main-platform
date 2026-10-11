@@ -1,7 +1,12 @@
 import { notFound } from 'next/navigation';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
+import { ArchiveCategorySection } from '@/modules/categories/components/archive-category-section';
 import { CategoryForm } from '@/modules/categories/components/category-form';
-import { findCategoryById } from '@/modules/categories/infrastructure/categories.query';
+import {
+  findCategoryById,
+  getCategoryImage,
+  listCategoryOptions,
+} from '@/modules/categories/infrastructure/categories.query';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
 interface EditCategoryPageProps {
@@ -15,7 +20,11 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
     notFound();
   }
 
-  const category = await findCategoryById(ctx, rawParams.id);
+  const [category, image, categoryOptions] = await Promise.all([
+    findCategoryById(ctx, rawParams.id),
+    getCategoryImage(ctx, rawParams.id),
+    listCategoryOptions(ctx, rawParams.id),
+  ]);
 
   return (
     <div className='flex flex-col gap-4'>
@@ -26,7 +35,13 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
         name={category.name}
         description={category.description}
         isActive={category.isActive}
+        parentId={category.parentId}
+        image={image}
+        categoryOptions={categoryOptions}
       />
+      {ctx.permissions.has(PERMISSIONS.admin.categories.delete) ? (
+        <ArchiveCategorySection categoryId={category.id} categoryName={category.name} />
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { CategoryForm } from '@/modules/categories/components/category-form';
+import { listCategoryOptions } from '@/modules/categories/infrastructure/categories.query';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
 interface NewCategoryPageProps {
@@ -14,7 +15,8 @@ export default async function NewCategoryPage({ searchParams }: NewCategoryPageP
     notFound();
   }
 
-  const rawParams = await searchParams;
+  const [rawParams, categoryOptions] = await Promise.all([searchParams, listCategoryOptions(ctx)]);
+
   const parentId = typeof rawParams.parentId === 'string' ? rawParams.parentId : null;
 
   return (
@@ -25,7 +27,7 @@ export default async function NewCategoryPage({ searchParams }: NewCategoryPageP
           Se creará como subcategoría de la categoría seleccionada.
         </p>
       )}
-      <CategoryForm mode='create' parentId={parentId} />
+      <CategoryForm mode='create' parentId={parentId} categoryOptions={categoryOptions} />
     </div>
   );
 }

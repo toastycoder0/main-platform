@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildCategoryTree,
-  type CategoryTreeNode,
-  flattenVisibleRows,
-  getCategoryPath,
-} from './categories.tree';
+import { buildCategoryTree, type CategoryTreeNode, flattenVisibleRows } from './categories.tree';
 
 interface TestRow {
   id: string;
@@ -119,22 +114,5 @@ describe('flattenVisibleRows', () => {
     expect(flat[0]?.isExpanded).toBe(true);
     expect(flat[1]?.hasChildren).toBe(false);
     expect(flat[1]?.isExpanded).toBe(true);
-  });
-});
-
-describe('getCategoryPath', () => {
-  it('builds a breadcrumb string from node names', () => {
-    const rows = [
-      { id: 'cat_a', name: 'Pisos', path: 'cat_a' },
-      { id: 'cat_b', name: 'Vinílicos', path: 'cat_a/cat_b' },
-      { id: 'cat_c', name: 'Comercial', path: 'cat_a/cat_b/cat_c' },
-    ];
-
-    expect(getCategoryPath(rows, 'cat_c')).toBe('Pisos > Vinílicos > Comercial');
-  });
-
-  it('returns the node id when the node is not found', () => {
-    const rows = [{ id: 'cat_a', name: 'Pisos', path: 'cat_a' }];
-    expect(getCategoryPath(rows, 'unknown')).toBe('unknown');
   });
 });

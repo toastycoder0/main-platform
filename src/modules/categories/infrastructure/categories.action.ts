@@ -12,6 +12,8 @@ import {
   toggleCategoryActiveSchema,
   updateCategorySchema,
 } from '../application/categories.validation';
+import { syncCategoryImage } from './categories.files';
+import { findCategoryById } from './categories.query';
 import {
   archiveCategory as archiveCategoryRepo,
   createCategory as createCategoryRepo,
@@ -24,7 +26,10 @@ import {
 export const createCategory = run(
   { permission: PERMISSIONS.admin.categories.create, input: createCategorySchema },
   async (ctx, data) => {
-    await createCategoryRepo(ctx, data);
+    const created = await createCategoryRepo(ctx, data);
+    if (data.image) {
+      await syncCategoryImage(ctx.db, created.id, ctx.session.user.id, data.image);
+    }
     revalidatePath('/dashboard/categories');
     redirect('/dashboard/categories');
   },
@@ -33,7 +38,18 @@ export const createCategory = run(
 export const updateCategory = run(
   { permission: PERMISSIONS.admin.categories.edit, input: updateCategorySchema },
   async (ctx, data) => {
+    const current = await findCategoryById(ctx, data.id);
+
     await updateCategoryRepo(ctx, data.id, data);
+
+    if (data.parentId !== undefined && data.parentId !== current.parentId) {
+      await moveCategoryRepo(ctx, data.id, data.parentId);
+    }
+
+    if (data.image !== undefined) {
+      await syncCategoryImage(ctx.db, data.id, ctx.session.user.id, data.image);
+    }
+
     revalidatePath('/dashboard/categories');
     redirect('/dashboard/categories');
   },
@@ -44,6 +60,7 @@ export const archiveCategory = run(
   async (ctx, data) => {
     await archiveCategoryRepo(ctx, data.id);
     revalidatePath('/dashboard/categories');
+    redirect('/dashboard/categories');
   },
 );
 

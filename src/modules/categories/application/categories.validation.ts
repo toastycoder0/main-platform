@@ -10,6 +10,7 @@ const categoryFieldsSchema = {
   name: z.string().trim().min(1, FIELD_ERRORS.name).max(100, FIELD_ERRORS.name),
   description: z.string().trim().max(500, FIELD_ERRORS.description).nullable().optional(),
   isActive: z.boolean().optional(),
+  image: z.string().optional(),
 };
 
 export const createCategorySchema = z.object({
@@ -19,6 +20,7 @@ export const createCategorySchema = z.object({
 
 export const updateCategorySchema = z.object({
   id: z.string().min(1, FIELD_ERRORS.required),
+  parentId: z.string().optional().nullable(),
   ...categoryFieldsSchema,
 });
 

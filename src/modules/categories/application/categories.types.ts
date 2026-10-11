@@ -10,3 +10,13 @@ export interface CategoryTreeRow {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface CategoryFormDTO {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  path: string;
+  parentId: string | null;
+  isActive: boolean;
+}
