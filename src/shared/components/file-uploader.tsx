@@ -185,7 +185,9 @@ function FileAttachment({
         {isBusy(item.state) ? (
           <Spinner />
         ) : previewSrc ? (
-          <img src={previewSrc} alt={item.fileName} />
+          <picture>
+            <img src={previewSrc} alt={item.fileName} />
+          </picture>
         ) : (
           <FileTextIcon />
         )}
