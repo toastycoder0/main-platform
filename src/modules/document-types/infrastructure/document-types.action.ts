@@ -1,11 +1,10 @@
 'use server';
 
-import { randomBytes } from 'node:crypto';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import type { DatabaseClient } from '@/infrastructure/db';
 import { documentType } from '@/infrastructure/db/schema';
+import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
@@ -16,29 +15,14 @@ import {
   updateDocumentTypeSchema,
 } from '../application/document-types.validation';
 
-async function resolveUniqueDocumentTypeSlug(db: DatabaseClient, base: string): Promise<string> {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = attempt === 0 ? base : `${base}-${randomBytes(2).toString('hex')}`;
-    const [existing] = await db
-      .select({ id: documentType.id })
-      .from(documentType)
-      .where(eq(documentType.slug, candidate))
-      .limit(1);
-
-    if (!existing) {
-      return candidate;
-    }
-  }
-
-  throw new AppError('internal', 'No se pudo generar un slug único para el tipo de documento');
-}
-
 export const createDocumentType = run(
   { permission: PERMISSIONS.admin.documentTypes.create, input: createDocumentTypeSchema },
   async (ctx, { name, description, isActive }) => {
-    const slug = await resolveUniqueDocumentTypeSlug(
+    const slug = await resolveUniqueSlug(
       ctx.db,
+      documentType,
       slugifyDocumentTypeName(name) || 'tipo-de-documento',
+      'el tipo de documento',
     );
 
     await ctx.db.transaction(async (tx) => {

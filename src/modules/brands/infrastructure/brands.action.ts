@@ -1,11 +1,10 @@
 'use server';
 
-import { randomBytes } from 'node:crypto';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import type { DatabaseClient } from '@/infrastructure/db';
 import { brand } from '@/infrastructure/db/schema';
+import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
@@ -16,27 +15,15 @@ import {
   updateBrandSchema,
 } from '../application/brands.validation';
 
-async function resolveUniqueBrandSlug(db: DatabaseClient, base: string): Promise<string> {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = attempt === 0 ? base : `${base}-${randomBytes(2).toString('hex')}`;
-    const [existing] = await db
-      .select({ id: brand.id })
-      .from(brand)
-      .where(eq(brand.slug, candidate))
-      .limit(1);
-
-    if (!existing) {
-      return candidate;
-    }
-  }
-
-  throw new AppError('internal', 'No se pudo generar un slug único para la marca');
-}
-
 export const createBrand = run(
   { permission: PERMISSIONS.admin.brands.create, input: createBrandSchema },
   async (ctx, { name, description, isActive }) => {
-    const slug = await resolveUniqueBrandSlug(ctx.db, slugifyBrandName(name) || 'marca');
+    const slug = await resolveUniqueSlug(
+      ctx.db,
+      brand,
+      slugifyBrandName(name) || 'marca',
+      'la marca',
+    );
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx

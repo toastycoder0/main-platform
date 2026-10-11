@@ -1,38 +1,25 @@
 'use server';
 
-import { randomBytes } from 'node:crypto';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import type { DatabaseClient } from '@/infrastructure/db';
 import { tag } from '@/infrastructure/db/schema';
+import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
 import { slugifyTagName } from '../application/tags.slug';
 import { createTagSchema, tagParamsSchema, updateTagSchema } from '../application/tags.validation';
 
-async function resolveUniqueTagSlug(db: DatabaseClient, base: string): Promise<string> {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = attempt === 0 ? base : `${base}-${randomBytes(2).toString('hex')}`;
-    const [existing] = await db
-      .select({ id: tag.id })
-      .from(tag)
-      .where(eq(tag.slug, candidate))
-      .limit(1);
-
-    if (!existing) {
-      return candidate;
-    }
-  }
-
-  throw new AppError('internal', 'No se pudo generar un slug único para la etiqueta');
-}
-
 export const createTag = run(
   { permission: PERMISSIONS.admin.tags.create, input: createTagSchema },
   async (ctx, { name, description, isActive }) => {
-    const slug = await resolveUniqueTagSlug(ctx.db, slugifyTagName(name) || 'etiqueta');
+    const slug = await resolveUniqueSlug(
+      ctx.db,
+      tag,
+      slugifyTagName(name) || 'etiqueta',
+      'la etiqueta',
+    );
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx
