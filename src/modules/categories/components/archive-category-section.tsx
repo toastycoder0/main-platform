@@ -1,20 +1,8 @@
 'use client';
 
-import { Trash2Icon } from 'lucide-react';
 import { useTransition } from 'react';
 import { submitAction } from '@/shared/actions/submit-action';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/components/alert-dialog';
-import { Button } from '@/shared/components/button';
+import { DestructiveConfirm } from '@/shared/components/confirm-destructive';
 import { archiveCategory } from '../infrastructure/categories.action';
 
 interface ArchiveCategorySectionProps {
@@ -41,26 +29,14 @@ export function ArchiveCategorySection({ categoryId, categoryName }: ArchiveCate
       </div>
 
       <div className='flex gap-2'>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button type='button' variant='destructive' disabled={isPending}>
-              <Trash2Icon />
-              Archivar categoría
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Archivar {categoryName}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción oculta la categoría de forma permanente. No se puede deshacer.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={submitArchive}>Archivar</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DestructiveConfirm
+          label='Archivar categoría'
+          title={`Archivar ${categoryName}?`}
+          description='Esta acción oculta la categoría de forma permanente. No se puede deshacer.'
+          confirmLabel='Archivar'
+          busy={isPending}
+          onConfirm={submitArchive}
+        />
       </div>
     </section>
   );

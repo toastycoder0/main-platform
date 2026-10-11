@@ -1,20 +1,10 @@
 'use client';
 
-import { BanIcon, KeyIcon, ShieldCheckIcon, Trash2Icon } from 'lucide-react';
+import { BanIcon, KeyIcon, ShieldCheckIcon } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { submitAction } from '@/shared/actions/submit-action';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/components/alert-dialog';
 import { Button } from '@/shared/components/button';
+import { DestructiveConfirm } from '@/shared/components/confirm-destructive';
 import {
   Dialog,
   DialogContent,
@@ -245,29 +235,14 @@ function DeleteSection({ user }: { user: AccessUser }) {
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button type='button' variant='destructive' disabled={isPending}>
-          <Trash2Icon />
-          Eliminar usuario
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar a {user.firstName} {user.lastName}?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción elimina la cuenta de forma permanente junto con sus sesiones, direcciones y
-            perfiles de facturación. No se puede deshacer.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={submitDelete}>Eliminar</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveConfirm
+      label='Eliminar usuario'
+      title={`Eliminar a ${user.firstName} ${user.lastName}?`}
+      description='Esta acción elimina la cuenta de forma permanente junto con sus sesiones, direcciones y perfiles de facturación. No se puede deshacer.'
+      confirmLabel='Eliminar'
+      busy={isPending}
+      onConfirm={submitDelete}
+    />
   );
 }
 
