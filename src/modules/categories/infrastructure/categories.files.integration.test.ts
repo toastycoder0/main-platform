@@ -128,7 +128,9 @@ describe('syncCategoryImage', () => {
     const rows = await db
       .select({ ownerId: file.ownerId, key: file.key })
       .from(file)
-      .where(and(eq(file.ownerId, categoryId), eq(file.entity, 'category'), eq(file.scope, 'image')))
+      .where(
+        and(eq(file.ownerId, categoryId), eq(file.entity, 'category'), eq(file.scope, 'image')),
+      )
       .limit(1);
     expect(rows[0]?.ownerId).toBe(categoryId);
     expect(rows[0]?.key).toBeTruthy();
@@ -153,13 +155,17 @@ describe('syncCategoryImage', () => {
       .where(eq(file.tempKey, tempKey))
       .limit(1);
 
+    if (!oldFileBefore) {
+      throw new Error('Expected oldFileBefore to exist');
+    }
+
     // First sync
     await syncCategoryImage(db, categoryId, 'cat_files_test', tempKey);
 
     const [oldRow] = await db
       .select({ ownerId: file.ownerId })
       .from(file)
-      .where(eq(file.id, oldFileBefore!.id))
+      .where(eq(file.id, oldFileBefore.id))
       .limit(1);
     expect(oldRow?.ownerId).toBe(categoryId);
 
@@ -169,7 +175,7 @@ describe('syncCategoryImage', () => {
     const [detached] = await db
       .select({ ownerId: file.ownerId })
       .from(file)
-      .where(eq(file.id, oldFileBefore!.id))
+      .where(eq(file.id, oldFileBefore.id))
       .limit(1);
     expect(detached?.ownerId).toBeNull();
   });

@@ -1,3 +1,4 @@
+import { type LucideIcon, SearchXIcon } from 'lucide-react';
 import {
   Empty,
   EmptyDescription,
@@ -9,13 +10,18 @@ import {
 interface ListEmptyStateProps {
   entity: string;
   outOfRange: boolean;
+  icon?: LucideIcon;
 }
 
-export function ListEmptyState({ entity, outOfRange }: ListEmptyStateProps) {
+export function ListEmptyState({ entity, outOfRange, icon }: ListEmptyStateProps) {
+  const Icon = icon ?? SearchXIcon;
+
   return (
     <Empty data-slot='list-empty'>
       <EmptyHeader>
-        <EmptyMedia variant='icon' />
+        <EmptyMedia variant='icon'>
+          <Icon />
+        </EmptyMedia>
         <EmptyTitle>
           {outOfRange ? `No hay ${entity} en esta página` : `No se encontraron ${entity}`}
         </EmptyTitle>
