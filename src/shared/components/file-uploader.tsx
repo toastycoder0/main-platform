@@ -4,7 +4,7 @@ import { FileTextIcon, UploadIcon, XIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
-import { isTempKey } from '@/infrastructure/storage/keys';
+import { extractExtension, isTempKey } from '@/infrastructure/storage/keys';
 import {
   confirmUpload,
   deleteTempUpload,
@@ -31,6 +31,8 @@ interface FileItem {
   fileName: string;
   fileSize: number;
   tempKey: string;
+  fileType?: string | undefined;
+  previewUrl?: string | undefined;
 }
 
 export function FileUploader({
@@ -148,6 +150,20 @@ function openableHref(item: FileItem): string | undefined {
   return item.state === 'done' && !isTempKey(item.tempKey) ? item.tempKey : undefined;
 }
 
+function buildExistingFile(formValue: string, allowedTypes: string[]): FileItem {
+  const isImageScope = allowedTypes.some((t) => t.startsWith('image/'));
+  const ext = extractExtension(formValue);
+  const name = ext ? `${isImageScope ? 'imagen' : 'documento'}.${ext}` : 'Archivo adjunto';
+
+  return {
+    state: 'done',
+    fileName: name,
+    fileSize: 0,
+    tempKey: formValue,
+    fileType: isImageScope ? 'image/unknown' : undefined,
+  };
+}
+
 function FileAttachment({
   item,
   onRemove,
@@ -156,17 +172,24 @@ function FileAttachment({
   onRemove?: ((item: FileItem) => void) | undefined;
 }) {
   const href = openableHref(item);
+  const isImage = Boolean(item.fileType?.startsWith('image/'));
+  const previewSrc = isImage ? (href ?? item.previewUrl) : undefined;
 
   return (
-    <Attachment state={item.state} size='sm'>
-      {href && (
-        <AttachmentTrigger asChild>
-          <a href={href} rel='noreferrer' target='_blank'>
-            <span className='sr-only'>Abrir {item.fileName}</span>
-          </a>
-        </AttachmentTrigger>
-      )}
-      <AttachmentMedia>{isBusy(item.state) ? <Spinner /> : <FileTextIcon />}</AttachmentMedia>
+    <Attachment
+      state={item.state}
+      orientation={isImage ? 'vertical' : undefined}
+      size={isImage ? undefined : 'sm'}
+    >
+      <AttachmentMedia variant={previewSrc ? 'image' : 'icon'}>
+        {isBusy(item.state) ? (
+          <Spinner />
+        ) : previewSrc ? (
+          <img src={previewSrc} alt={item.fileName} />
+        ) : (
+          <FileTextIcon />
+        )}
+      </AttachmentMedia>
       <AttachmentContent>
         <AttachmentTitle>{item.fileName}</AttachmentTitle>
         <AttachmentDescription>{attachmentStatus(item)}</AttachmentDescription>
@@ -181,6 +204,13 @@ function FileAttachment({
           <XIcon />
         </AttachmentAction>
       </AttachmentActions>
+      {href && (
+        <AttachmentTrigger asChild>
+          <a href={href} target='_blank' rel='noreferrer' aria-label={`Abrir ${item.fileName}`}>
+            <span className='sr-only'>Abrir {item.fileName}</span>
+          </a>
+        </AttachmentTrigger>
+      )}
     </Attachment>
   );
 }
@@ -249,9 +279,17 @@ export function ControlledFileUploader<T extends FieldValues>({
 
   async function addFile(file: File): Promise<void> {
     const id = crypto.randomUUID();
+    const previewUrl = URL.createObjectURL(file);
     setItems((cur) => [
       ...cur,
-      { state: 'uploading', fileName: file.name, fileSize: file.size, tempKey: id },
+      {
+        state: 'uploading',
+        fileName: file.name,
+        fileSize: file.size,
+        tempKey: id,
+        fileType: file.type,
+        previewUrl,
+      },
     ]);
 
     const tempKey = await upload(file);
@@ -280,6 +318,9 @@ export function ControlledFileUploader<T extends FieldValues>({
   }
 
   function handleRemove(item: FileItem): void {
+    if (item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
     if (isTempKey(item.tempKey)) {
       deleteTempUpload({ fileKey: item.tempKey }).catch(() => undefined);
     }
@@ -300,10 +341,7 @@ export function ControlledFileUploader<T extends FieldValues>({
         const hasExisting = formValue !== '' && !isTempKey(formValue);
 
         const entries: FileItem[] = hasExisting
-          ? [
-              ...items,
-              { state: 'done', fileName: 'Archivo adjunto', fileSize: 0, tempKey: formValue },
-            ]
+          ? [...items, buildExistingFile(formValue, allowedTypes)]
           : items;
 
         return (

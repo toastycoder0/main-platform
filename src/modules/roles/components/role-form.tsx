@@ -25,6 +25,8 @@ const GROUP_LABELS: Record<string, string> = {
   admin: 'Panel de administración',
   'admin.users': 'Usuarios',
   'admin.roles': 'Roles',
+  'admin.categories': 'Categorías',
+  'admin.files': 'Archivos',
 };
 
 interface PermissionGroup {
