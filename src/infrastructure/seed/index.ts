@@ -78,6 +78,11 @@ const INITIAL_PERMISSIONS = [
   },
   { slug: admin.exchangeRates.create, name: 'Crear tipos de cambio', type: 'action' as const },
   { slug: admin.exchangeRates.edit, name: 'Editar tipos de cambio', type: 'action' as const },
+  {
+    slug: admin.exchangeRates.delete,
+    name: 'Archivar tipos de cambio',
+    type: 'action' as const,
+  },
 ];
 
 const ROLE_SLUG = 'super_admin';

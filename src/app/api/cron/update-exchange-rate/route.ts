@@ -70,7 +70,7 @@ async function upsertUsdMxnRate(rate: number): Promise<void> {
   if (existing) {
     await db
       .update(exchangeRate)
-      .set({ rate: String(rate), fetchedAt: new Date() })
+      .set({ rate: String(rate), fetchedAt: new Date(), deletedAt: null })
       .where(eq(exchangeRate.id, existing.id));
   } else {
     await db.insert(exchangeRate).values({

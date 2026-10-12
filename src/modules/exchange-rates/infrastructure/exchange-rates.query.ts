@@ -1,4 +1,4 @@
-import { asc, eq, type SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { exchangeRate } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list/list-params';
@@ -9,7 +9,9 @@ import type {
 } from '../application/exchange-rates.types';
 
 function buildWhere(_params: ListParams): SQL | undefined {
-  return undefined;
+  const conditions: SQL[] = [isNull(exchangeRate.deletedAt)];
+
+  return conditions.length === 1 ? conditions[0] : and(...conditions);
 }
 
 export async function listExchangeRates(
@@ -55,7 +57,7 @@ export async function getExchangeRate(
       fetchedAt: exchangeRate.fetchedAt,
     })
     .from(exchangeRate)
-    .where(eq(exchangeRate.id, id))
+    .where(and(eq(exchangeRate.id, id), isNull(exchangeRate.deletedAt)))
     .limit(1);
 
   if (!rows[0]) {
@@ -76,7 +78,8 @@ export async function getCurrentRates(
       rate: exchangeRate.rate,
       fetchedAt: exchangeRate.fetchedAt,
     })
-    .from(exchangeRate);
+    .from(exchangeRate)
+    .where(isNull(exchangeRate.deletedAt));
 
   return rows.map((r) => ({ ...r, rate: r.rate.toString() }));
 }

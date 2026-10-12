@@ -56,6 +56,7 @@ export const PERMISSIONS = {
       access: 'admin.exchangeRates.access',
       create: 'admin.exchangeRates.create',
       edit: 'admin.exchangeRates.edit',
+      delete: 'admin.exchangeRates.delete',
     },
   },
 } as const;
