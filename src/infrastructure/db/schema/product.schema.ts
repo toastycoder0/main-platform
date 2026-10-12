@@ -4,7 +4,9 @@ import {
   check,
   index,
   integer,
+  jsonb,
   numeric,
+  pgEnum,
   primaryKey,
   snakeCase,
   text,
@@ -22,6 +24,8 @@ import { documentType } from './document-type.schema';
 import { productUnit } from './product-unit.schema';
 import { tag } from './tag.schema';
 import { user } from './user.schema';
+
+export const productStatusEnum = pgEnum('product_status', ['active', 'inactive', 'warehouse_only']);
 
 export const product = snakeCase.table(
   'product',
@@ -51,7 +55,7 @@ export const product = snakeCase.table(
     defaultMinQty: integer().default(1).notNull(),
     defaultIncrementQty: integer().default(1).notNull(),
     defaultLeadTimeDays: integer().default(0).notNull(),
-    status: text().default('active').notNull(),
+    status: productStatusEnum('status').default('active').notNull(),
     deletedAt: timestamp({ withTimezone: true }),
     ...ordering,
     ...timestamps,
@@ -60,6 +64,11 @@ export const product = snakeCase.table(
     index('product_listing_idx')
       .on(table.sortOrder, table.id)
       .where(sql`${table.deletedAt} IS NULL`),
+    check(
+      'product_cost_currency_check',
+      sql`(${table.cost} IS NULL AND ${table.costCurrency} IS NULL)
+        OR (${table.cost} IS NOT NULL AND ${table.costCurrency} IS NOT NULL)`,
+    ),
   ],
 );
 
@@ -126,6 +135,82 @@ export const productTag = snakeCase.table(
       .references(() => tag.id, { onDelete: 'restrict' }),
   },
   (table) => [primaryKey({ columns: [table.productId, table.tagId] })],
+);
+
+export const productItemPricingModelEnum = pgEnum('product_item_pricing_model', [
+  'flat',
+  'formula',
+]);
+
+export const productItemOptionTypeEnum = pgEnum('product_item_option_type', [
+  'short_text',
+  'long_text',
+  'number',
+  'select',
+]);
+
+export const productItem = snakeCase.table(
+  'product_item',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('pitem')),
+    productId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    title: text().notNull(),
+    code: text().notNull(),
+    isDefault: boolean().default(false).notNull(),
+    isActive: boolean().default(true).notNull(),
+    managesInventory: boolean().default(true).notNull(),
+    minOrderQty: integer().default(1).notNull(),
+    incrementQty: integer().default(1).notNull(),
+    leadTimeDays: integer().default(0).notNull(),
+    pricingModel: productItemPricingModelEnum().default('flat').notNull(),
+    priceFormula: text(),
+    ...ordering,
+    ...timestamps,
+  },
+  (table) => [
+    index('product_item_product_idx').on(table.productId, table.sortOrder),
+    uniqueIndex('product_item_default_idx').on(table.productId).where(sql`${table.isDefault}`),
+    check(
+      'product_item_formula_check',
+      sql`(${table.pricingModel} = 'formula' AND ${table.priceFormula} IS NOT NULL)
+        OR (${table.pricingModel} = 'flat' AND ${table.priceFormula} IS NULL)`,
+    ),
+  ],
+);
+
+export const productItemOption = snakeCase.table(
+  'product_item_option',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('popt')),
+    itemId: text()
+      .notNull()
+      .references(() => productItem.id, { onDelete: 'cascade' }),
+    key: text().notNull(),
+    label: text().notNull(),
+    type: productItemOptionTypeEnum().notNull(),
+    selectOptions: jsonb().$type<string[]>(),
+    isRequired: boolean().default(true).notNull(),
+    minValue: numeric({ precision: 12, scale: 2 }),
+    maxValue: numeric({ precision: 12, scale: 2 }),
+    helpText: text(),
+    ...ordering,
+    ...timestamps,
+  },
+  (table) => [
+    index('product_item_option_item_idx').on(table.itemId, table.sortOrder),
+    uniqueIndex('product_item_option_key_idx').on(table.itemId, table.key),
+    check(
+      'product_item_option_select_check',
+      sql`(${table.type} = 'select' AND ${table.selectOptions} IS NOT NULL)
+        OR (${table.type} <> 'select')`,
+    ),
+  ],
 );
 
 export const priceList = snakeCase.table(
