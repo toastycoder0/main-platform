@@ -1,7 +1,15 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { env } from '@/config/env';
 import { db } from '@/infrastructure/db';
-import { permission, role, rolePermission, user, userRole } from '@/infrastructure/db/schema';
+import {
+  currency,
+  exchangeRate,
+  permission,
+  role,
+  rolePermission,
+  user,
+  userRole,
+} from '@/infrastructure/db/schema';
 import { logger } from '@/infrastructure/logger';
 import { auth } from '@/modules/auth/infrastructure/auth.config';
 import { PERMISSIONS } from '@/shared/constants/permissions';
@@ -59,6 +67,17 @@ const INITIAL_PERMISSIONS = [
     name: 'Archivar tipos de documento',
     type: 'action' as const,
   },
+  { slug: admin.currencies.access, name: 'Acceso a gestión de monedas', type: 'access' as const },
+  { slug: admin.currencies.create, name: 'Crear monedas', type: 'action' as const },
+  { slug: admin.currencies.edit, name: 'Editar monedas', type: 'action' as const },
+  { slug: admin.currencies.delete, name: 'Archivar monedas', type: 'action' as const },
+  {
+    slug: admin.exchangeRates.access,
+    name: 'Acceso a gestión de tipos de cambio',
+    type: 'access' as const,
+  },
+  { slug: admin.exchangeRates.create, name: 'Crear tipos de cambio', type: 'action' as const },
+  { slug: admin.exchangeRates.edit, name: 'Editar tipos de cambio', type: 'action' as const },
 ];
 
 const ROLE_SLUG = 'super_admin';
@@ -181,6 +200,43 @@ async function seed(): Promise<void> {
   const permissionIds = await seedPermissions();
   const roleId = await seedRole(permissionIds);
   await seedAdminUser(roleId);
+  await seedCurrencies();
+}
+
+async function seedCurrencies(): Promise<void> {
+  const DEFAULT_CURRENCIES = [
+    { code: 'MXN', name: 'Peso Mexicano', decimalDigits: 2, sortOrder: 0 },
+    { code: 'USD', name: 'US Dollar', decimalDigits: 2, sortOrder: 1 },
+  ];
+
+  for (const c of DEFAULT_CURRENCIES) {
+    const [existing] = await db
+      .select({ code: currency.code })
+      .from(currency)
+      .where(eq(currency.code, c.code))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(currency).values(c);
+      logger.info({ code: c.code }, 'Currency created');
+    }
+  }
+
+  const [existingRate] = await db
+    .select({ id: exchangeRate.id })
+    .from(exchangeRate)
+    .where(and(eq(exchangeRate.baseCode, 'USD'), eq(exchangeRate.quoteCode, 'MXN')))
+    .limit(1);
+
+  if (!existingRate) {
+    await db.insert(exchangeRate).values({
+      baseCode: 'USD',
+      quoteCode: 'MXN',
+      rate: '18.0000000000',
+      fetchedAt: new Date(),
+    });
+    logger.info({ pair: 'USD/MXN' }, 'Exchange rate created');
+  }
 }
 
 async function main() {

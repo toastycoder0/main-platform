@@ -1,7 +1,9 @@
 import { authManifest } from './auth/manifest';
 import { brandsManifest } from './brands/manifest';
 import { categoriesManifest } from './categories/manifest';
+import { currenciesManifest } from './currencies/manifest';
 import { documentTypesManifest } from './document-types/manifest';
+import { exchangeRatesManifest } from './exchange-rates/manifest';
 import { filesManifest } from './files/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
 import { productUnitsManifest } from './product-units/manifest';
@@ -18,7 +20,9 @@ const manifests: ModuleManifest[] = [
   authManifest,
   brandsManifest,
   categoriesManifest,
+  currenciesManifest,
   documentTypesManifest,
+  exchangeRatesManifest,
   filesManifest,
   productUnitsManifest,
   rolesManifest,
