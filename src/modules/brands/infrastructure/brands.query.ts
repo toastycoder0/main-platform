@@ -2,6 +2,7 @@ import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import { brand } from '@/infrastructure/db/schema';
+import { listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type { BrandFormDTO, BrandListItemDTO } from '../application/brands.types';
@@ -62,4 +63,14 @@ export async function getBrand(ctx: RequestContext, id: string): Promise<BrandFo
     .limit(1);
 
   return rows[0];
+}
+
+export async function getBrandImage(ctx: RequestContext, brandId: string): Promise<string | null> {
+  const files = await listOwnerFiles(ctx.db, {
+    entity: 'brand',
+    scope: 'image',
+    ownerId: brandId,
+  });
+
+  return files[0]?.url ?? null;
 }

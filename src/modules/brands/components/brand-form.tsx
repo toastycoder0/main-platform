@@ -7,6 +7,7 @@ import { createBrand, updateBrand } from '@/modules/brands/infrastructure/brands
 import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/components/field';
+import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { Input } from '@/shared/components/input';
 import { Switch } from '@/shared/components/switch';
 import { Textarea } from '@/shared/components/textarea';
@@ -15,9 +16,10 @@ import { type BrandFormSchema, brandFormSchema } from '../application/brands.val
 
 interface BrandFormProps {
   brand?: BrandFormDTO;
+  image?: string | null;
 }
 
-export function BrandForm({ brand }: BrandFormProps) {
+export function BrandForm({ brand, image }: BrandFormProps) {
   const {
     handleSubmit,
     control,
@@ -29,6 +31,7 @@ export function BrandForm({ brand }: BrandFormProps) {
       name: brand?.name ?? '',
       description: brand?.description ?? '',
       isActive: brand?.isActive ?? true,
+      image: image ?? '',
     },
   });
 
@@ -40,11 +43,13 @@ export function BrandForm({ brand }: BrandFormProps) {
             name: values.name,
             description: values.description || null,
             isActive: values.isActive ?? true,
+            image: values.image || undefined,
           })
         : createBrand({
             name: values.name,
             description: values.description || null,
             isActive: values.isActive ?? true,
+            image: values.image || undefined,
           }),
     );
   }
@@ -102,6 +107,15 @@ export function BrandForm({ brand }: BrandFormProps) {
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
+          />
+
+          <ControlledFileUploader
+            control={control}
+            name='image'
+            entity='brand'
+            scope='image'
+            label='Imagen'
+            description='Imagen representativa de la marca.'
           />
         </FieldGroup>
 

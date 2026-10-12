@@ -26,6 +26,13 @@ describe('updateBrandSchema', () => {
     ).toBe(true);
   });
 
+  it('accepts image as optional string', () => {
+    expect(
+      updateBrandSchema.safeParse({ id: 'brd_1', name: 'Marca', image: 'temp_key_123' }).success,
+    ).toBe(true);
+    expect(updateBrandSchema.safeParse({ id: 'brd_1', name: 'Marca' }).success).toBe(true);
+  });
+
   it('fails validation when id is empty', () => {
     const result = updateBrandSchema.safeParse({ id: '', name: 'Marca' });
     expect(result.success).toBe(false);
@@ -80,6 +87,13 @@ describe('createBrandSchema', () => {
     if (result.success) {
       expect('id' in result.data).toBe(false);
     }
+  });
+
+  it('accepts image as optional string', () => {
+    expect(createBrandSchema.safeParse({ name: 'Marca', image: 'temp_key_123' }).success).toBe(
+      true,
+    );
+    expect(createBrandSchema.safeParse({ name: 'Marca' }).success).toBe(true);
   });
 
   it('fails validation when name is empty', () => {

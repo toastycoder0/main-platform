@@ -10,6 +10,7 @@ const brandFieldsSchema = {
   name: z.string().trim().min(1, FIELD_ERRORS.name).max(100, FIELD_ERRORS.name),
   description: z.string().trim().max(500, FIELD_ERRORS.description).nullable().optional(),
   isActive: z.boolean().optional(),
+  image: z.string().optional(),
 };
 
 export const brandFormSchema = z.object({

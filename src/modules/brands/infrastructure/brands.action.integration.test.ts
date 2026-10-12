@@ -1,8 +1,8 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
-import { brand } from '@/infrastructure/db/schema';
+import { brand, file } from '@/infrastructure/db/schema';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { archiveBrand, createBrand, updateBrand } from './brands.action';
 
@@ -29,7 +29,18 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }));
 
+vi.mock('@/infrastructure/storage/client', () => ({
+  storageClient: {
+    getPresignedUploadUrl: vi.fn(() => Promise.resolve('https://upload.test/put')),
+    fileExists: vi.fn(() => Promise.resolve(true)),
+    deleteFile: vi.fn(() => Promise.resolve()),
+    copyFile: vi.fn(() => Promise.resolve()),
+    getPublicUrl: (key: string) => `https://cdn.test/${key}`,
+  },
+}));
+
 const createdBrandIds: string[] = [];
+const createdFileIds: string[] = [];
 
 function testContext(): RequestContext {
   const logger: RequestContext['logger'] = {
@@ -103,6 +114,10 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
+  if (createdFileIds.length > 0) {
+    await db.delete(file).where(inArray(file.tempKey, createdFileIds));
+  }
+
   if (createdBrandIds.length > 0) {
     await db.delete(brand).where(inArray(brand.id, createdBrandIds));
   }
@@ -183,6 +198,40 @@ describe('createBrand', () => {
 
     expect(result).toEqual({ success: false, error: 'Datos inválidos' });
   });
+
+  it('attaches an image when one is provided', async () => {
+    const name = `${scope} Con Imagen`;
+    const tempKey = `_temp/${scope}_create.jpg`;
+
+    await db.insert(file).values({
+      tempKey,
+      entity: 'brand',
+      scope: 'image',
+      createdBy: 'user_itest',
+    });
+    createdFileIds.push(tempKey);
+
+    const result = await createBrand({ name, description: null, isActive: true, image: tempKey });
+    expect(result.success).toBe(true);
+
+    const rows = await db.select({ id: brand.id }).from(brand).where(eq(brand.name, name)).limit(1);
+    const created = rows[0];
+
+    if (created) {
+      createdBrandIds.push(created.id);
+    }
+
+    const attached = await db
+      .select({ ownerId: file.ownerId, key: file.key })
+      .from(file)
+      .where(
+        and(eq(file.entity, 'brand'), eq(file.scope, 'image'), eq(file.ownerId, created?.id ?? '')),
+      )
+      .limit(1);
+
+    expect(attached[0]?.ownerId).toBe(created?.id);
+    expect(attached[0]?.key).toContain('brands/images');
+  });
 });
 
 describe('updateBrand', () => {
@@ -212,6 +261,37 @@ describe('updateBrand', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
+  });
+
+  it('attaches an image to an existing brand', async () => {
+    const id = await seedBrand('Con Imagen Update');
+    const tempKey = `_temp/${scope}_update.jpg`;
+
+    await db.insert(file).values({
+      tempKey,
+      entity: 'brand',
+      scope: 'image',
+      createdBy: 'user_itest',
+    });
+    createdFileIds.push(tempKey);
+
+    const result = await updateBrand({
+      id,
+      name: `${scope} Con Imagen Update`,
+      description: null,
+      isActive: true,
+      image: tempKey,
+    });
+    expect(result.success).toBe(true);
+
+    const attached = await db
+      .select({ ownerId: file.ownerId, key: file.key })
+      .from(file)
+      .where(and(eq(file.entity, 'brand'), eq(file.scope, 'image'), eq(file.ownerId, id)))
+      .limit(1);
+
+    expect(attached[0]?.ownerId).toBe(id);
+    expect(attached[0]?.key).toContain('brands/images');
   });
 });
 

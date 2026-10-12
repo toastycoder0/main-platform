@@ -3,7 +3,7 @@ import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { brandParamsSchema } from '@/modules/brands/application/brands.validation';
 import { ArchiveBrandSection } from '@/modules/brands/components/archive-brand-section';
 import { BrandForm } from '@/modules/brands/components/brand-form';
-import { getBrand } from '@/modules/brands/infrastructure/brands.query';
+import { getBrand, getBrandImage } from '@/modules/brands/infrastructure/brands.query';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
 interface EditBrandPageProps {
@@ -28,10 +28,12 @@ export default async function EditBrandPage({ params }: EditBrandPageProps) {
     notFound();
   }
 
+  const image = await getBrandImage(ctx, brand.id);
+
   return (
     <div className='flex flex-col gap-4'>
       <h1 className='text-2xl font-semibold'>Editar marca</h1>
-      <BrandForm brand={brand} />
+      <BrandForm brand={brand} image={image} />
       {ctx.permissions.has(PERMISSIONS.admin.brands.delete) ? (
         <ArchiveBrandSection brandId={brand.id} brandName={brand.name} />
       ) : null}

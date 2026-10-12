@@ -14,10 +14,11 @@ import {
   createBrandSchema,
   updateBrandSchema,
 } from '../application/brands.validation';
+import { syncBrandImage } from './brands.files';
 
 export const createBrand = run(
   { permission: PERMISSIONS.admin.brands.create, input: createBrandSchema },
-  async (ctx, { name, description, isActive }) => {
+  async (ctx, { name, description, isActive, image }) => {
     const slug = await resolveUniqueSlug(
       ctx.db,
       brand,
@@ -25,19 +26,32 @@ export const createBrand = run(
       'la marca',
     );
 
-    await ctx.db.transaction(async (tx) => {
+    const created = await ctx.db.transaction(async (tx) => {
       const [row] = await tx
         .select({ value: sql<number>`coalesce(max(${brand.sortOrder}), -1)` })
         .from(brand);
 
-      await tx.insert(brand).values({
-        slug,
-        name,
-        description: description || null,
-        isActive: isActive ?? true,
-        sortOrder: (row?.value ?? -1) + 1,
-      });
+      const [inserted] = await tx
+        .insert(brand)
+        .values({
+          slug,
+          name,
+          description: description || null,
+          isActive: isActive ?? true,
+          sortOrder: (row?.value ?? -1) + 1,
+        })
+        .returning({ id: brand.id });
+
+      return inserted;
     });
+
+    if (!created) {
+      throw new AppError('internal', 'No se pudo crear la marca');
+    }
+
+    if (image) {
+      await syncBrandImage(ctx.db, created.id, ctx.session.user.id, image);
+    }
 
     revalidatePath('/dashboard/brands');
     redirect('/dashboard/brands');
@@ -46,7 +60,7 @@ export const createBrand = run(
 
 export const updateBrand = run(
   { permission: PERMISSIONS.admin.brands.edit, input: updateBrandSchema },
-  async (ctx, { id, name, description, isActive }) => {
+  async (ctx, { id, name, description, isActive, image }) => {
     const [existing] = await ctx.db
       .select({ id: brand.id })
       .from(brand)
@@ -61,6 +75,10 @@ export const updateBrand = run(
       .update(brand)
       .set({ name, description: description || null, isActive: isActive ?? true })
       .where(eq(brand.id, id));
+
+    if (image !== undefined) {
+      await syncBrandImage(ctx.db, id, ctx.session.user.id, image);
+    }
 
     revalidatePath('/dashboard/brands');
     redirect('/dashboard/brands');
