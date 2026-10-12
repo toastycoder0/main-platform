@@ -3,8 +3,10 @@ import { env } from '@/config/env';
 import { db } from '@/infrastructure/db';
 import {
   currency,
+  documentType,
   exchangeRate,
   permission,
+  productUnit,
   role,
   rolePermission,
   user,
@@ -206,6 +208,8 @@ async function seed(): Promise<void> {
   const roleId = await seedRole(permissionIds);
   await seedAdminUser(roleId);
   await seedCurrencies();
+  await seedProductUnits();
+  await seedDocumentTypes();
 }
 
 async function seedCurrencies(): Promise<void> {
@@ -241,6 +245,69 @@ async function seedCurrencies(): Promise<void> {
       fetchedAt: new Date(),
     });
     logger.info({ pair: 'USD/MXN' }, 'Exchange rate created');
+  }
+}
+
+const SEED_PRODUCT_UNITS = [
+  { slug: 'm2', name: 'Metro cuadrado', abbreviation: 'M2', taxCode: 'MTK' },
+  { slug: 'bucket', name: 'Cubeta', abbreviation: 'CUBETA', taxCode: 'XBJ' },
+  { slug: 'ml', name: 'Mililitro', abbreviation: 'ML', taxCode: 'MLT' },
+  { slug: 'piece', name: 'Pieza', abbreviation: 'PIEZA', taxCode: 'H87' },
+  { slug: 'kit', name: 'Kit', abbreviation: 'KIT', taxCode: 'KT' },
+  { slug: 'can', name: 'Lata', abbreviation: 'LATA', taxCode: 'H87' },
+  { slug: 'bottle', name: 'Botella', abbreviation: 'BOTELLA', taxCode: 'H87' },
+  { slug: 'sack', name: 'Saco', abbreviation: 'SACO', taxCode: 'SA' },
+  { slug: 'gallon', name: 'Galón', abbreviation: 'GALÓN', taxCode: 'GLL' },
+  { slug: 'package', name: 'Paquete', abbreviation: 'PAQUETE', taxCode: 'H87' },
+  { slug: 'box', name: 'Caja', abbreviation: 'CAJA', taxCode: 'H87' },
+];
+
+async function seedProductUnits(): Promise<void> {
+  for (const [i, u] of SEED_PRODUCT_UNITS.entries()) {
+    const [existing] = await db
+      .select({ id: productUnit.id })
+      .from(productUnit)
+      .where(eq(productUnit.slug, u.slug))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(productUnit).values({
+        slug: u.slug,
+        name: u.name,
+        abbreviation: u.abbreviation,
+        taxCode: u.taxCode,
+        sortOrder: i,
+      });
+      logger.info({ slug: u.slug }, 'Product unit created');
+    }
+  }
+}
+
+const SEED_DOCUMENT_TYPES = [
+  { slug: 'technical_information', name: 'Información técnica', sortOrder: 1 },
+  { slug: 'installation', name: 'Instalación', sortOrder: 2 },
+  { slug: 'maintenance', name: 'Mantenimiento', sortOrder: 3 },
+  { slug: 'certifications', name: 'Certificaciones', sortOrder: 4 },
+  { slug: 'bim_cad_resources', name: 'Recursos BIM y CAD', sortOrder: 5 },
+  { slug: 'others', name: 'Otros documentos', sortOrder: 6 },
+];
+
+async function seedDocumentTypes(): Promise<void> {
+  for (const d of SEED_DOCUMENT_TYPES) {
+    const [existing] = await db
+      .select({ id: documentType.id })
+      .from(documentType)
+      .where(eq(documentType.slug, d.slug))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(documentType).values({
+        slug: d.slug,
+        name: d.name,
+        sortOrder: d.sortOrder,
+      });
+      logger.info({ slug: d.slug }, 'Document type created');
+    }
   }
 }
 
