@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   index,
   integer,
   numeric,
@@ -8,7 +9,9 @@ import {
   snakeCase,
   text,
   timestamp,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+
 import { generateId } from '../id';
 import { ordering } from '../order';
 import { timestamps } from '../time';
@@ -18,6 +21,7 @@ import { currency } from './currency.schema';
 import { documentType } from './document-type.schema';
 import { productUnit } from './product-unit.schema';
 import { tag } from './tag.schema';
+import { user } from './user.schema';
 
 export const product = snakeCase.table(
   'product',
@@ -122,4 +126,63 @@ export const productTag = snakeCase.table(
       .references(() => tag.id, { onDelete: 'restrict' }),
   },
   (table) => [primaryKey({ columns: [table.productId, table.tagId] })],
+);
+
+export const priceList = snakeCase.table(
+  'price_list',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('plst')),
+    slug: text().notNull().unique(),
+    name: text().notNull(),
+    description: text(),
+    isDefault: boolean().default(false).notNull(),
+    ...ordering,
+    ...timestamps,
+  },
+  (table) => [index('price_list_listing_idx').on(table.sortOrder, table.id)],
+);
+
+export const productPrice = snakeCase.table(
+  'product_price',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('pprc')),
+    productId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    priceListId: text()
+      .notNull()
+      .references(() => priceList.id, { onDelete: 'cascade' }),
+    amount: numeric({ precision: 12, scale: 2 }).notNull(),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex('product_price_pair_idx').on(table.productId, table.priceListId)],
+);
+
+export const userProductPrice = snakeCase.table(
+  'user_product_price',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('upp_')),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    productId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    amount: numeric({ precision: 12, scale: 2 }),
+    priceListId: text().references(() => priceList.id),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('user_product_price_pair_idx').on(table.userId, table.productId),
+    check(
+      'user_product_price_xor',
+      sql`(${table.amount} IS NOT NULL AND ${table.priceListId} IS NULL) OR (${table.amount} IS NULL AND ${table.priceListId} IS NOT NULL)`,
+    ),
+  ],
 );
