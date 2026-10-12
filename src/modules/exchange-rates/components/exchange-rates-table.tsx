@@ -1,4 +1,4 @@
-import { PencilIcon, Trash2Icon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { ListEmptyState } from '@/shared/components/list-empty';
 import { ListPagination } from '@/shared/components/list-pagination';
@@ -35,7 +35,6 @@ interface ExchangeRatesTableProps {
 export async function ExchangeRatesTable({ params }: ExchangeRatesTableProps) {
   const [ctx, parsed] = await Promise.all([createRequestContext(), params]);
   const canEdit = ctx.permissions.has(PERMISSIONS.admin.exchangeRates.edit);
-  const canDelete = ctx.permissions.has(PERMISSIONS.admin.exchangeRates.delete);
   const { items, total } = await listExchangeRates(ctx, parsed);
 
   if (items.length === 0) {
@@ -58,7 +57,7 @@ export async function ExchangeRatesTable({ params }: ExchangeRatesTableProps) {
           { key: 'fetchedAt', label: 'Actualizado' },
           { key: 'createdAt', label: 'Creación' },
         ]}
-        actions={canEdit || canDelete}
+        actions={canEdit}
       >
         {items.map((item) => (
           <TableRow key={item.id}>
@@ -70,7 +69,7 @@ export async function ExchangeRatesTable({ params }: ExchangeRatesTableProps) {
               {formatDate(item.fetchedAt)}
             </ListCell>
             <ListCell className='text-muted-foreground'>{formatDate(item.createdAt)}</ListCell>
-            {canEdit || canDelete ? (
+            {canEdit ? (
               <ListCell>
                 <ListRowActions
                   label={`Acciones de ${item.baseCode}/${item.quoteCode}`}
@@ -80,15 +79,6 @@ export async function ExchangeRatesTable({ params }: ExchangeRatesTableProps) {
                       href: `${BASE_PATH}/form/${item.id}`,
                       icon: PencilIcon,
                     },
-                    ...(canDelete
-                      ? [
-                          {
-                            label: 'Archivar',
-                            href: `${BASE_PATH}/form/${item.id}`,
-                            icon: Trash2Icon,
-                          } as const,
-                        ]
-                      : []),
                   ]}
                 />
               </ListCell>
