@@ -17,6 +17,7 @@ import { category } from './category.schema';
 import { currency } from './currency.schema';
 import { documentType } from './document-type.schema';
 import { productUnit } from './product-unit.schema';
+import { tag } from './tag.schema';
 
 export const product = snakeCase.table(
   'product',
@@ -90,4 +91,35 @@ export const productDocument = snakeCase.table(
     index('product_document_product_idx').on(table.productId, table.sortOrder),
     index('product_document_type_idx').on(table.documentTypeId),
   ],
+);
+
+export const productDetail = snakeCase.table(
+  'product_detail',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('pdet')),
+    productId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    group: text(),
+    label: text().notNull(),
+    value: text().notNull(),
+    ...ordering,
+    ...timestamps,
+  },
+  (table) => [index('product_detail_product_idx').on(table.productId, table.sortOrder)],
+);
+
+export const productTag = snakeCase.table(
+  'product_tag',
+  {
+    productId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    tagId: text()
+      .notNull()
+      .references(() => tag.id, { onDelete: 'restrict' }),
+  },
+  (table) => [primaryKey({ columns: [table.productId, table.tagId] })],
 );
