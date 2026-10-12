@@ -6,6 +6,7 @@ import {
   documentType,
   exchangeRate,
   permission,
+  priceList,
   productUnit,
   role,
   rolePermission,
@@ -83,6 +84,18 @@ const INITIAL_PERMISSIONS = [
   {
     slug: admin.exchangeRates.delete,
     name: 'Archivar tipos de cambio',
+    type: 'action' as const,
+  },
+  {
+    slug: admin.priceLists.access,
+    name: 'Acceso a gestión de listas de precios',
+    type: 'access' as const,
+  },
+  { slug: admin.priceLists.create, name: 'Crear listas de precios', type: 'action' as const },
+  { slug: admin.priceLists.edit, name: 'Editar listas de precios', type: 'action' as const },
+  {
+    slug: admin.priceLists.delete,
+    name: 'Eliminar listas de precios',
     type: 'action' as const,
   },
 ];
@@ -210,6 +223,7 @@ async function seed(): Promise<void> {
   await seedCurrencies();
   await seedProductUnits();
   await seedDocumentTypes();
+  await seedPriceLists();
 }
 
 async function seedCurrencies(): Promise<void> {
@@ -307,6 +321,32 @@ async function seedDocumentTypes(): Promise<void> {
         sortOrder: d.sortOrder,
       });
       logger.info({ slug: d.slug }, 'Document type created');
+    }
+  }
+}
+
+const SEED_PRICE_LISTS = [
+  { slug: 'a', name: 'A', sortOrder: 1, isDefault: true },
+  { slug: 'b', name: 'B', sortOrder: 2 },
+  { slug: 'c', name: 'C', sortOrder: 3 },
+];
+
+async function seedPriceLists(): Promise<void> {
+  for (const pl of SEED_PRICE_LISTS) {
+    const [existing] = await db
+      .select({ id: priceList.id })
+      .from(priceList)
+      .where(eq(priceList.slug, pl.slug))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(priceList).values({
+        slug: pl.slug,
+        name: pl.name,
+        sortOrder: pl.sortOrder,
+        isDefault: pl.isDefault,
+      });
+      logger.info({ slug: pl.slug }, 'Price list created');
     }
   }
 }

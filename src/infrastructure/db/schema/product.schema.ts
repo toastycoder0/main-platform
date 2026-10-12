@@ -138,10 +138,15 @@ export const priceList = snakeCase.table(
     name: text().notNull(),
     description: text(),
     isDefault: boolean().default(false).notNull(),
+    deletedAt: timestamp({ withTimezone: true }),
     ...ordering,
     ...timestamps,
   },
-  (table) => [index('price_list_listing_idx').on(table.sortOrder, table.id)],
+  (table) => [
+    index('price_list_listing_idx')
+      .on(table.sortOrder, table.id)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
 );
 
 export const productPrice = snakeCase.table(

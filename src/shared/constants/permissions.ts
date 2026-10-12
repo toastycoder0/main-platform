@@ -58,5 +58,11 @@ export const PERMISSIONS = {
       edit: 'admin.exchangeRates.edit',
       delete: 'admin.exchangeRates.delete',
     },
+    priceLists: {
+      access: 'admin.priceLists.access',
+      create: 'admin.priceLists.create',
+      edit: 'admin.priceLists.edit',
+      delete: 'admin.priceLists.delete',
+    },
   },
 } as const;
