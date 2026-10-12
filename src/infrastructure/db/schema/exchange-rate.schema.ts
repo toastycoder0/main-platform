@@ -16,7 +16,7 @@ export const exchangeRate = snakeCase.table(
     quoteCode: text()
       .notNull()
       .references(() => currency.code, { onDelete: 'restrict' }),
-    rate: numeric(20, 10).notNull(),
+    rate: numeric({ precision: 20, scale: 10 }).notNull(),
     fetchedAt: timestamp({ withTimezone: true }).notNull(),
     deletedAt: timestamp({ withTimezone: true }),
     ...timestamps,

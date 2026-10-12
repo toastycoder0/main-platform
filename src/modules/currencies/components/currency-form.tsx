@@ -25,7 +25,7 @@ export function CurrencyForm({ currency: initial }: CurrencyFormProps) {
     control,
     formState: { isSubmitting },
   } = useForm<CurrencyFormSchema>({
-    resolver: zodResolver(currencyFormSchema),
+    resolver: zodResolver(currencyFormSchema) as never,
     defaultValues: {
       code: initial?.code ?? '',
       name: initial?.name ?? '',

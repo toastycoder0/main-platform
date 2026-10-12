@@ -6,7 +6,15 @@ export const exchangeRateParamsSchema = z.object({
   id: z.string().min(1, FIELD_ERRORS.required),
 });
 
-export const exchangeRateFieldsSchema = {
+export const exchangeRateFormSchema = z.object({
+  id: z.string().optional(),
+  baseCode: z.string().min(1, FIELD_ERRORS.required).max(3),
+  quoteCode: z.string().min(1, FIELD_ERRORS.required).max(3),
+  rate: z.coerce.number().positive('La tasa debe ser un número positivo'),
+  fetchedAt: z.string().min(1, FIELD_ERRORS.required),
+});
+
+export const createExchangeRateSchema = z.object({
   baseCode: z.string().min(1, FIELD_ERRORS.required).max(3),
   quoteCode: z
     .string()
@@ -14,21 +22,19 @@ export const exchangeRateFieldsSchema = {
     .max(3)
     .transform((v) => v.toUpperCase()),
   rate: z.coerce.number().positive('La tasa debe ser un número positivo'),
-  fetchedAt: z
-    .date({ required_error: FIELD_ERRORS.required })
-    .or(z.string().transform((v) => new Date(v))),
-};
-
-export const exchangeRateFormSchema = z.object({
-  id: z.string().optional(),
-  ...exchangeRateFieldsSchema,
+  fetchedAt: z.date({ message: FIELD_ERRORS.required }),
 });
-
-export const createExchangeRateSchema = z.object(exchangeRateFieldsSchema);
 
 export const updateExchangeRateSchema = z.object({
   id: z.string().min(1, FIELD_ERRORS.required),
-  ...exchangeRateFieldsSchema,
+  baseCode: z.string().min(1, FIELD_ERRORS.required).max(3),
+  quoteCode: z
+    .string()
+    .min(1, FIELD_ERRORS.required)
+    .max(3)
+    .transform((v) => v.toUpperCase()),
+  rate: z.coerce.number().positive('La tasa debe ser un número positivo'),
+  fetchedAt: z.date({ message: FIELD_ERRORS.required }),
 });
 
 export type ExchangeRateFormSchema = z.infer<typeof exchangeRateFormSchema>;

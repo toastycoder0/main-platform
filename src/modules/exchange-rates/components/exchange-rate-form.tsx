@@ -28,13 +28,13 @@ export function ExchangeRateForm({ exchangeRate: initial, currencies }: Exchange
     control,
     formState: { isSubmitting },
   } = useForm<ExchangeRateFormSchema>({
-    resolver: zodResolver(exchangeRateFormSchema),
+    resolver: zodResolver(exchangeRateFormSchema) as never,
     defaultValues: {
       id: initial?.id,
       baseCode: initial?.baseCode ?? '',
       quoteCode: initial?.quoteCode ?? '',
-      rate: initial ? Number(initial.rate) : undefined,
-      fetchedAt: initial?.fetchedAt ?? new Date(),
+      rate: initial ? Number(initial.rate) : 0,
+      fetchedAt: initial?.fetchedAt ? initial.fetchedAt.toISOString().slice(0, 16) : '',
     },
   });
 
@@ -46,19 +46,19 @@ export function ExchangeRateForm({ exchangeRate: initial, currencies }: Exchange
             baseCode: values.baseCode,
             quoteCode: values.quoteCode,
             rate: values.rate,
-            fetchedAt: values.fetchedAt,
+            fetchedAt: new Date(values.fetchedAt),
           })
         : createExchangeRate({
             baseCode: values.baseCode,
             quoteCode: values.quoteCode,
             rate: values.rate,
-            fetchedAt: values.fetchedAt,
+            fetchedAt: new Date(values.fetchedAt),
           }),
     );
   }
 
   return (
-    <form id='exchange-rate-form' onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form id='exchange-rate-form' onSubmit={handleSubmit(onSubmit as never)} noValidate>
       <div className='flex flex-col gap-6 mb-6'>
         <FieldGroup>
           <Controller
@@ -145,8 +145,8 @@ export function ExchangeRateForm({ exchangeRate: initial, currencies }: Exchange
                   id='form-rate-fetched'
                   type='datetime-local'
                   aria-invalid={fieldState.invalid}
-                  value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
-                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                  value={field.value ?? ''}
+                  onChange={(e) => field.onChange(e.target.value)}
                 />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
