@@ -43,6 +43,10 @@ export default async function NewProductPage() {
     amount: '',
   }));
 
+  const defaultUnitId = productUnitOptions[0]?.value ?? '';
+  const defaultCurrency = currencyOptions[0]?.value ?? 'MXN';
+  const defaultDocumentTypeId = documentTypeOptions[0]?.value ?? '';
+
   return (
     <div className='flex flex-col gap-4'>
       <h1 className='text-2xl font-semibold'>Crear producto</h1>
@@ -55,6 +59,9 @@ export default async function NewProductPage() {
         documentTypeOptions={documentTypeOptions}
         priceListOptions={priceListOptions}
         defaultPrices={defaultPrices}
+        defaultUnitId={defaultUnitId}
+        defaultCurrency={defaultCurrency}
+        defaultDocumentTypeId={defaultDocumentTypeId}
       />
     </div>
   );

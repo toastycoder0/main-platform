@@ -50,8 +50,9 @@ interface ProductFormProps {
   documentTypeOptions: Option[];
   priceListOptions: Option[];
   defaultPrices: ProductPriceEntry[];
-  defaultUnitId?: string;
-  defaultCurrency?: string;
+  defaultUnitId: string;
+  defaultCurrency: string;
+  defaultDocumentTypeId: string;
 }
 
 function generateSlug(text: string): string {
@@ -75,7 +76,8 @@ export function ProductForm({
   priceListOptions,
   defaultPrices,
   defaultUnitId,
-  defaultCurrency = 'MXN',
+  defaultCurrency,
+  defaultDocumentTypeId,
 }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
@@ -97,7 +99,7 @@ export function ProductForm({
       description: '',
       code: '',
       brandId: null,
-      unitId: defaultUnitId ?? (productUnitOptions[0]?.value || ''),
+      unitId: defaultUnitId,
       baseCurrency: defaultCurrency,
       costCurrency: null,
       satId: '',
@@ -768,7 +770,7 @@ export function ProductForm({
               variant='outline'
               onClick={() =>
                 appendDocument({
-                  documentTypeId: documentTypeOptions[0]?.value || '',
+                  documentTypeId: defaultDocumentTypeId,
                   label: '',
                   isVisible: true,
                   fileUrl: '',
