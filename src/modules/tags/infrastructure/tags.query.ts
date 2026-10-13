@@ -63,3 +63,18 @@ export async function getTag(ctx: RequestContext, id: string): Promise<TagFormDT
 
   return rows[0];
 }
+
+export interface TagOption {
+  value: string;
+  label: string;
+}
+
+export async function listTagOptions(ctx: RequestContext): Promise<TagOption[]> {
+  const rows = await ctx.db
+    .select({ id: tag.id, name: tag.name })
+    .from(tag)
+    .where(isNull(tag.deletedAt))
+    .orderBy(asc(tag.name), asc(tag.id));
+
+  return rows.map((r) => ({ value: r.id, label: r.name }));
+}

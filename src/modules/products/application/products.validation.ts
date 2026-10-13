@@ -22,6 +22,8 @@ const productFieldsSchema = {
   taxRate: z.coerce.number().positive().nullable().optional(),
   cost: z.coerce.number().positive().nullable().optional(),
   status: z.enum(['active', 'inactive', 'warehouse_only']),
+  tagIds: z.array(z.string()).default([]),
+  categoryIds: z.array(z.string()).default([]),
 };
 
 export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {

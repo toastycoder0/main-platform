@@ -7,11 +7,16 @@ import { Controller, useForm } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxCollection,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
 } from '@/shared/components/combobox';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
@@ -31,6 +36,8 @@ interface ProductFormProps {
   brandOptions: Option[];
   productUnitOptions: Option[];
   currencyOptions: Option[];
+  tagOptions: Option[];
+  categoryOptions: Option[];
   defaultUnitId?: string;
   defaultCurrency?: string;
 }
@@ -50,11 +57,15 @@ export function ProductForm({
   brandOptions,
   productUnitOptions,
   currencyOptions,
+  tagOptions,
+  categoryOptions,
   defaultUnitId,
   defaultCurrency = 'MXN',
 }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+  const tagAnchor = useComboboxAnchor();
+  const categoryAnchor = useComboboxAnchor();
 
   const {
     handleSubmit,
@@ -81,6 +92,8 @@ export function ProductForm({
       taxRate: null,
       cost: null,
       status: 'active',
+      tagIds: [],
+      categoryIds: [],
     },
   });
 
@@ -485,6 +498,106 @@ export function ProductForm({
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
+          />
+          <Controller
+            name='tagIds'
+            control={control}
+            render={({ field, fieldState }) => {
+              const selectedTags = tagOptions.filter((opt) => field.value.includes(opt.value));
+
+              return (
+                <Field
+                  orientation='vertical'
+                  data-invalid={fieldState.invalid}
+                  className='md:col-span-2'
+                >
+                  <FieldLabel htmlFor='form-product-tags'>Tags</FieldLabel>
+                  <Combobox
+                    multiple
+                    items={tagOptions}
+                    value={selectedTags}
+                    isItemEqualToValue={(a, b) => a?.value === b?.value}
+                    onValueChange={(next) => field.onChange(next.map((item) => item.value))}
+                  >
+                    <ComboboxChips ref={tagAnchor} className='w-full'>
+                      <ComboboxValue>
+                        {(values: Option[]) => (
+                          <>
+                            {values.map((value) => (
+                              <ComboboxChip key={value.value}>{value.label}</ComboboxChip>
+                            ))}
+                            <ComboboxChipsInput placeholder='Buscar tags...' />
+                          </>
+                        )}
+                      </ComboboxValue>
+                    </ComboboxChips>
+                    <ComboboxContent anchor={tagAnchor}>
+                      <ComboboxList>
+                        <ComboboxCollection>
+                          {(item: Option) => (
+                            <ComboboxItem key={item.value} value={item}>
+                              {item.label}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxCollection>
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              );
+            }}
+          />
+          <Controller
+            name='categoryIds'
+            control={control}
+            render={({ field, fieldState }) => {
+              const selectedCategories = categoryOptions.filter((opt) =>
+                field.value.includes(opt.value),
+              );
+
+              return (
+                <Field
+                  orientation='vertical'
+                  data-invalid={fieldState.invalid}
+                  className='md:col-span-2'
+                >
+                  <FieldLabel htmlFor='form-product-categories'>Categorías</FieldLabel>
+                  <Combobox
+                    multiple
+                    items={categoryOptions}
+                    value={selectedCategories}
+                    isItemEqualToValue={(a, b) => a?.value === b?.value}
+                    onValueChange={(next) => field.onChange(next.map((item) => item.value))}
+                  >
+                    <ComboboxChips ref={categoryAnchor} className='w-full'>
+                      <ComboboxValue>
+                        {(values: Option[]) => (
+                          <>
+                            {values.map((value) => (
+                              <ComboboxChip key={value.value}>{value.label}</ComboboxChip>
+                            ))}
+                            <ComboboxChipsInput placeholder='Buscar categorías...' />
+                          </>
+                        )}
+                      </ComboboxValue>
+                    </ComboboxChips>
+                    <ComboboxContent anchor={categoryAnchor}>
+                      <ComboboxList>
+                        <ComboboxCollection>
+                          {(item: Option) => (
+                            <ComboboxItem key={item.value} value={item}>
+                              {item.label}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxCollection>
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              );
+            }}
           />
         </FieldGroup>
 
