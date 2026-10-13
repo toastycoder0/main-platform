@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { listCategoryOptions } from '@/modules/categories/infrastructure/categories.query';
+import type { ProductPriceEntry } from '@/modules/products/components/product-form';
 import { ProductForm } from '@/modules/products/components/product-form';
 import {
   listBrandOptions,
   listCurrencyOptions,
   listDocumentTypeOptions,
+  listPriceListOptions,
   listProductUnitOptions,
 } from '@/modules/products/infrastructure/products.query';
 import { listTagOptions } from '@/modules/tags/infrastructure/tags.query';
@@ -25,6 +27,7 @@ export default async function NewProductPage() {
     tagOptions,
     categoryOptions,
     documentTypeOptions,
+    priceListOptions,
   ] = await Promise.all([
     listBrandOptions(ctx),
     listProductUnitOptions(ctx),
@@ -32,7 +35,13 @@ export default async function NewProductPage() {
     listTagOptions(ctx),
     listCategoryOptions(ctx),
     listDocumentTypeOptions(ctx),
+    listPriceListOptions(ctx),
   ]);
+
+  const defaultPrices: ProductPriceEntry[] = priceListOptions.map((option) => ({
+    priceListId: option.value,
+    amount: '',
+  }));
 
   return (
     <div className='flex flex-col gap-4'>
@@ -44,6 +53,8 @@ export default async function NewProductPage() {
         tagOptions={tagOptions}
         categoryOptions={categoryOptions}
         documentTypeOptions={documentTypeOptions}
+        priceListOptions={priceListOptions}
+        defaultPrices={defaultPrices}
       />
     </div>
   );

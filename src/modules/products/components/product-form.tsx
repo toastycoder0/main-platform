@@ -34,6 +34,12 @@ import { Textarea } from '@/shared/components/textarea';
 import type { ProductFormSchema } from '../application/products.validation';
 import { productFormSchema } from '../application/products.validation';
 import type { Option } from '../infrastructure/products.query';
+import { ControlledNumberInput } from './product-form-fields';
+
+export interface ProductPriceEntry {
+  priceListId: string;
+  amount: number | '';
+}
 
 interface ProductFormProps {
   brandOptions: Option[];
@@ -42,6 +48,8 @@ interface ProductFormProps {
   tagOptions: Option[];
   categoryOptions: Option[];
   documentTypeOptions: Option[];
+  priceListOptions: Option[];
+  defaultPrices: ProductPriceEntry[];
   defaultUnitId?: string;
   defaultCurrency?: string;
 }
@@ -64,6 +72,8 @@ export function ProductForm({
   tagOptions,
   categoryOptions,
   documentTypeOptions,
+  priceListOptions,
+  defaultPrices,
   defaultUnitId,
   defaultCurrency = 'MXN',
 }: ProductFormProps) {
@@ -101,6 +111,7 @@ export function ProductForm({
       categoryIds: [],
       details: [],
       documents: [],
+      prices: defaultPrices,
     },
   });
 
@@ -631,6 +642,36 @@ export function ProductForm({
             }}
           />
         </FieldGroup>
+
+        <div className='flex flex-col gap-4 pt-4 border-t'>
+          <div>
+            <h3 className='font-medium'>Precios</h3>
+            <p className='text-sm text-muted-foreground'>
+              Precios del producto según las listas de precios disponibles
+            </p>
+          </div>
+
+          {priceListOptions.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>No hay listas de precios configuradas.</p>
+          ) : (
+            <div className='flex flex-col divide-y'>
+              {priceListOptions.map((option, index) => (
+                <div
+                  key={option.value}
+                  className='grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-4 py-3 items-center'
+                >
+                  <span className='text-sm font-medium'>{option.label}</span>
+                  <ControlledNumberInput
+                    control={control}
+                    name={`prices.${index}.amount`}
+                    label={`Precio (${option.label})`}
+                    placeholder='0.00'
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Details Section */}
         <div className='flex flex-col gap-4 pt-4 border-t'>

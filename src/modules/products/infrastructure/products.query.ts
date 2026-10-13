@@ -1,7 +1,14 @@
 import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
-import { brand, currency, documentType, product, productUnit } from '@/infrastructure/db/schema';
+import {
+  brand,
+  currency,
+  documentType,
+  priceList,
+  product,
+  productUnit,
+} from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type { ProductListItemDTO } from '../application/products.types';
@@ -98,6 +105,16 @@ export async function listDocumentTypeOptions(ctx: RequestContext): Promise<Opti
     .from(documentType)
     .where(isNull(documentType.deletedAt))
     .orderBy(asc(documentType.sortOrder), asc(documentType.id));
+
+  return rows.map((r) => ({ value: r.id, label: r.name }));
+}
+
+export async function listPriceListOptions(ctx: RequestContext): Promise<Option[]> {
+  const rows = await ctx.db
+    .select({ id: priceList.id, name: priceList.name })
+    .from(priceList)
+    .where(isNull(priceList.deletedAt))
+    .orderBy(asc(priceList.sortOrder), asc(priceList.id));
 
   return rows.map((r) => ({ value: r.id, label: r.name }));
 }

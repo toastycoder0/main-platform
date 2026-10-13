@@ -17,6 +17,11 @@ const productDocumentSchema = z.object({
   fileUrl: z.string().optional(),
 });
 
+const productPriceEntrySchema = z.object({
+  priceListId: z.string().min(1, FIELD_ERRORS.required),
+  amount: z.coerce.number().min(0, 'El precio debe ser mayor o igual a 0').or(z.literal('')),
+});
+
 const productFieldsSchema = {
   title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
   slug: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
@@ -38,6 +43,7 @@ const productFieldsSchema = {
   categoryIds: z.array(z.string()).default([]),
   details: z.array(productDetailSchema).default([]),
   documents: z.array(productDocumentSchema).default([]),
+  prices: z.array(productPriceEntrySchema).default([]),
 };
 
 export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {
