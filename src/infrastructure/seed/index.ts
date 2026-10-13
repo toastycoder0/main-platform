@@ -98,6 +98,10 @@ const INITIAL_PERMISSIONS = [
     name: 'Eliminar listas de precios',
     type: 'action' as const,
   },
+  { slug: admin.products.access, name: 'Acceso a gestión de productos', type: 'access' as const },
+  { slug: admin.products.create, name: 'Crear productos', type: 'action' as const },
+  { slug: admin.products.edit, name: 'Editar productos', type: 'action' as const },
+  { slug: admin.products.delete, name: 'Eliminar productos', type: 'action' as const },
 ];
 
 const ROLE_SLUG = 'super_admin';
