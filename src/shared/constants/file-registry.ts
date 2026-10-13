@@ -1,4 +1,4 @@
-export type FileOwnerType = 'product_document' | 'brand' | 'category' | 'user';
+export type FileOwnerType = 'product_document' | 'product_image' | 'brand' | 'category' | 'user';
 
 export interface ScopeConfig {
   path: string;
@@ -49,6 +49,15 @@ export const FILE_REGISTRY = {
       allowedTypes: DOCUMENT_TYPES,
       maxSize: 10 * MB,
       maxCount: 20,
+    },
+  },
+  product_images: {
+    image: {
+      path: 'products/images',
+      ownerType: 'product_image',
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      maxSize: 5 * MB,
+      maxCount: 10,
     },
   },
 } satisfies Record<string, Record<string, ScopeConfig>>;

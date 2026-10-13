@@ -11,6 +11,7 @@ import {
   snakeCase,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
@@ -52,9 +53,6 @@ export const product = snakeCase.table(
     taxName: text(),
     taxRate: numeric({ precision: 5, scale: 2 }),
     cost: numeric({ precision: 12, scale: 2 }),
-    defaultMinQty: integer().default(1).notNull(),
-    defaultIncrementQty: integer().default(1).notNull(),
-    defaultLeadTimeDays: integer().default(0).notNull(),
     status: productStatusEnum('status').default('active').notNull(),
     deletedAt: timestamp({ withTimezone: true }),
     ...ordering,
@@ -80,7 +78,8 @@ export const productCategory = snakeCase.table(
       .references(() => product.id, { onDelete: 'cascade' }),
     categoryId: text()
       .notNull()
-      .references(() => category.id, { onDelete: 'restrict' }),
+      .references(() => category.id, { onDelete: 'cascade' }),
+    ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.productId, table.categoryId] })],
 );
@@ -132,7 +131,8 @@ export const productTag = snakeCase.table(
       .references(() => product.id, { onDelete: 'cascade' }),
     tagId: text()
       .notNull()
-      .references(() => tag.id, { onDelete: 'restrict' }),
+      .references(() => tag.id, { onDelete: 'cascade' }),
+    ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.productId, table.tagId] })],
 );
@@ -142,12 +142,16 @@ export const productItemPricingModelEnum = pgEnum('product_item_pricing_model', 
   'formula',
 ]);
 
-export const productItemOptionTypeEnum = pgEnum('product_item_option_type', [
-  'short_text',
-  'long_text',
-  'number',
-  'select',
-]);
+export type ProductItemOption = {
+  key: string;
+  label: string;
+  type: 'short_text' | 'long_text' | 'number' | 'select';
+  selectOptions?: string[];
+  isRequired: boolean;
+  minValue?: number;
+  maxValue?: number;
+  helpText?: string;
+};
 
 export const productItem = snakeCase.table(
   'product_item',
@@ -160,7 +164,7 @@ export const productItem = snakeCase.table(
       .references(() => product.id, { onDelete: 'cascade' }),
     title: text().notNull(),
     code: text().notNull(),
-    isDefault: boolean().default(false).notNull(),
+    unitId: text().references(() => productUnit.id),
     isActive: boolean().default(true).notNull(),
     managesInventory: boolean().default(true).notNull(),
     minOrderQty: integer().default(1).notNull(),
@@ -168,48 +172,74 @@ export const productItem = snakeCase.table(
     leadTimeDays: integer().default(0).notNull(),
     pricingModel: productItemPricingModelEnum().default('flat').notNull(),
     priceFormula: text(),
+    options: jsonb().$type<ProductItemOption[]>().default([]).notNull(),
     ...ordering,
     ...timestamps,
   },
   (table) => [
     index('product_item_product_idx').on(table.productId, table.sortOrder),
-    uniqueIndex('product_item_default_idx').on(table.productId).where(sql`${table.isDefault}`),
+    index('product_item_unit_idx').on(table.unitId),
     check(
       'product_item_formula_check',
       sql`(${table.pricingModel} = 'formula' AND ${table.priceFormula} IS NOT NULL)
         OR (${table.pricingModel} = 'flat' AND ${table.priceFormula} IS NULL)`,
     ),
+    check('product_item_options_array_check', sql`jsonb_typeof(${table.options}) = 'array'`),
   ],
 );
 
-export const productItemOption = snakeCase.table(
-  'product_item_option',
+export const productLinkTypeEnum = pgEnum('product_link_type', ['related', 'complement']);
+
+export const productLink = snakeCase.table(
+  'product_link',
   {
     id: text()
       .primaryKey()
-      .$defaultFn(() => generateId('popt')),
-    itemId: text()
+      .$defaultFn(() => generateId('plnk')),
+    type: productLinkTypeEnum().notNull(),
+    productId: text()
       .notNull()
-      .references(() => productItem.id, { onDelete: 'cascade' }),
-    key: text().notNull(),
-    label: text().notNull(),
-    type: productItemOptionTypeEnum().notNull(),
-    selectOptions: jsonb().$type<string[]>(),
-    isRequired: boolean().default(true).notNull(),
-    minValue: numeric({ precision: 12, scale: 2 }),
-    maxValue: numeric({ precision: 12, scale: 2 }),
-    helpText: text(),
+      .references(() => product.id, { onDelete: 'cascade' }),
+    itemId: text().references(() => productItem.id, { onDelete: 'cascade' }),
+    linkedProductId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    linkedItemId: text().references(() => productItem.id, { onDelete: 'cascade' }),
     ...ordering,
     ...timestamps,
   },
   (table) => [
-    index('product_item_option_item_idx').on(table.itemId, table.sortOrder),
-    uniqueIndex('product_item_option_key_idx').on(table.itemId, table.key),
+    unique('product_link_unique')
+      .on(table.type, table.productId, table.itemId, table.linkedProductId, table.linkedItemId)
+      .nullsNotDistinct(),
+    index('product_link_product_idx').on(table.productId, table.type, table.sortOrder),
+    index('product_link_linked_idx').on(table.linkedProductId, table.linkedItemId),
+    check('product_link_self_check', sql`${table.productId} <> ${table.linkedProductId}`),
     check(
-      'product_item_option_select_check',
-      sql`(${table.type} = 'select' AND ${table.selectOptions} IS NOT NULL)
-        OR (${table.type} <> 'select')`,
+      'product_link_related_scope_check',
+      sql`${table.type} = 'complement' OR (${table.itemId} IS NULL AND ${table.linkedItemId} IS NULL)`,
     ),
+  ],
+);
+
+export const productImage = snakeCase.table(
+  'product_image',
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => generateId('pimg')),
+    productId: text()
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    itemId: text().references(() => productItem.id, { onDelete: 'set null' }),
+    altText: text(),
+    isVisible: boolean().default(true).notNull(),
+    ...ordering,
+    ...timestamps,
+  },
+  (table) => [
+    index('product_image_product_idx').on(table.productId, table.sortOrder),
+    index('product_image_item_idx').on(table.itemId),
   ],
 );
 
@@ -257,7 +287,7 @@ export const userProductPrice = snakeCase.table(
   {
     id: text()
       .primaryKey()
-      .$defaultFn(() => generateId('upp_')),
+      .$defaultFn(() => generateId('upp')),
     userId: text()
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),

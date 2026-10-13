@@ -1,6 +1,13 @@
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { DatabaseClient } from '@/infrastructure/db';
-import { brand, category, file, productDocument, user } from '@/infrastructure/db/schema';
+import {
+  brand,
+  category,
+  file,
+  productDocument,
+  productImage,
+  user,
+} from '@/infrastructure/db/schema';
 import { storageClient } from '@/infrastructure/storage/client';
 import { extractExtension, generateFileKey, isTempKey } from '@/infrastructure/storage/keys';
 import { storageKeyToUrl, urlToStorageKey } from '@/infrastructure/storage/urls';
@@ -51,6 +58,15 @@ const OWNER_CHECKERS: Partial<Record<FileOwnerType, OwnerChecker>> = {
       .select({ id: productDocument.id })
       .from(productDocument)
       .where(eq(productDocument.id, ownerId))
+      .limit(1);
+
+    return Boolean(rows[0]);
+  },
+  product_image: async (db, ownerId) => {
+    const rows = await db
+      .select({ id: productImage.id })
+      .from(productImage)
+      .where(eq(productImage.id, ownerId))
       .limit(1);
 
     return Boolean(rows[0]);
