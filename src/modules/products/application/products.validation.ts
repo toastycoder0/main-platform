@@ -10,6 +10,13 @@ const productDetailSchema = z.object({
   value: z.string().trim().min(1, FIELD_ERRORS.required).max(500, FIELD_ERRORS.tooLong),
 });
 
+const productDocumentSchema = z.object({
+  documentTypeId: z.string().min(1, FIELD_ERRORS.required),
+  label: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
+  isVisible: z.boolean().default(true),
+  fileUrl: z.string().optional(),
+});
+
 const productFieldsSchema = {
   title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
   slug: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
@@ -30,6 +37,7 @@ const productFieldsSchema = {
   tagIds: z.array(z.string()).default([]),
   categoryIds: z.array(z.string()).default([]),
   details: z.array(productDetailSchema).default([]),
+  documents: z.array(productDocumentSchema).default([]),
 };
 
 export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {

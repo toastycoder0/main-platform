@@ -20,6 +20,7 @@ import {
   useComboboxAnchor,
 } from '@/shared/components/combobox';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/components/field';
+import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { Input } from '@/shared/components/input';
 import {
   Select,
@@ -28,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/select';
+import { Switch } from '@/shared/components/switch';
 import { Textarea } from '@/shared/components/textarea';
 import type { ProductFormSchema } from '../application/products.validation';
 import { productFormSchema } from '../application/products.validation';
@@ -39,6 +41,7 @@ interface ProductFormProps {
   currencyOptions: Option[];
   tagOptions: Option[];
   categoryOptions: Option[];
+  documentTypeOptions: Option[];
   defaultUnitId?: string;
   defaultCurrency?: string;
 }
@@ -60,6 +63,7 @@ export function ProductForm({
   currencyOptions,
   tagOptions,
   categoryOptions,
+  documentTypeOptions,
   defaultUnitId,
   defaultCurrency = 'MXN',
 }: ProductFormProps) {
@@ -96,6 +100,7 @@ export function ProductForm({
       tagIds: [],
       categoryIds: [],
       details: [],
+      documents: [],
     },
   });
 
@@ -130,6 +135,18 @@ export function ProductForm({
   });
 
   const MAX_DETAILS = 20;
+
+  const {
+    fields: documentFields,
+    append: appendDocument,
+    remove: removeDocument,
+  } = useFieldArray({
+    control,
+    name: 'documents',
+    keyName: 'fieldKey',
+  });
+
+  const MAX_DOCUMENTS = 10;
 
   return (
     <form id='product-form' onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -689,6 +706,127 @@ export function ProductForm({
                         {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                       </Field>
                     )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Documents Section */}
+        <div className='flex flex-col gap-4 pt-4 border-t'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <h3 className='font-medium'>Documentos</h3>
+              <p className='text-sm text-muted-foreground'>
+                Documentos técnicos y certificaciones del producto
+              </p>
+            </div>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() =>
+                appendDocument({
+                  documentTypeId: documentTypeOptions[0]?.value || '',
+                  label: '',
+                  isVisible: true,
+                  fileUrl: '',
+                })
+              }
+              disabled={documentFields.length >= MAX_DOCUMENTS}
+            >
+              Agregar documento
+            </Button>
+          </div>
+
+          {documentFields.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>Sin documentos registrados.</p>
+          ) : null}
+
+          {documentFields.map((item, index) => (
+            <Card key={item.fieldKey} data-slot='collection-item' size='sm'>
+              <CardHeader>
+                <CardTitle>Documento {index + 1}</CardTitle>
+                <CardAction>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => removeDocument(index)}
+                    className='text-destructive hover:text-destructive'
+                  >
+                    Eliminar
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+                  <Controller
+                    name={`documents.${index}.documentTypeId`}
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                        <FieldLabel>
+                          Tipo de documento <span className='text-destructive'>*</span>
+                        </FieldLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger aria-invalid={fieldState.invalid}>
+                            <SelectValue placeholder='Seleccionar tipo' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {documentTypeOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
+                  <Controller
+                    name={`documents.${index}.label`}
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                        <FieldLabel>
+                          Etiqueta <span className='text-destructive'>*</span>
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          aria-invalid={fieldState.invalid}
+                          placeholder='Ej: Certificado de calidad'
+                        />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
+                  <Controller
+                    name={`documents.${index}.isVisible`}
+                    control={control}
+                    render={({ field }) => (
+                      <Field orientation='vertical'>
+                        <FieldLabel>Visible</FieldLabel>
+                        <div className='flex items-center gap-2 h-9'>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          <span className='text-sm text-muted-foreground'>
+                            {field.value ? 'Sí' : 'No'}
+                          </span>
+                        </div>
+                      </Field>
+                    )}
+                  />
+                </div>
+
+                <div className='mt-4 border-t pt-4'>
+                  <ControlledFileUploader
+                    control={control}
+                    name={`documents.${index}.fileUrl`}
+                    entity='product_documents'
+                    scope='document'
+                    label='Archivo (opcional)'
+                    description='PDF o documento relacionado con el producto.'
                   />
                 </div>
               </CardContent>

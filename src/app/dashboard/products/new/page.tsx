@@ -5,6 +5,7 @@ import { ProductForm } from '@/modules/products/components/product-form';
 import {
   listBrandOptions,
   listCurrencyOptions,
+  listDocumentTypeOptions,
   listProductUnitOptions,
 } from '@/modules/products/infrastructure/products.query';
 import { listTagOptions } from '@/modules/tags/infrastructure/tags.query';
@@ -17,14 +18,21 @@ export default async function NewProductPage() {
     notFound();
   }
 
-  const [brandOptions, productUnitOptions, currencyOptions, tagOptions, categoryOptions] =
-    await Promise.all([
-      listBrandOptions(ctx),
-      listProductUnitOptions(ctx),
-      listCurrencyOptions(ctx),
-      listTagOptions(ctx),
-      listCategoryOptions(ctx),
-    ]);
+  const [
+    brandOptions,
+    productUnitOptions,
+    currencyOptions,
+    tagOptions,
+    categoryOptions,
+    documentTypeOptions,
+  ] = await Promise.all([
+    listBrandOptions(ctx),
+    listProductUnitOptions(ctx),
+    listCurrencyOptions(ctx),
+    listTagOptions(ctx),
+    listCategoryOptions(ctx),
+    listDocumentTypeOptions(ctx),
+  ]);
 
   return (
     <div className='flex flex-col gap-4'>
@@ -35,6 +43,7 @@ export default async function NewProductPage() {
         currencyOptions={currencyOptions}
         tagOptions={tagOptions}
         categoryOptions={categoryOptions}
+        documentTypeOptions={documentTypeOptions}
       />
     </div>
   );
