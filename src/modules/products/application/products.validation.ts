@@ -5,6 +5,11 @@ export const productParamsSchema = z.object({
   id: z.string().min(1, FIELD_ERRORS.required),
 });
 
+const productDetailSchema = z.object({
+  label: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
+  value: z.string().trim().min(1, FIELD_ERRORS.required).max(500, FIELD_ERRORS.tooLong),
+});
+
 const productFieldsSchema = {
   title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
   slug: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
@@ -24,6 +29,7 @@ const productFieldsSchema = {
   status: z.enum(['active', 'inactive', 'warehouse_only']),
   tagIds: z.array(z.string()).default([]),
   categoryIds: z.array(z.string()).default([]),
+  details: z.array(productDetailSchema).default([]),
 };
 
 export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {

@@ -3,8 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import {
   Combobox,
   ComboboxChip,
@@ -94,6 +95,7 @@ export function ProductForm({
       status: 'active',
       tagIds: [],
       categoryIds: [],
+      details: [],
     },
   });
 
@@ -116,6 +118,18 @@ export function ProductForm({
   const brandItems = brandOptions.map((opt) => ({ value: opt.value, label: opt.label }));
   const unitItems = productUnitOptions.map((opt) => ({ value: opt.value, label: opt.label }));
   const currencyItems = currencyOptions.map((opt) => ({ value: opt.value, label: opt.label }));
+
+  const {
+    fields: detailFields,
+    append: appendDetail,
+    remove: removeDetail,
+  } = useFieldArray({
+    control,
+    name: 'details',
+    keyName: 'fieldKey',
+  });
+
+  const MAX_DETAILS = 20;
 
   return (
     <form id='product-form' onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -600,6 +614,87 @@ export function ProductForm({
             }}
           />
         </FieldGroup>
+
+        {/* Details Section */}
+        <div className='flex flex-col gap-4 pt-4 border-t'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <h3 className='font-medium'>Detalles técnicos</h3>
+              <p className='text-sm text-muted-foreground'>
+                Especificaciones y características del producto
+              </p>
+            </div>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => appendDetail({ label: '', value: '' })}
+              disabled={detailFields.length >= MAX_DETAILS}
+            >
+              Agregar detalle
+            </Button>
+          </div>
+
+          {detailFields.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>Sin detalles registrados.</p>
+          ) : null}
+
+          {detailFields.map((item, index) => (
+            <Card key={item.fieldKey} data-slot='collection-item' size='sm'>
+              <CardHeader>
+                <CardTitle>Detalle {index + 1}</CardTitle>
+                <CardAction>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => removeDetail(index)}
+                    className='text-destructive hover:text-destructive'
+                  >
+                    Eliminar
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <div className='grid gap-4 sm:grid-cols-2'>
+                  <Controller
+                    name={`details.${index}.label`}
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                        <FieldLabel>
+                          Etiqueta <span className='text-destructive'>*</span>
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          aria-invalid={fieldState.invalid}
+                          placeholder='Ej: Material'
+                        />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
+                  <Controller
+                    name={`details.${index}.value`}
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                        <FieldLabel>
+                          Valor <span className='text-destructive'>*</span>
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          aria-invalid={fieldState.invalid}
+                          placeholder='Ej: Acero inoxidable'
+                        />
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {errors.root && <div className='text-sm text-destructive'>{errors.root.message}</div>}
 
