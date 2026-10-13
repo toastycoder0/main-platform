@@ -198,6 +198,29 @@ export function ProductForm({
           />
 
           <Controller
+            name='status'
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor='form-product-status'>
+                  Estado <span className='text-destructive'>*</span>
+                </FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id='form-product-status' aria-invalid={fieldState.invalid}>
+                    <SelectValue placeholder='Seleccionar estado' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='active'>Activo</SelectItem>
+                    <SelectItem value='inactive'>Inactivo</SelectItem>
+                    <SelectItem value='warehouse_only'>Solo almacén</SelectItem>
+                  </SelectContent>
+                </Select>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+
+          <Controller
             name='description'
             control={control}
             render={({ field, fieldState }) => (
@@ -316,29 +339,6 @@ export function ProductForm({
                         {option.label}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-
-          <Controller
-            name='status'
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='form-product-status'>
-                  Estado <span className='text-destructive'>*</span>
-                </FieldLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id='form-product-status' aria-invalid={fieldState.invalid}>
-                    <SelectValue placeholder='Seleccionar estado' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='active'>Activo</SelectItem>
-                    <SelectItem value='inactive'>Inactivo</SelectItem>
-                    <SelectItem value='warehouse_only'>Solo almacén</SelectItem>
                   </SelectContent>
                 </Select>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
