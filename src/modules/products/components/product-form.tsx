@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
@@ -55,17 +55,6 @@ interface ProductFormProps {
   defaultDocumentTypeId: string;
 }
 
-function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 export function ProductForm({
   brandOptions,
   productUnitOptions,
@@ -80,21 +69,17 @@ export function ProductForm({
   defaultDocumentTypeId,
 }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
   const tagAnchor = useComboboxAnchor();
   const categoryAnchor = useComboboxAnchor();
 
   const {
     handleSubmit,
     control,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<ProductFormSchema>({
     resolver: zodResolver(productFormSchema) as never,
     defaultValues: {
       title: '',
-      slug: '',
       subtitle: '',
       description: '',
       code: '',
@@ -116,14 +101,6 @@ export function ProductForm({
       prices: defaultPrices,
     },
   });
-
-  const title = watch('title');
-
-  useEffect(() => {
-    if (!isSlugManuallyEdited && title) {
-      setValue('slug', generateSlug(title), { shouldValidate: true });
-    }
-  }, [title, isSlugManuallyEdited, setValue]);
 
   async function onSubmit(values: ProductFormSchema) {
     setIsSubmitting(true);
@@ -178,29 +155,6 @@ export function ProductForm({
                   id='form-product-title'
                   aria-invalid={fieldState.invalid}
                   placeholder='Nombre del producto'
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-
-          <Controller
-            name='slug'
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='form-product-slug'>
-                  Slug <span className='text-destructive'>*</span>
-                </FieldLabel>
-                <Input
-                  {...field}
-                  id='form-product-slug'
-                  aria-invalid={fieldState.invalid}
-                  placeholder='slug-del-producto'
-                  onChange={(e) => {
-                    setIsSlugManuallyEdited(true);
-                    field.onChange(e);
-                  }}
                 />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>

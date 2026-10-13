@@ -91,6 +91,7 @@ export const productFormSchema = z
   .object({
     id: z.string().min(1, FIELD_ERRORS.required).optional(),
     ...productFieldsSchema,
+    slug: z.string().trim().max(200, FIELD_ERRORS.tooLong).optional(),
   })
   .superRefine((data, ctx) => {
     if (
