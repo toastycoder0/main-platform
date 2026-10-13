@@ -1,0 +1,93 @@
+import { z } from 'zod';
+import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+
+export const productParamsSchema = z.object({
+  id: z.string().min(1, FIELD_ERRORS.required),
+});
+
+const productFieldsSchema = {
+  title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
+  slug: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
+  subtitle: z.string().trim().max(500, FIELD_ERRORS.tooLong).nullable().optional(),
+  description: z.string().trim().max(5000, FIELD_ERRORS.tooLong).nullable().optional(),
+  code: z.string().trim().max(100, FIELD_ERRORS.tooLong).nullable().optional(),
+  brandId: z.string().min(1).nullable().optional(),
+  unitId: z.string().min(1, FIELD_ERRORS.required),
+  baseCurrency: z.string().min(1, FIELD_ERRORS.required),
+  costCurrency: z.string().min(1).nullable().optional(),
+  satId: z.string().trim().max(50, FIELD_ERRORS.tooLong).nullable().optional(),
+  satUnit: z.string().trim().max(50, FIELD_ERRORS.tooLong).nullable().optional(),
+  taxObject: z.string().trim().max(100, FIELD_ERRORS.tooLong).nullable().optional(),
+  taxName: z.string().trim().max(100, FIELD_ERRORS.tooLong).nullable().optional(),
+  taxRate: z.coerce.number().positive().nullable().optional(),
+  cost: z.coerce.number().positive().nullable().optional(),
+  status: z.enum(['active', 'inactive', 'warehouse_only']),
+};
+
+export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {
+  if (
+    (data.cost !== null && data.cost !== undefined) !==
+    (data.costCurrency !== null && data.costCurrency !== undefined)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Costo y moneda de costo deben completarse ambos',
+      path: ['cost'],
+    });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Costo y moneda de costo deben completarse ambos',
+      path: ['costCurrency'],
+    });
+  }
+});
+
+export const updateProductSchema = z
+  .object({
+    id: z.string().min(1, FIELD_ERRORS.required),
+    ...productFieldsSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (
+      (data.cost !== null && data.cost !== undefined) !==
+      (data.costCurrency !== null && data.costCurrency !== undefined)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Costo y moneda de costo deben completarse ambos',
+        path: ['cost'],
+      });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Costo y moneda de costo deben completarse ambos',
+        path: ['costCurrency'],
+      });
+    }
+  });
+
+export const productFormSchema = z
+  .object({
+    id: z.string().min(1, FIELD_ERRORS.required).optional(),
+    ...productFieldsSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (
+      (data.cost !== null && data.cost !== undefined) !==
+      (data.costCurrency !== null && data.costCurrency !== undefined)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Costo y moneda de costo deben completarse ambos',
+        path: ['cost'],
+      });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Costo y moneda de costo deben completarse ambos',
+        path: ['costCurrency'],
+      });
+    }
+  });
+
+export type CreateProductSchema = z.infer<typeof createProductSchema>;
+export type UpdateProductSchema = z.infer<typeof updateProductSchema>;
+export type ProductFormSchema = z.infer<typeof productFormSchema>;

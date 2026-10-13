@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
-import { brand, product, productUnit } from '@/infrastructure/db/schema';
+import { brand, currency, product, productUnit } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type { ProductListItemDTO } from '../application/products.types';
@@ -55,4 +55,39 @@ export async function listProducts(
     })),
     total: counted[0]?.total ?? 0,
   };
+}
+
+export interface Option {
+  value: string;
+  label: string;
+}
+
+export async function listBrandOptions(ctx: RequestContext): Promise<Option[]> {
+  const rows = await ctx.db
+    .select({ id: brand.id, name: brand.name })
+    .from(brand)
+    .where(isNull(brand.deletedAt))
+    .orderBy(asc(brand.name), asc(brand.id));
+
+  return rows.map((r) => ({ value: r.id, label: r.name }));
+}
+
+export async function listProductUnitOptions(ctx: RequestContext): Promise<Option[]> {
+  const rows = await ctx.db
+    .select({ id: productUnit.id, name: productUnit.name })
+    .from(productUnit)
+    .where(isNull(productUnit.deletedAt))
+    .orderBy(asc(productUnit.sortOrder), asc(productUnit.id));
+
+  return rows.map((r) => ({ value: r.id, label: r.name }));
+}
+
+export async function listCurrencyOptions(ctx: RequestContext): Promise<Option[]> {
+  const rows = await ctx.db
+    .select({ code: currency.code, name: currency.name })
+    .from(currency)
+    .where(isNull(currency.deletedAt))
+    .orderBy(asc(currency.sortOrder), asc(currency.code));
+
+  return rows.map((r) => ({ value: r.code, label: r.name }));
 }
