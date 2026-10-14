@@ -20,3 +20,17 @@ export interface CategoryFormDTO {
   parentId: string | null;
   isActive: boolean;
 }
+
+export interface HomeCategoryDTO {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl: string | null;
+}
+
+export interface HomeRootCategoryDTO {
+  id: string;
+  name: string;
+  slug: string;
+  children: HomeCategoryDTO[];
+}

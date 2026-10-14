@@ -1,9 +1,14 @@
-import { and, asc, eq, isNull, ne } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { category } from '@/infrastructure/db/schema';
-import { listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
+import { listFilesByOwners, listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
 import { AppError } from '@/shared/errors';
-import type { CategoryFormDTO, CategoryTreeRow } from '../application/categories.types';
+import type {
+  CategoryFormDTO,
+  CategoryTreeRow,
+  HomeCategoryDTO,
+  HomeRootCategoryDTO,
+} from '../application/categories.types';
 
 export async function findCategoryById(ctx: RequestContext, id: string): Promise<CategoryFormDTO> {
   const [row] = await ctx.db
@@ -84,5 +89,66 @@ export async function getCategoryTree(ctx: RequestContext): Promise<CategoryTree
     ...r,
     parentId: r.parentId ?? null,
     description: r.description ?? null,
+  }));
+}
+
+// Home showcase: only root categories (level 1) and their direct children
+// (level 2). Deeper levels are intentionally discarded.
+export async function getHomeCategories(ctx: RequestContext): Promise<HomeRootCategoryDTO[]> {
+  const roots = await ctx.db
+    .select({ id: category.id, name: category.name, slug: category.slug })
+    .from(category)
+    .where(and(isNull(category.deletedAt), eq(category.isActive, true), isNull(category.parentId)))
+    .orderBy(asc(category.sortOrder), asc(category.id));
+
+  if (roots.length === 0) {
+    return [];
+  }
+
+  const rootIds = roots.map((r) => r.id);
+
+  const children = await ctx.db
+    .select({
+      id: category.id,
+      parentId: category.parentId,
+      name: category.name,
+      slug: category.slug,
+    })
+    .from(category)
+    .where(
+      and(
+        isNull(category.deletedAt),
+        eq(category.isActive, true),
+        inArray(category.parentId, rootIds),
+      ),
+    )
+    .orderBy(asc(category.sortOrder), asc(category.id));
+
+  const imageFiles = await listFilesByOwners(
+    ctx.db,
+    { entity: 'category', scope: 'image' },
+    children.map((c) => c.id),
+  );
+
+  const childrenByRoot = new Map<string, HomeCategoryDTO[]>();
+  for (const child of children) {
+    if (!child.parentId) {
+      continue;
+    }
+    const group = childrenByRoot.get(child.parentId) ?? [];
+    group.push({
+      id: child.id,
+      name: child.name,
+      slug: child.slug,
+      imageUrl: imageFiles.get(child.id)?.[0]?.url ?? null,
+    });
+    childrenByRoot.set(child.parentId, group);
+  }
+
+  return roots.map((root) => ({
+    id: root.id,
+    name: root.name,
+    slug: root.slug,
+    children: childrenByRoot.get(root.id) ?? [],
   }));
 }
