@@ -222,7 +222,6 @@ export interface ProductFormOptions {
   productVariantOptions: ProductVariantOption[];
 }
 
-/** Every catalog the product form needs; pass the stored product so its links stay selectable. */
 export async function getProductFormOptions(
   ctx: RequestContext,
   current?: ProductFormDTO,

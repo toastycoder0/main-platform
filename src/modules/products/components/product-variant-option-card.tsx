@@ -50,10 +50,8 @@ export function ProductVariantOptionCard({
   } = useFieldArray({ control, name: choicesPath, keyName: 'fieldKey' });
   const { errors } = useFormState({ control, name: choicesPath });
   const choicesState = getFieldState(choicesPath, { ...formState, errors }).error;
-  // With no registered choices the resolver reports the error on the array itself, not on `root`.
   const choicesError = choicesState?.root?.message ?? choicesState?.message;
 
-  // Keep the identifier in sync with the label until the user customizes it.
   function syncKeyWithLabel(next: string, previous: string) {
     const currentKey = getValues(`${basePath}.key`);
     if (currentKey !== '' && currentKey !== toOptionKey(previous)) {

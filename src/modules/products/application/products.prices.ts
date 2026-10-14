@@ -2,7 +2,6 @@ import type { ProductFormSchema } from './products.validation';
 
 type PriceEntry = ProductFormSchema['prices'][number];
 
-/** One entry per price list, filled with the stored amount when there is one. */
 export function buildPriceEntries(
   priceLists: { value: string }[],
   stored: PriceEntry[] = [],

@@ -3,7 +3,6 @@ import type { ProductFormSchema } from '../application/products.validation';
 
 type FormOption = ProductFormSchema['variants'][number]['options'][number];
 
-/** Form option -> stored option. Drops attributes that do not apply to the option type. */
 export function toItemOption(option: FormOption): ProductItemOption {
   const stored: ProductItemOption = {
     key: option.key,
@@ -32,7 +31,6 @@ export function toItemOption(option: FormOption): ProductItemOption {
   return stored;
 }
 
-/** Stored option -> form option. */
 export function fromItemOption(option: ProductItemOption): FormOption {
   return {
     key: option.key,
@@ -46,12 +44,10 @@ export function fromItemOption(option: ProductItemOption): FormOption {
   };
 }
 
-/** Numeric columns are returned as strings by the driver. */
 export function toNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
 }
 
-/** Numeric columns are written as strings to avoid float round-trips. */
 export function toDecimal(value: number | null | undefined): string | null {
   return value === null || value === undefined ? null : value.toFixed(2);
 }

@@ -45,7 +45,6 @@ export function ProductGallerySection() {
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingUpload[]>([]);
-  // Temp keys are not publicly readable, so finished uploads keep their local blob preview.
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [skippedCount, setSkippedCount] = useState(0);
 
@@ -88,7 +87,6 @@ export function ProductGallerySection() {
     const valid = candidates.filter((file) => fileIsValid(file, allowedTypes, maxSize));
     setSkippedCount(candidates.length - valid.length);
 
-    // Sequential on purpose: keeps the gallery in the order the files were picked.
     for (const file of valid) {
       await uploadOne(file);
     }

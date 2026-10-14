@@ -17,5 +17,4 @@ export interface ProductVariantOption {
   label: string;
 }
 
-/** Shape the product form edits; `variants[].clientId` and image links use database ids when editing. */
 export type ProductFormDTO = ProductFormSchema & { id: string };

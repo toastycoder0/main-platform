@@ -7,11 +7,6 @@ import { AppError } from '@/shared/errors';
 export const PRODUCT_IMAGE_FILES = { entity: 'product_images', scope: 'image' } as const;
 export const PRODUCT_DOCUMENT_FILES = { entity: 'product_documents', scope: 'document' } as const;
 
-/**
- * Attaches a single file to a product image or document row. Only fresh uploads
- * (temp keys) or the file the row already owns may be claimed; any other URL
- * would let a payload steal a file from a different owner.
- */
 export async function syncProductFile(
   db: DbLike,
   locator: FileLocator,
@@ -32,7 +27,6 @@ export async function syncProductFile(
 
   await syncFiles(db, locator, [ref], actorId);
 
-  // `syncFiles` skips refs it cannot resolve (expired uploads), which would leave the row empty.
   const attached = await listOwnerFiles(db, locator);
   if (attached.length === 0) {
     throw new AppError(
@@ -42,7 +36,6 @@ export async function syncProductFile(
   }
 }
 
-/** Releases the files of a row that is about to be deleted. */
 export async function detachProductFiles(
   db: DbLike,
   locator: FileLocator,

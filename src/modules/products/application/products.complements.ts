@@ -2,7 +2,6 @@ import type { ProductFormSchema } from './products.validation';
 
 type ProductComplementValues = ProductFormSchema['complementaryProducts'][number];
 
-/** Select value meaning "no variant restriction" (stored as `null` in the form). */
 export const ANY_VARIANT = 'any';
 
 export interface VariantSelectItem {
@@ -22,7 +21,6 @@ export function fromVariantSelectValue(value: string): string | null {
   return value === ANY_VARIANT ? null : value;
 }
 
-/** Variants of the product being edited a complement can be limited to. */
 export function getOwnVariantItems(
   variants: Pick<ProductFormSchema['variants'][number], 'clientId' | 'title'>[],
 ): VariantSelectItem[] {
@@ -41,7 +39,6 @@ export function getLinkedVariantItems(
   return [{ value: ANY_VARIANT, label: 'Todas las variantes' }, ...variants];
 }
 
-/** Plain-language summary of what a complement entry means. */
 export function describeComplement({
   productLabel,
   ownVariantLabel,

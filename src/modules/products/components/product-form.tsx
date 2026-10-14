@@ -127,7 +127,6 @@ export function ProductForm({
     formState: { isSubmitting },
   } = form;
 
-  // The cost/currency rule spans two fields, so fixing one must refresh the error of the other.
   useEffect(() => {
     const subscription = form.watch((_values, { name }) => {
       if ((name === 'cost' || name === 'costCurrency') && form.formState.isSubmitted) {

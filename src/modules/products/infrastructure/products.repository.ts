@@ -94,10 +94,6 @@ async function assertComplementVariants(db: DatabaseClient, data: ProductInput):
   }
 }
 
-/**
- * Foreign keys would surface as an opaque internal error, so every referenced
- * record is checked up front to give the user an actionable message.
- */
 async function assertReferences(
   ctx: RequestContext,
   data: ProductInput,
@@ -229,11 +225,6 @@ async function writeDetailsAndPrices(tx: Transaction, productId: string, data: P
   }
 }
 
-/**
- * Variants are reconciled by id instead of replaced: other products can link to
- * them, and deleting a row would cascade into those links. Returns the map from
- * the form identifier to the stored id.
- */
 async function writeVariants(
   tx: Transaction,
   productId: string,
@@ -477,7 +468,6 @@ export async function updateProduct(
   await assertReferences(ctx, data, data.id);
 
   await ctx.db.transaction(async (tx) => {
-    // Serializes concurrent edits of the same product so child rows are never interleaved.
     const [locked] = await tx
       .select({ id: product.id })
       .from(product)

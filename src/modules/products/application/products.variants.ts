@@ -60,7 +60,6 @@ export function createDefaultVariant(): ProductVariantValues {
   return createEmptyVariant('Estándar');
 }
 
-/** Builds the identifier used to reference an option inside price formulas. */
 export function toOptionKey(label: string): string {
   const key = slugify(label).replaceAll('-', '_');
   return /^[0-9]/.test(key) ? `opcion_${key}` : key;
@@ -89,7 +88,6 @@ const BASE_FORMULA_VARIABLES: FormulaVariable[] = [
   { token: 'variant.lead_time_days', label: 'Días de entrega de la variante', group: 'variant' },
 ];
 
-/** Variables a variant formula can reference: product data, the variant itself and its options. */
 export function getFormulaVariables(
   options: Pick<ProductVariantOptionValues, 'key' | 'label'>[],
 ): FormulaVariable[] {
@@ -104,7 +102,6 @@ export function getFormulaVariables(
   return [...BASE_FORMULA_VARIABLES, ...optionVariables];
 }
 
-/** Replaces the current selection with `token` and returns the new text plus caret position. */
 export function insertAtSelection(
   text: string,
   token: string,

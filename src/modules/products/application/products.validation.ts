@@ -22,7 +22,6 @@ const productDetailSchema = z.object({
 });
 
 const productDocumentSchema = z.object({
-  // Present only for rows that already exist, so edits keep their identity (and files).
   id: z.string().min(1).optional(),
   documentTypeId: z.string().min(1, FIELD_ERRORS.required),
   label: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
@@ -34,7 +33,6 @@ const MAX_MONEY = 9_999_999_999.99;
 
 const productPriceEntrySchema = z.object({
   priceListId: z.string().min(1, FIELD_ERRORS.required),
-  // An empty string means "no price for this list".
   amount: z.union([
     z.literal(''),
     z
@@ -94,7 +92,6 @@ const productVariantOptionSchema = z
 
 const productVariantSchema = z
   .object({
-    // Form-only identifier so images can reference a variant before it has a database id.
     clientId: z.string().min(1),
     title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
     code: z.string().trim().min(1, FIELD_ERRORS.required).max(100, FIELD_ERRORS.tooLong),
@@ -163,7 +160,6 @@ const productImageSchema = z.object({
   fileUrl: z.string().min(1, FIELD_ERRORS.required),
   altText: z.string().trim().max(200, FIELD_ERRORS.tooLong).nullable().optional(),
   isVisible: z.boolean().default(true),
-  // `null` means the image belongs to the product in general.
   variantId: z.string().min(1).nullable().optional(),
 });
 
@@ -171,9 +167,7 @@ const productImagesSchema = z.array(productImageSchema).default([]);
 
 const productComplementSchema = z.object({
   linkedProductId: z.string().min(1, FIELD_ERRORS.required),
-  // Variant of this product the complement is limited to (form `clientId`); `null` means any.
   variantId: z.string().min(1).nullable().optional(),
-  // Variant of the complementary product that is offered; `null` means all of them.
   linkedVariantId: z.string().min(1).nullable().optional(),
 });
 

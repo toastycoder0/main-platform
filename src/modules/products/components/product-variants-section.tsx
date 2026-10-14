@@ -19,7 +19,6 @@ export function ProductVariantsSection({ unitItems }: ProductVariantsSectionProp
     keyName: 'fieldKey',
   });
 
-  // Images and complements linked to a removed variant fall back to "general".
   function removeVariant(index: number) {
     const removedId = getValues(`variants.${index}.clientId`);
     getValues('images').forEach((image, imageIndex) => {
