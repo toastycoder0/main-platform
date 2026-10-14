@@ -49,6 +49,7 @@ interface ProductFormProps {
   categoryOptions: Option[];
   documentTypeOptions: Option[];
   priceListOptions: Option[];
+  productOptions: Option[];
   defaultPrices: ProductPriceEntry[];
   defaultUnitId: string;
   defaultCurrency: string;
@@ -63,6 +64,7 @@ export function ProductForm({
   categoryOptions,
   documentTypeOptions,
   priceListOptions,
+  productOptions,
   defaultPrices,
   defaultUnitId,
   defaultCurrency,
@@ -96,6 +98,8 @@ export function ProductForm({
       status: 'active',
       tagIds: [],
       categoryIds: [],
+      relatedProducts: [],
+      complementaryProducts: [],
       details: [],
       documents: [],
       prices: defaultPrices,
@@ -137,6 +141,26 @@ export function ProductForm({
   });
 
   const MAX_DOCUMENTS = 10;
+
+  const {
+    fields: relatedFields,
+    append: appendRelated,
+    remove: removeRelated,
+  } = useFieldArray({
+    control,
+    name: 'relatedProducts',
+    keyName: 'fieldKey',
+  });
+
+  const {
+    fields: complementaryFields,
+    append: appendComplementary,
+    remove: removeComplementary,
+  } = useFieldArray({
+    control,
+    name: 'complementaryProducts',
+    keyName: 'fieldKey',
+  });
 
   return (
     <form id='product-form' onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -826,6 +850,172 @@ export function ProductForm({
                     description='PDF o documento relacionado con el producto.'
                   />
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Related Products Section */}
+        <div className='flex flex-col gap-4 pt-4 border-t'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <h3 className='font-medium'>Productos relacionados</h3>
+              <p className='text-sm text-muted-foreground'>
+                Productos similares o de la misma categoría que pueden interesar al cliente
+              </p>
+            </div>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => appendRelated({ linkedProductId: '' })}
+            >
+              Agregar relacionado
+            </Button>
+          </div>
+
+          {relatedFields.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>Sin productos relacionados.</p>
+          ) : null}
+
+          {relatedFields.map((item, index) => (
+            <Card key={item.fieldKey} data-slot='collection-item' size='sm'>
+              <CardHeader>
+                <CardTitle>Relacionado {index + 1}</CardTitle>
+                <CardAction>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => removeRelated(index)}
+                    className='text-destructive hover:text-destructive'
+                  >
+                    Eliminar
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <Controller
+                  name={`relatedProducts.${index}.linkedProductId`}
+                  control={control}
+                  render={({ field, fieldState }) => {
+                    const selected =
+                      productOptions.find((opt) => opt.value === field.value) ?? null;
+                    return (
+                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                        <FieldLabel>
+                          Producto <span className='text-destructive'>*</span>
+                        </FieldLabel>
+                        <Combobox
+                          items={productOptions}
+                          value={selected}
+                          isItemEqualToValue={(a, b) => a?.value === b?.value}
+                          onValueChange={(next) => field.onChange(next?.value ?? '')}
+                        >
+                          <ComboboxInput
+                            aria-invalid={fieldState.invalid}
+                            placeholder='Buscar producto...'
+                            showClear={selected !== null}
+                          />
+                          <ComboboxContent>
+                            <ComboboxList>
+                              <ComboboxCollection>
+                                {(opt: Option) => (
+                                  <ComboboxItem key={opt.value} value={opt}>
+                                    {opt.label}
+                                  </ComboboxItem>
+                                )}
+                              </ComboboxCollection>
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    );
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Complementary Products Section */}
+        <div className='flex flex-col gap-4 pt-4 border-t'>
+          <div className='flex items-center justify-between'>
+            <div>
+              <h3 className='font-medium'>Productos complementarios</h3>
+              <p className='text-sm text-muted-foreground'>
+                Productos que complementan o mejoran la experiencia de uso junto a este producto
+              </p>
+            </div>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => appendComplementary({ linkedProductId: '' })}
+            >
+              Agregar complementario
+            </Button>
+          </div>
+
+          {complementaryFields.length === 0 ? (
+            <p className='text-sm text-muted-foreground'>Sin productos complementarios.</p>
+          ) : null}
+
+          {complementaryFields.map((item, index) => (
+            <Card key={item.fieldKey} data-slot='collection-item' size='sm'>
+              <CardHeader>
+                <CardTitle>Complemento {index + 1}</CardTitle>
+                <CardAction>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => removeComplementary(index)}
+                    className='text-destructive hover:text-destructive'
+                  >
+                    Eliminar
+                  </Button>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <Controller
+                  name={`complementaryProducts.${index}.linkedProductId`}
+                  control={control}
+                  render={({ field, fieldState }) => {
+                    const selected =
+                      productOptions.find((opt) => opt.value === field.value) ?? null;
+                    return (
+                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                        <FieldLabel>
+                          Producto <span className='text-destructive'>*</span>
+                        </FieldLabel>
+                        <Combobox
+                          items={productOptions}
+                          value={selected}
+                          isItemEqualToValue={(a, b) => a?.value === b?.value}
+                          onValueChange={(next) => field.onChange(next?.value ?? '')}
+                        >
+                          <ComboboxInput
+                            aria-invalid={fieldState.invalid}
+                            placeholder='Buscar producto...'
+                            showClear={selected !== null}
+                          />
+                          <ComboboxContent>
+                            <ComboboxList>
+                              <ComboboxCollection>
+                                {(opt: Option) => (
+                                  <ComboboxItem key={opt.value} value={opt}>
+                                    {opt.label}
+                                  </ComboboxItem>
+                                )}
+                              </ComboboxCollection>
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
+                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                      </Field>
+                    );
+                  }}
+                />
               </CardContent>
             </Card>
           ))}

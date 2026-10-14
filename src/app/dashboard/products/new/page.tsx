@@ -8,6 +8,7 @@ import {
   listCurrencyOptions,
   listDocumentTypeOptions,
   listPriceListOptions,
+  listProductOptions,
   listProductUnitOptions,
 } from '@/modules/products/infrastructure/products.query';
 import { listTagOptions } from '@/modules/tags/infrastructure/tags.query';
@@ -28,6 +29,7 @@ export default async function NewProductPage() {
     categoryOptions,
     documentTypeOptions,
     priceListOptions,
+    productOptions,
   ] = await Promise.all([
     listBrandOptions(ctx),
     listProductUnitOptions(ctx),
@@ -36,6 +38,7 @@ export default async function NewProductPage() {
     listCategoryOptions(ctx),
     listDocumentTypeOptions(ctx),
     listPriceListOptions(ctx),
+    listProductOptions(ctx),
   ]);
 
   const defaultPrices: ProductPriceEntry[] = priceListOptions.map((option) => ({
@@ -58,6 +61,7 @@ export default async function NewProductPage() {
         categoryOptions={categoryOptions}
         documentTypeOptions={documentTypeOptions}
         priceListOptions={priceListOptions}
+        productOptions={productOptions}
         defaultPrices={defaultPrices}
         defaultUnitId={defaultUnitId}
         defaultCurrency={defaultCurrency}
