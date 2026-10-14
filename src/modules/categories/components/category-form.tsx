@@ -78,13 +78,14 @@ export function CategoryForm(props: CategoryFormProps) {
         }),
       );
     } else {
+      const editProps = props as CategoryFormEditProps;
       await submitAction(() =>
         updateCategory({
-          id: (props as CategoryFormEditProps).id,
+          id: editProps.id,
           name: values.name,
           description: values.description || null,
           isActive: values.isActive ?? true,
-          image: values.image || undefined,
+          image: values.image || (editProps.image ? null : undefined),
           parentId: values.parentId || null,
         }),
       );
