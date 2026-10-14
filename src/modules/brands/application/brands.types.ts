@@ -13,3 +13,9 @@ export interface BrandFormDTO {
   description: string | null;
   isActive: boolean;
 }
+
+export interface HomeBrandDTO {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+}

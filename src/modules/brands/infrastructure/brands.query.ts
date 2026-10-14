@@ -2,10 +2,10 @@ import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import { brand } from '@/infrastructure/db/schema';
-import { listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
+import { listFilesByOwners, listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
-import type { BrandFormDTO, BrandListItemDTO } from '../application/brands.types';
+import type { BrandFormDTO, BrandListItemDTO, HomeBrandDTO } from '../application/brands.types';
 
 function buildWhere(params: ListParams): SQL | undefined {
   const conditions: SQL[] = [isNull(brand.deletedAt)];
@@ -73,4 +73,24 @@ export async function getBrandImage(ctx: RequestContext, brandId: string): Promi
   });
 
   return files[0]?.url ?? null;
+}
+
+export async function getActiveBrands(ctx: RequestContext): Promise<HomeBrandDTO[]> {
+  const rows = await ctx.db
+    .select({ id: brand.id, name: brand.name })
+    .from(brand)
+    .where(and(isNull(brand.deletedAt), eq(brand.isActive, true)))
+    .orderBy(asc(brand.sortOrder), asc(brand.id));
+
+  const imageFiles = await listFilesByOwners(
+    ctx.db,
+    { entity: 'brand', scope: 'image' },
+    rows.map((r) => r.id),
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    imageUrl: imageFiles.get(row.id)?.[0]?.url ?? null,
+  }));
 }
