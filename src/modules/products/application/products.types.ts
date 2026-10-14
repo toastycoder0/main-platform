@@ -1,3 +1,5 @@
+import type { ProductFormSchema } from './products.validation';
+
 export interface ProductListItemDTO {
   id: string;
   slug: string;
@@ -8,3 +10,12 @@ export interface ProductListItemDTO {
   unitName: string;
   createdAt: Date;
 }
+
+export interface ProductVariantOption {
+  productId: string;
+  value: string;
+  label: string;
+}
+
+/** Shape the product form edits; `variants[].clientId` and image links use database ids when editing. */
+export type ProductFormDTO = ProductFormSchema & { id: string };
