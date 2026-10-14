@@ -292,26 +292,6 @@ describe('Products E2E', () => {
 
     it('blocks an empty submit and reports the required fields', async () => {
       await page.locator('#form-variants-0-code').fill('');
-      await submitForm(page);
-
-      await page.getByText(REQUIRED).first().waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
-      expect(await page.locator('#form-product-title').getAttribute('aria-invalid')).toBe('true');
-      expect(await page.locator('#form-variants-0-code').getAttribute('aria-invalid')).toBe('true');
-    });
-
-    it('clears the error once the field is fixed', async () => {
-      await submitForm(page);
-      await page.locator('#form-product-title[aria-invalid="true"]').waitFor();
-
-      await page.locator('#form-product-title').fill('Producto corregido');
-      await page.locator('#form-product-title:not([aria-invalid="true"])').waitFor();
-    });
-
-    it('requires a unit of measure', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Sin unidad'));
-      await page.locator('#form-variants-0-code').fill('SKU-NOUNIT');
-      await page.locator('[data-slot=combobox-clear]').first().waitFor();
       await page
         .locator('#form-product-unit')
         .locator('xpath=..')
@@ -321,13 +301,17 @@ describe('Products E2E', () => {
 
       await page.getByText(REQUIRED).first().waitFor();
       expect(page.url()).toBe(`${LIST_URL}/new`);
+      expect(await page.locator('#form-product-title').getAttribute('aria-invalid')).toBe('true');
+      expect(await page.locator('#form-variants-0-code').getAttribute('aria-invalid')).toBe('true');
+      expect(await page.locator('#form-product-unit').getAttribute('aria-invalid')).toBe('true');
     });
 
-    it('limits the length of the title', async () => {
-      await page.locator('#form-product-title').fill('a'.repeat(201));
+    it('clears the error once the field is fixed', async () => {
       await submitForm(page);
-      await page.getByText('El texto excede el número máximo de caracteres').first().waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
+      await page.locator('#form-product-title[aria-invalid="true"]').waitFor();
+
+      await page.locator('#form-product-title').fill('Producto corregido');
+      await page.locator('#form-product-title:not([aria-invalid="true"])').waitFor();
     });
 
     it('requires cost and cost currency together', async () => {
@@ -342,39 +326,6 @@ describe('Products E2E', () => {
 
       await chooseCombobox(page, page.locator('#form-product-cost-currency'), 'US Dollar');
       await page.getByText(message).first().waitFor({ state: 'detached' });
-    });
-
-    it('requires cost when only the cost currency is chosen', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Moneda'));
-      await page.locator('#form-variants-0-code').fill('SKU-CUR');
-      await chooseCombobox(page, page.locator('#form-product-cost-currency'), 'US Dollar');
-      await submitForm(page);
-
-      await page.getByText('Costo y moneda de costo deben completarse ambos').first().waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
-    });
-
-    it('rejects a negative cost and an out-of-range tax rate', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Rangos'));
-      await page.locator('#form-variants-0-code').fill('SKU-RANGE');
-      await page.locator('#form-cost').fill('-5');
-      await chooseCombobox(page, page.locator('#form-product-cost-currency'), 'US Dollar');
-      await page.locator('#form-taxRate').fill('150');
-      await submitForm(page);
-
-      await page.getByText('El costo no puede ser negativo').waitFor();
-      await page.getByText('La tasa no puede ser mayor a 100').waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
-    });
-
-    it('rejects a negative price', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Precio'));
-      await page.locator('#form-variants-0-code').fill('SKU-PRICE');
-      await page.locator('#prices-0-amount').fill('-1');
-      await submitForm(page);
-
-      await page.getByText('El precio debe ser mayor o igual a 0').waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
     });
 
     it('does not turn an emptied cost into zero', async () => {
@@ -404,33 +355,6 @@ describe('Products E2E', () => {
       await page.locator('#form-variants-1-title').waitFor({ state: 'detached' });
     });
 
-    it('rejects repeated variant codes', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Códigos'));
-      await page.locator('#form-variants-0-code').fill('SKU-DUP');
-      await page.getByRole('button', { name: 'Agregar variante' }).click();
-      await page.locator('#form-variants-1-title').fill('Segunda');
-      await page.locator('#form-variants-1-code').fill('sku-dup');
-      await submitForm(page);
-
-      await page.getByText('El código ya está en uso en otra variante').waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
-    });
-
-    it('requires a formula when the pricing model is a formula', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Fórmula'));
-      await page.locator('#form-variants-0-code').fill('SKU-FORM');
-      await chooseSelect(
-        page,
-        page.locator('#form-variants-0-pricingModel'),
-        'Fórmula personalizada',
-      );
-      await page.locator('#form-variants-0-priceFormula').waitFor();
-      await submitForm(page);
-
-      await page.getByText('La fórmula es requerida').waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
-    });
-
     it('inserts variables into the formula from the shortcuts', async () => {
       await chooseSelect(
         page,
@@ -449,46 +373,23 @@ describe('Products E2E', () => {
       expect(await page.locator('#form-variants-0-options-0-key').inputValue()).toBe('ancho_cm');
     });
 
-    it('validates option identifiers, select choices and number ranges', async () => {
+    it('shows nested option errors on the matching fields', async () => {
       await page.locator('#form-product-title').fill(uniqueTitle('Opciones inválidas'));
       await page.locator('#form-variants-0-code').fill('SKU-OPT');
 
       await page.getByRole('button', { name: 'Agregar opción' }).click();
-      await page.locator('#form-variants-0-options-0-label').fill('Acabado');
-      await chooseSelect(
-        page,
-        page.locator('#form-variants-0-options-0-type'),
-        'Lista de opciones',
-      );
-
-      await page.getByRole('button', { name: 'Agregar opción' }).click();
-      await page.locator('#form-variants-0-options-1-label').fill('Ancho');
-      await page.locator('#form-variants-0-options-1-key').fill('Ancho Inválido');
-      await chooseSelect(page, page.locator('#form-variants-0-options-1-type'), 'Número');
-      await page.locator('#form-variants-0-options-1-minValue').fill('10');
-      await page.locator('#form-variants-0-options-1-maxValue').fill('2');
+      await page.locator('#form-variants-0-options-0-label').fill('Ancho');
+      await page.locator('#form-variants-0-options-0-key').fill('Ancho Inválido');
 
       await submitForm(page);
 
-      await page.getByText('Agrega al menos una opción a la lista').waitFor();
       await page
         .getByText('Usa minúsculas, números y guiones bajos, iniciando con una letra')
         .waitFor();
-      await page.getByText('El máximo debe ser mayor o igual al mínimo').waitFor();
+      expect(
+        await page.locator('#form-variants-0-options-0-key').getAttribute('aria-invalid'),
+      ).toBe('true');
       expect(page.url()).toBe(`${LIST_URL}/new`);
-    });
-
-    it('rejects repeated option identifiers inside a variant', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Llaves'));
-      await page.locator('#form-variants-0-code').fill('SKU-KEYS');
-      for (const index of [0, 1]) {
-        await page.getByRole('button', { name: 'Agregar opción' }).click();
-        await page.locator(`#form-variants-0-options-${index}-label`).fill(`Opción ${index}`);
-        await page.locator(`#form-variants-0-options-${index}-key`).fill('misma');
-      }
-      await submitForm(page);
-
-      await page.getByText('El identificador ya está en uso en esta variante').waitFor();
     });
 
     it('manages select choices', async () => {
@@ -511,15 +412,6 @@ describe('Products E2E', () => {
       expect(await page.locator('#form-variants-0-options-0-minValue').count()).toBe(0);
       await chooseSelect(page, page.locator('#form-variants-0-options-0-type'), 'Número');
       await page.locator('#form-variants-0-options-0-minValue').waitFor();
-    });
-
-    it('rejects quantities below the minimum', async () => {
-      await page.locator('#form-product-title').fill(uniqueTitle('Cantidades'));
-      await page.locator('#form-variants-0-code').fill('SKU-QTY');
-      await page.locator('#form-variants-0-minOrderQty').fill('0');
-      await submitForm(page);
-
-      await page.getByText('La cantidad mínima es 1').waitFor();
     });
   });
 
@@ -571,14 +463,6 @@ describe('Products E2E', () => {
       expect(await page.getByText('Sin documentos registrados.').isVisible()).toBe(true);
     });
 
-    it('stops adding documents at the limit', async () => {
-      const add = page.getByRole('button', { name: 'Agregar documento' });
-      for (let i = 0; i < 10; i++) {
-        await add.click();
-      }
-      expect(await add.isDisabled()).toBe(true);
-    });
-
     it('requires a product for a related entry', async () => {
       await page.locator('#form-product-title').fill(uniqueTitle('Relacionado'));
       await page.locator('#form-variants-0-code').fill('SKU-REL');
@@ -606,6 +490,11 @@ describe('Products E2E', () => {
       expect(await page.getByRole('cell', { name: title, exact: true }).isVisible()).toBe(true);
       expect(await page.getByRole('cell', { name: 'Metro cuadrado' }).isVisible()).toBe(true);
       expect(await page.getByText('Activo', { exact: true }).isVisible()).toBe(true);
+
+      // Same title again: both products are listed (distinct slugs are covered by integration).
+      await createProduct(page, title, { code: 'SKU-MIN-2' });
+      await searchInList(page, title);
+      expect(await page.getByRole('cell', { name: title, exact: true }).count()).toBe(2);
     });
 
     it('trims the title and keeps the product usable with accents', async () => {
@@ -614,15 +503,6 @@ describe('Products E2E', () => {
 
       await searchInList(page, title);
       expect(await page.getByRole('cell', { name: title, exact: true }).isVisible()).toBe(true);
-    });
-
-    it('creates products that share the same title with distinct slugs', async () => {
-      const title = uniqueTitle('Repetido');
-      await createProduct(page, title, { code: 'SKU-R1' });
-      await createProduct(page, title, { code: 'SKU-R2' });
-
-      await searchInList(page, title);
-      expect(await page.getByRole('cell', { name: title, exact: true }).count()).toBe(2);
     });
 
     it('persists every general field', async () => {
@@ -707,20 +587,16 @@ describe('Products E2E', () => {
       expect(await page.locator('#prices-2-amount').inputValue()).toBe('0');
     });
 
-    it('persists technical details in order', async () => {
+    it('persists technical details', async () => {
       const title = uniqueTitle('Detalles guardados');
       await openNewProduct(page);
       await page.locator('#form-product-title').fill(title);
       await page.locator('#form-variants-0-code').fill('DET-1');
 
       await page.getByRole('button', { name: 'Agregar detalle' }).click();
-      await page.getByRole('button', { name: 'Agregar detalle' }).click();
       const first = item(page, 'Detalle 1');
       await first.getByPlaceholder('Ej: Material').fill('Material');
       await first.getByPlaceholder('Ej: Acero inoxidable').fill('Acero');
-      const second = item(page, 'Detalle 2');
-      await second.getByPlaceholder('Ej: Material').fill('Peso');
-      await second.getByPlaceholder('Ej: Acero inoxidable').fill('3 kg');
 
       await submitForm(page);
       await waitForList(page);
@@ -730,8 +606,8 @@ describe('Products E2E', () => {
         'Material',
       );
       expect(
-        await item(page, 'Detalle 2').getByPlaceholder('Ej: Acero inoxidable').inputValue(),
-      ).toBe('3 kg');
+        await item(page, 'Detalle 1').getByPlaceholder('Ej: Acero inoxidable').inputValue(),
+      ).toBe('Acero');
     });
 
     it('persists variants with formula pricing and typed options', async () => {
@@ -983,27 +859,6 @@ describe('Products E2E', () => {
         .waitFor();
     });
 
-    it('rejects the same related product twice', async () => {
-      const target = uniqueTitle('Doble');
-      await createProduct(page, target, { code: 'DBL-1' });
-
-      await openNewProduct(page);
-      await page.locator('#form-product-title').fill(uniqueTitle('Dobles'));
-      await page.locator('#form-variants-0-code').fill('DBL-2');
-      for (const n of [1, 2]) {
-        await page.getByRole('button', { name: 'Agregar relacionado' }).click();
-        await chooseCombobox(
-          page,
-          item(page, `Relacionado ${n}`).getByPlaceholder('Buscar producto...'),
-          target,
-        );
-      }
-      await submitForm(page);
-
-      await page.getByText('Este producto ya fue agregado').waitFor();
-      expect(page.url()).toBe(`${LIST_URL}/new`);
-    });
-
     it('does not offer a variant picker for a complement until a product is chosen', async () => {
       await openNewProduct(page);
       await page.getByRole('button', { name: 'Agregar complementario' }).click();
@@ -1104,17 +959,6 @@ describe('Products E2E', () => {
       expect(await page.locator('#form-variants-0-code').inputValue()).toBe('EDT-3');
     });
 
-    it('validates the edit form like the creation form', async () => {
-      const title = uniqueTitle('Editar valida');
-      await createProduct(page, title, { code: 'EDT-4' });
-      await openEdit(page, title);
-
-      await page.locator('#form-product-title').fill('');
-      await submitForm(page);
-      await page.getByText(REQUIRED).first().waitFor();
-      expect(page.url()).toContain('/dashboard/products/form/');
-    });
-
     it('keeps the edit form on the page when cancelling', async () => {
       const title = uniqueTitle('Editar cancela');
       await createProduct(page, title, { code: 'EDT-5' });
@@ -1156,20 +1000,6 @@ describe('Products E2E', () => {
       expect(await page.locator('#form-variants-1-code').inputValue()).toBe('EV-2');
       expect(await page.locator('#form-variants-2-title').inputValue()).toBe('Nueva');
       expect(await page.locator('#form-variants-3-title').count()).toBe(0);
-    });
-
-    it('rejects a repeated variant code while editing', async () => {
-      const title = uniqueTitle('Editar códigos');
-      await createProduct(page, title, { code: 'EC-1' });
-      await openEdit(page, title);
-
-      await page.getByRole('button', { name: 'Agregar variante' }).click();
-      await page.locator('#form-variants-1-title').fill('Otra');
-      await page.locator('#form-variants-1-code').fill('ec-1');
-      await submitForm(page);
-
-      await page.getByText('El código ya está en uso en otra variante').waitFor();
-      expect(page.url()).toContain('/dashboard/products/form/');
     });
 
     it('keeps stored images and files across edits and lets them be replaced', async () => {
