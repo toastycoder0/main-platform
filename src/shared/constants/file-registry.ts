@@ -57,7 +57,8 @@ export const FILE_REGISTRY = {
       ownerType: 'product_image',
       allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
       maxSize: 5 * MB,
-      maxCount: 10,
+      // Product galleries are intentionally unbounded.
+      maxCount: Number.POSITIVE_INFINITY,
     },
   },
 } satisfies Record<string, Record<string, ScopeConfig>>;
