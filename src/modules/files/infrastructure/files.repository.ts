@@ -1,6 +1,13 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { DatabaseClient } from '@/infrastructure/db';
-import { brand, category, file, user } from '@/infrastructure/db/schema';
+import {
+  brand,
+  category,
+  file,
+  productDocument,
+  productImage,
+  user,
+} from '@/infrastructure/db/schema';
 import { storageClient } from '@/infrastructure/storage/client';
 import { extractExtension, generateFileKey, isTempKey } from '@/infrastructure/storage/keys';
 import { storageKeyToUrl, urlToStorageKey } from '@/infrastructure/storage/urls';
@@ -42,6 +49,24 @@ const OWNER_CHECKERS: Partial<Record<FileOwnerType, OwnerChecker>> = {
       .select({ id: brand.id })
       .from(brand)
       .where(and(eq(brand.id, ownerId), isNull(brand.deletedAt)))
+      .limit(1);
+
+    return Boolean(rows[0]);
+  },
+  product_document: async (db, ownerId) => {
+    const rows = await db
+      .select({ id: productDocument.id })
+      .from(productDocument)
+      .where(eq(productDocument.id, ownerId))
+      .limit(1);
+
+    return Boolean(rows[0]);
+  },
+  product_image: async (db, ownerId) => {
+    const rows = await db
+      .select({ id: productImage.id })
+      .from(productImage)
+      .where(eq(productImage.id, ownerId))
       .limit(1);
 
     return Boolean(rows[0]);
@@ -183,4 +208,45 @@ export async function listOwnerFiles(db: DbLike, locator: FileLocator): Promise<
       ? [{ id: row.id, key: row.key, url: storageKeyToUrl(row.key), sortOrder: row.sortOrder }]
       : [],
   );
+}
+
+/** Batch variant of `listOwnerFiles`: files of several owners of one scope, grouped by owner. */
+export async function listFilesByOwners(
+  db: DbLike,
+  locator: Omit<FileLocator, 'ownerId'>,
+  ownerIds: string[],
+): Promise<Map<string, FileDTO[]>> {
+  const grouped = new Map<string, FileDTO[]>();
+
+  if (ownerIds.length === 0) {
+    return grouped;
+  }
+
+  const rows = await db
+    .select()
+    .from(file)
+    .where(
+      and(
+        eq(file.entity, locator.entity),
+        eq(file.scope, locator.scope),
+        inArray(file.ownerId, ownerIds),
+      ),
+    )
+    .orderBy(asc(file.sortOrder), asc(file.id));
+
+  for (const row of rows) {
+    if (!row.key || !row.ownerId) {
+      continue;
+    }
+    const list = grouped.get(row.ownerId) ?? [];
+    list.push({
+      id: row.id,
+      key: row.key,
+      url: storageKeyToUrl(row.key),
+      sortOrder: row.sortOrder,
+    });
+    grouped.set(row.ownerId, list);
+  }
+
+  return grouped;
 }

@@ -3,6 +3,7 @@ import { boolean, index, snakeCase, text, timestamp } from 'drizzle-orm/pg-core'
 import { generateId } from '../id';
 import { ordering } from '../order';
 import { timestamps } from '../time';
+import { priceList } from './product.schema';
 
 export const user = snakeCase.table(
   'user',
@@ -21,6 +22,7 @@ export const user = snakeCase.table(
     banned: boolean(),
     banReason: text(),
     banExpires: timestamp({ precision: 6, withTimezone: true }),
+    priceListId: text().references(() => priceList.id),
     ...timestamps,
   },
   (table) => [

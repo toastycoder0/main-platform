@@ -217,7 +217,40 @@ function FileAttachment({
   );
 }
 
-function fileIsValid(file: File | null, allowedTypes: string[], maxSize: number): file is File {
+export async function uploadTempFile(
+  entity: FileEntity,
+  scope: string,
+  file: File,
+): Promise<string | null> {
+  const result = await requestUploadUrl({
+    entity,
+    scope,
+    fileName: file.name,
+    contentType: file.type,
+    size: file.size,
+  });
+  if (!result.success) {
+    return null;
+  }
+
+  const res = await fetch(result.data.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type },
+  });
+  if (!res.ok) {
+    return null;
+  }
+
+  const confirm = await confirmUpload({ fileKey: result.data.tempKey });
+  return confirm.success ? result.data.tempKey : null;
+}
+
+export function fileIsValid(
+  file: File | null,
+  allowedTypes: string[],
+  maxSize: number,
+): file is File {
   return (
     file !== null &&
     (allowedTypes.length === 0 || allowedTypes.includes(file.type)) &&
@@ -254,31 +287,6 @@ export function ControlledFileUploader<T extends FieldValues>({
   const onChangeRef = useRef<(value: string) => void>(() => undefined);
   const formValueRef = useRef('');
 
-  async function upload(file: File): Promise<string | null> {
-    const result = await requestUploadUrl({
-      entity,
-      scope,
-      fileName: file.name,
-      contentType: file.type,
-      size: file.size,
-    });
-    if (!result.success) {
-      return null;
-    }
-
-    const res = await fetch(result.data.uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': file.type },
-    });
-    if (!res.ok) {
-      return null;
-    }
-
-    const confirm = await confirmUpload({ fileKey: result.data.tempKey });
-    return confirm.success ? result.data.tempKey : null;
-  }
-
   async function addFile(file: File): Promise<void> {
     const id = crypto.randomUUID();
     const previewUrl = URL.createObjectURL(file);
@@ -294,7 +302,7 @@ export function ControlledFileUploader<T extends FieldValues>({
       },
     ]);
 
-    const tempKey = await upload(file);
+    const tempKey = await uploadTempFile(entity, scope, file);
     if (tempKey) {
       setItems((cur) =>
         cur.map((it) => (it.tempKey === id ? { ...it, state: 'done', tempKey } : it)),

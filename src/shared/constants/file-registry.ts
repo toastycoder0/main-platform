@@ -1,11 +1,4 @@
-export type FileOwnerType =
-  | 'product'
-  | 'product_variant'
-  | 'brand'
-  | 'category'
-  | 'order'
-  | 'shipment'
-  | 'user';
+export type FileOwnerType = 'product_document' | 'product_image' | 'brand' | 'category' | 'user';
 
 export interface ScopeConfig {
   path: string;
@@ -47,6 +40,25 @@ export const FILE_REGISTRY = {
       allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
       maxSize: 5 * MB,
       maxCount: 1,
+    },
+  },
+  product_documents: {
+    document: {
+      path: 'products/documents',
+      ownerType: 'product_document',
+      allowedTypes: DOCUMENT_TYPES,
+      maxSize: 10 * MB,
+      maxCount: 20,
+    },
+  },
+  product_images: {
+    image: {
+      path: 'products/images',
+      ownerType: 'product_image',
+      allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      maxSize: 5 * MB,
+      // Product galleries are intentionally unbounded.
+      maxCount: Number.POSITIVE_INFINITY,
     },
   },
 } satisfies Record<string, Record<string, ScopeConfig>>;
