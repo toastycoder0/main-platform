@@ -31,6 +31,14 @@ const GALLERY_INPUT = 'input[type=file][accept*="image"]';
 let sql: ReturnType<typeof postgres> | undefined;
 let counter = 0;
 
+/** Returns the live connection or fails with a clear message if it was never opened. */
+function db(): ReturnType<typeof postgres> {
+  if (!sql) {
+    throw new Error('La conexión a la base de datos no está inicializada');
+  }
+  return sql;
+}
+
 function uniqueTitle(label: string): string {
   counter += 1;
   return `E2E ${label} ${Date.now().toString(36)}${counter}`;
@@ -41,11 +49,12 @@ async function seedCatalogs(): Promise<void> {
   if (!url) {
     throw new Error('DATABASE_URL is not available to the e2e worker');
   }
-  sql = postgres(url);
+  const conn = postgres(url);
+  sql = conn;
 
-  await sql`INSERT INTO brand (id, slug, name) VALUES ('brd_e2e_marca', 'e2e-marca', ${SEEDED_BRAND}) ON CONFLICT DO NOTHING`;
-  await sql`INSERT INTO tag (id, slug, name) VALUES ('tag_e2e_a', 'e2e-tag-a', ${SEEDED_TAGS[0] ?? ''}), ('tag_e2e_b', 'e2e-tag-b', ${SEEDED_TAGS[1] ?? ''}) ON CONFLICT DO NOTHING`;
-  await sql`INSERT INTO category (id, slug, name, path) VALUES ('cat_e2e_uno', 'e2e-uno', ${SEEDED_CATEGORIES[0] ?? ''}, 'cat_e2e_uno'), ('cat_e2e_dos', 'e2e-dos', ${SEEDED_CATEGORIES[1] ?? ''}, 'cat_e2e_dos') ON CONFLICT DO NOTHING`;
+  await conn`INSERT INTO brand (id, slug, name) VALUES ('brd_e2e_marca', 'e2e-marca', ${SEEDED_BRAND}) ON CONFLICT DO NOTHING`;
+  await conn`INSERT INTO tag (id, slug, name) VALUES ('tag_e2e_a', 'e2e-tag-a', ${SEEDED_TAGS[0] ?? ''}), ('tag_e2e_b', 'e2e-tag-b', ${SEEDED_TAGS[1] ?? ''}) ON CONFLICT DO NOTHING`;
+  await conn`INSERT INTO category (id, slug, name, path) VALUES ('cat_e2e_uno', 'e2e-uno', ${SEEDED_CATEGORIES[0] ?? ''}, 'cat_e2e_uno'), ('cat_e2e_dos', 'e2e-dos', ${SEEDED_CATEGORIES[1] ?? ''}, 'cat_e2e_dos') ON CONFLICT DO NOTHING`;
 }
 
 async function loginAsAdmin(page: Page) {
@@ -1006,8 +1015,8 @@ describe('Products E2E', () => {
 
     it('shows the server error when a referenced record disappears', async () => {
       const title = uniqueTitle('Referencia perdida');
-      await sql`INSERT INTO tag (id, slug, name) VALUES ('tag_e2e_temp', 'e2e-tag-temp', 'E2E Tag Temporal') ON CONFLICT DO NOTHING`;
-      await sql`UPDATE tag SET deleted_at = NULL WHERE id = 'tag_e2e_temp'`;
+      await db()`INSERT INTO tag (id, slug, name) VALUES ('tag_e2e_temp', 'e2e-tag-temp', 'E2E Tag Temporal') ON CONFLICT DO NOTHING`;
+      await db()`UPDATE tag SET deleted_at = NULL WHERE id = 'tag_e2e_temp'`;
 
       await openNewProduct(page);
       await page.locator('#form-product-title').fill(title);
@@ -1016,7 +1025,7 @@ describe('Products E2E', () => {
       await page.getByRole('option', { name: 'E2E Tag Temporal' }).click();
       await page.keyboard.press('Escape');
 
-      await sql`UPDATE tag SET deleted_at = now() WHERE id = 'tag_e2e_temp'`;
+      await db()`UPDATE tag SET deleted_at = now() WHERE id = 'tag_e2e_temp'`;
 
       await submitForm(page);
       expect(await toastText(page)).toContain('Algún tag seleccionado no existe');
@@ -1028,8 +1037,8 @@ describe('Products E2E', () => {
 
     it('keeps the form data when the server rejects the submission', async () => {
       const title = uniqueTitle('Conserva datos');
-      await sql`INSERT INTO tag (id, slug, name) VALUES ('tag_e2e_temp2', 'e2e-tag-temp2', 'E2E Tag Temporal 2') ON CONFLICT DO NOTHING`;
-      await sql`UPDATE tag SET deleted_at = NULL WHERE id = 'tag_e2e_temp2'`;
+      await db()`INSERT INTO tag (id, slug, name) VALUES ('tag_e2e_temp2', 'e2e-tag-temp2', 'E2E Tag Temporal 2') ON CONFLICT DO NOTHING`;
+      await db()`UPDATE tag SET deleted_at = NULL WHERE id = 'tag_e2e_temp2'`;
 
       await openNewProduct(page);
       await page.locator('#form-product-title').fill(title);
@@ -1037,7 +1046,7 @@ describe('Products E2E', () => {
       await page.getByPlaceholder('Buscar tags...').click();
       await page.getByRole('option', { name: 'E2E Tag Temporal 2' }).click();
       await page.keyboard.press('Escape');
-      await sql`UPDATE tag SET deleted_at = now() WHERE id = 'tag_e2e_temp2'`;
+      await db()`UPDATE tag SET deleted_at = now() WHERE id = 'tag_e2e_temp2'`;
 
       await submitForm(page);
       await toastText(page);
@@ -1318,7 +1327,7 @@ describe('Products E2E', () => {
       await openEdit(page, title);
 
       const id = page.url().split('/form/')[1] ?? '';
-      await sql`UPDATE product SET deleted_at = now() WHERE id = ${id}`;
+      await db()`UPDATE product SET deleted_at = now() WHERE id = ${id}`;
 
       await page.locator('#form-product-title').fill(`${title} cambio`);
       await submitForm(page);
@@ -1331,7 +1340,7 @@ describe('Products E2E', () => {
       await createProduct(page, title, { code: 'AR-2' });
       await openEdit(page, title);
       const id = page.url().split('/form/')[1] ?? '';
-      await sql`UPDATE product SET deleted_at = now() WHERE id = ${id}`;
+      await db()`UPDATE product SET deleted_at = now() WHERE id = ${id}`;
 
       await page.goto(`${LIST_URL}/form/${id}`);
       await page.getByRole('heading', { name: 'Página no encontrada' }).waitFor();
