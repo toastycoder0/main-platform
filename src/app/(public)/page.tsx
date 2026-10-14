@@ -1,34 +1,22 @@
-import { createRequestContext } from '@/infrastructure/context/next-factory';
-import { HomeBrandsMarquee } from '@/modules/brands/components/home-brands-marquee';
-import { getActiveBrands } from '@/modules/brands/infrastructure/brands.query';
-import { HomeCategoriesShowcase } from '@/modules/categories/components/home-categories-showcase';
-import { getHomeCategories } from '@/modules/categories/infrastructure/categories.query';
-import { HomeProductSection } from '@/modules/products/components/home-product-section';
-import { getHomeProducts } from '@/modules/products/infrastructure/products.query';
+import { HomeBrandsMarqueeLoader } from '@/modules/brands/components/home-brands-marquee-loader';
+import { HomeCategoriesShowcaseLoader } from '@/modules/categories/components/home-categories-showcase-loader';
+import { HomeProductSectionLoader } from '@/modules/products/components/home-product-section-loader';
 import { FeaturesSection } from '@/shared/components/features-section';
 
-async function Home() {
-  const ctx = await createRequestContext();
-  const [categories, brands, recentProducts, popularProducts] = await Promise.all([
-    getHomeCategories(ctx),
-    getActiveBrands(ctx),
-    getHomeProducts(ctx, 'recent'),
-    getHomeProducts(ctx, 'popular'),
-  ]);
-
+function Home() {
   return (
     <>
       <section className='w-full rounded-lg aspect-square bg-[url(/assets/placeholder.svg)] bg-center lg:aspect-16/8' />
-      <HomeCategoriesShowcase categories={categories} />
-      <HomeBrandsMarquee brands={brands} />
-      <HomeProductSection
+      <HomeCategoriesShowcaseLoader />
+      <HomeBrandsMarqueeLoader />
+      <HomeProductSectionLoader
         title='Más nuevos'
-        products={recentProducts}
+        order='recent'
         viewAllHref='/products?sort=createdAt'
       />
-      <HomeProductSection
+      <HomeProductSectionLoader
         title='Populares'
-        products={popularProducts}
+        order='popular'
         viewAllHref='/products?sort=popular'
       />
       <FeaturesSection />
