@@ -12,12 +12,24 @@ interface ProductVariantsSectionProps {
 }
 
 export function ProductVariantsSection({ unitItems }: ProductVariantsSectionProps) {
-  const { control, getFieldState } = useFormContext<ProductFormSchema>();
+  const { control, getFieldState, getValues, setValue } = useFormContext<ProductFormSchema>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'variants',
     keyName: 'fieldKey',
   });
+
+  // Images linked to a removed variant fall back to the general gallery.
+  function removeVariant(index: number) {
+    const removedId = getValues(`variants.${index}.clientId`);
+    getValues('images').forEach((image, imageIndex) => {
+      if (image.variantId === removedId) {
+        setValue(`images.${imageIndex}.variantId`, null, { shouldDirty: true });
+      }
+    });
+    remove(index);
+  }
+
   const formState = useFormState({ control, name: 'variants' });
   const rootError = getFieldState('variants', formState).error?.root?.message;
 
@@ -48,7 +60,7 @@ export function ProductVariantsSection({ unitItems }: ProductVariantsSectionProp
           key={item.fieldKey}
           index={index}
           unitItems={unitItems}
-          onRemove={index === 0 ? undefined : () => remove(index)}
+          onRemove={index === 0 ? undefined : () => removeVariant(index)}
         />
       ))}
     </div>

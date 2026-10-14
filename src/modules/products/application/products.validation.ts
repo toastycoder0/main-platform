@@ -80,6 +80,8 @@ const productVariantOptionSchema = z
 
 const productVariantSchema = z
   .object({
+    // Form-only identifier so images can reference a variant before it has a database id.
+    clientId: z.string().min(1),
     title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
     code: z.string().trim().min(1, FIELD_ERRORS.required).max(100, FIELD_ERRORS.tooLong),
     unitId: z.string().min(1).nullable().optional(),
@@ -142,6 +144,35 @@ const productVariantsSchema = z
     });
   });
 
+const productImageSchema = z.object({
+  fileUrl: z.string().min(1, FIELD_ERRORS.required),
+  altText: z.string().trim().max(200, FIELD_ERRORS.tooLong).nullable().optional(),
+  isVisible: z.boolean().default(true),
+  // `null` means the image belongs to the product in general.
+  variantId: z.string().min(1).nullable().optional(),
+});
+
+const productImagesSchema = z.array(productImageSchema).default([]);
+
+function validateImageVariants(
+  data: {
+    variants: { clientId: string }[];
+    images: { variantId?: string | null | undefined }[];
+  },
+  ctx: z.RefinementCtx,
+) {
+  const variantIds = new Set(data.variants.map((variant) => variant.clientId));
+  data.images.forEach((image, index) => {
+    if (image.variantId && !variantIds.has(image.variantId)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'La variante seleccionada ya no existe',
+        path: ['images', index, 'variantId'],
+      });
+    }
+  });
+}
+
 const productFieldsSchema = {
   title: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
   slug: z.string().trim().min(1, FIELD_ERRORS.required).max(200, FIELD_ERRORS.tooLong),
@@ -165,6 +196,7 @@ const productFieldsSchema = {
   documents: z.array(productDocumentSchema).default([]),
   prices: z.array(productPriceEntrySchema).default([]),
   variants: productVariantsSchema,
+  images: productImagesSchema,
   relatedProducts: z
     .array(
       z.object({
@@ -182,6 +214,7 @@ const productFieldsSchema = {
 };
 
 export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {
+  validateImageVariants(data, ctx);
   if (
     (data.cost !== null && data.cost !== undefined) !==
     (data.costCurrency !== null && data.costCurrency !== undefined)
@@ -205,6 +238,7 @@ export const updateProductSchema = z
     ...productFieldsSchema,
   })
   .superRefine((data, ctx) => {
+    validateImageVariants(data, ctx);
     if (
       (data.cost !== null && data.cost !== undefined) !==
       (data.costCurrency !== null && data.costCurrency !== undefined)
@@ -229,6 +263,7 @@ export const productFormSchema = z
     slug: z.string().trim().max(200, FIELD_ERRORS.tooLong).optional(),
   })
   .superRefine((data, ctx) => {
+    validateImageVariants(data, ctx);
     if (
       (data.cost !== null && data.cost !== undefined) !==
       (data.costCurrency !== null && data.costCurrency !== undefined)

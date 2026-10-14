@@ -36,6 +36,7 @@ import { productFormSchema } from '../application/products.validation';
 import { createDefaultVariant } from '../application/products.variants';
 import type { Option } from '../infrastructure/products.query';
 import { ControlledNumberInput } from './product-form-fields';
+import { ProductGallerySection } from './product-gallery-section';
 import { ProductVariantsSection } from './product-variants-section';
 
 export interface ProductPriceEntry {
@@ -102,6 +103,7 @@ export function ProductForm({
       documents: [],
       prices: defaultPrices,
       variants: [createDefaultVariant()],
+      images: [],
     },
   });
   const {
@@ -660,6 +662,7 @@ export function ProductForm({
         {/* Variants Section */}
         <FormProvider {...form}>
           <ProductVariantsSection unitItems={unitItems} />
+          <ProductGallerySection />
         </FormProvider>
 
         {/* Details Section */}

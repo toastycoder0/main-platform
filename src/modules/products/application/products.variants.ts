@@ -41,6 +41,7 @@ export function createEmptyVariantOption(): ProductVariantOptionValues {
 
 export function createEmptyVariant(title = ''): ProductVariantValues {
   return {
+    clientId: crypto.randomUUID(),
     title,
     code: '',
     unitId: null,
