@@ -44,6 +44,20 @@ const productFieldsSchema = {
   details: z.array(productDetailSchema).default([]),
   documents: z.array(productDocumentSchema).default([]),
   prices: z.array(productPriceEntrySchema).default([]),
+  relatedProducts: z
+    .array(
+      z.object({
+        linkedProductId: z.string().min(1, FIELD_ERRORS.required),
+      }),
+    )
+    .default([]),
+  complementaryProducts: z
+    .array(
+      z.object({
+        linkedProductId: z.string().min(1, FIELD_ERRORS.required),
+      }),
+    )
+    .default([]),
 };
 
 export const createProductSchema = z.object(productFieldsSchema).superRefine((data, ctx) => {
