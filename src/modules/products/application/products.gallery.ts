@@ -25,10 +25,10 @@ export function getImageScopeItems(
   ];
 }
 
-export function toImageScopeValue(variantId: string | null | undefined): string {
+export function toImageScopeValue(variantId: string | null | undefined) {
   return variantId ?? GENERAL_IMAGE_SCOPE;
 }
 
-export function fromImageScopeValue(value: string): string | null {
+export function fromImageScopeValue(value: string) {
   return value === GENERAL_IMAGE_SCOPE ? null : value;
 }

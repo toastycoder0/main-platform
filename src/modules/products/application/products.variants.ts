@@ -60,7 +60,7 @@ export function createDefaultVariant(): ProductVariantValues {
   return createEmptyVariant('Estándar');
 }
 
-export function toOptionKey(label: string): string {
+export function toOptionKey(label: string) {
   const key = slugify(label).replaceAll('-', '_');
   return /^[0-9]/.test(key) ? `opcion_${key}` : key;
 }

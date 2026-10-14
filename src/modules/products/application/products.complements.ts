@@ -13,11 +13,11 @@ export function createComplementaryEntry(): ProductComplementValues {
   return { linkedProductId: '', variantId: null, linkedVariantId: null };
 }
 
-export function toVariantSelectValue(variantId: string | null | undefined): string {
+export function toVariantSelectValue(variantId: string | null | undefined) {
   return variantId ?? ANY_VARIANT;
 }
 
-export function fromVariantSelectValue(value: string): string | null {
+export function fromVariantSelectValue(value: string) {
   return value === ANY_VARIANT ? null : value;
 }
 
@@ -47,7 +47,7 @@ export function describeComplement({
   productLabel: string | null;
   ownVariantLabel: string | null;
   linkedVariantLabel: string | null;
-}): string {
+}) {
   if (!productLabel) {
     return 'Selecciona un producto para ver cómo se aplicará.';
   }
