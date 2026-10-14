@@ -5,6 +5,7 @@ import { HomeCategoriesShowcase } from '@/modules/categories/components/home-cat
 import { getHomeCategories } from '@/modules/categories/infrastructure/categories.query';
 import { HomeProductSection } from '@/modules/products/components/home-product-section';
 import { getHomeProducts } from '@/modules/products/infrastructure/products.query';
+import { FeaturesSection } from '@/shared/components/features-section';
 
 async function Home() {
   const ctx = await createRequestContext();
@@ -30,6 +31,7 @@ async function Home() {
         products={popularProducts}
         viewAllHref='/products?sort=popular'
       />
+      <FeaturesSection />
     </>
   );
 }
