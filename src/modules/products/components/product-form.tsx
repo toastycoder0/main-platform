@@ -2,8 +2,9 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import {
@@ -31,11 +32,15 @@ import {
 } from '@/shared/components/select';
 import { Switch } from '@/shared/components/switch';
 import { Textarea } from '@/shared/components/textarea';
+import { buildPriceEntries } from '../application/products.prices';
+import type { ProductFormDTO, ProductVariantOption } from '../application/products.types';
 import type { ProductFormSchema } from '../application/products.validation';
-import { productFormSchema } from '../application/products.validation';
+import { MAX_DETAILS, MAX_DOCUMENTS, productFormSchema } from '../application/products.validation';
 import { createDefaultVariant } from '../application/products.variants';
+import { createProduct, updateProduct } from '../infrastructure/products.action';
 import type { Option } from '../infrastructure/products.query';
-import { ControlledNumberInput } from './product-form-fields';
+import { ProductComplementarySection } from './product-complementary-section';
+import { ControlledNumberField, ControlledNumberInput } from './product-form-fields';
 import { ProductGallerySection } from './product-gallery-section';
 import { ProductVariantsSection } from './product-variants-section';
 
@@ -53,10 +58,13 @@ interface ProductFormProps {
   documentTypeOptions: Option[];
   priceListOptions: Option[];
   productOptions: Option[];
+  productVariantOptions: ProductVariantOption[];
   defaultPrices: ProductPriceEntry[];
   defaultUnitId: string;
   defaultCurrency: string;
   defaultDocumentTypeId: string;
+  /** Stored product to edit; omit to create a new one. */
+  product?: ProductFormDTO | undefined;
 }
 
 export function ProductForm({
@@ -68,56 +76,71 @@ export function ProductForm({
   documentTypeOptions,
   priceListOptions,
   productOptions,
+  productVariantOptions,
   defaultPrices,
   defaultUnitId,
   defaultCurrency,
   defaultDocumentTypeId,
+  product,
 }: ProductFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const tagAnchor = useComboboxAnchor();
   const categoryAnchor = useComboboxAnchor();
 
   const form = useForm<ProductFormSchema>({
     resolver: zodResolver(productFormSchema) as never,
-    defaultValues: {
-      title: '',
-      subtitle: '',
-      description: '',
-      code: '',
-      brandId: null,
-      unitId: defaultUnitId,
-      baseCurrency: defaultCurrency,
-      costCurrency: null,
-      satId: '',
-      satUnit: '',
-      taxObject: '',
-      taxName: '',
-      taxRate: null,
-      cost: null,
-      status: 'active',
-      tagIds: [],
-      categoryIds: [],
-      relatedProducts: [],
-      complementaryProducts: [],
-      details: [],
-      documents: [],
-      prices: defaultPrices,
-      variants: [createDefaultVariant()],
-      images: [],
-    },
+    defaultValues: product
+      ? {
+          ...product,
+          variants: product.variants.length > 0 ? product.variants : [createDefaultVariant()],
+          prices: buildPriceEntries(priceListOptions, product.prices),
+        }
+      : {
+          title: '',
+          subtitle: '',
+          description: '',
+          code: '',
+          brandId: null,
+          unitId: defaultUnitId,
+          baseCurrency: defaultCurrency,
+          costCurrency: null,
+          satId: '',
+          satUnit: '',
+          taxObject: '',
+          taxName: '',
+          taxRate: null,
+          cost: null,
+          status: 'active',
+          tagIds: [],
+          categoryIds: [],
+          relatedProducts: [],
+          complementaryProducts: [],
+          details: [],
+          documents: [],
+          prices: defaultPrices,
+          variants: [createDefaultVariant()],
+          images: [],
+        },
   });
   const {
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { isSubmitting },
   } = form;
 
+  // The cost/currency rule spans two fields, so fixing one must refresh the error of the other.
+  useEffect(() => {
+    const subscription = form.watch((_values, { name }) => {
+      if ((name === 'cost' || name === 'costCurrency') && form.formState.isSubmitted) {
+        form.trigger(['cost', 'costCurrency']);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   async function onSubmit(values: ProductFormSchema) {
-    setIsSubmitting(true);
-    // biome-ignore lint/suspicious/noConsole: temporary debug logging before implementing action
-    console.log('Form values:', values);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsSubmitting(false);
+    await submitAction(() =>
+      product ? updateProduct({ ...values, id: product.id }) : createProduct(values),
+    );
   }
 
   const brandItems = brandOptions.map((opt) => ({ value: opt.value, label: opt.label }));
@@ -134,8 +157,6 @@ export function ProductForm({
     keyName: 'fieldKey',
   });
 
-  const MAX_DETAILS = 20;
-
   const {
     fields: documentFields,
     append: appendDocument,
@@ -146,8 +167,6 @@ export function ProductForm({
     keyName: 'fieldKey',
   });
 
-  const MAX_DOCUMENTS = 10;
-
   const {
     fields: relatedFields,
     append: appendRelated,
@@ -155,16 +174,6 @@ export function ProductForm({
   } = useFieldArray({
     control,
     name: 'relatedProducts',
-    keyName: 'fieldKey',
-  });
-
-  const {
-    fields: complementaryFields,
-    append: appendComplementary,
-    remove: removeComplementary,
-  } = useFieldArray({
-    control,
-    name: 'complementaryProducts',
     keyName: 'fieldKey',
   });
 
@@ -376,25 +385,14 @@ export function ProductForm({
             )}
           />
 
-          <Controller
-            name='cost'
+          <ControlledNumberField
             control={control}
-            render={({ field, fieldState }) => (
-              <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='form-product-cost'>Costo</FieldLabel>
-                <Input
-                  {...field}
-                  id='form-product-cost'
-                  type='number'
-                  step='0.01'
-                  min='0'
-                  value={field.value ?? ''}
-                  aria-invalid={fieldState.invalid}
-                  placeholder='0.00'
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
+            name='cost'
+            label='Costo'
+            placeholder='0.00'
+            min={0}
+            step='0.01'
+            nullable
           />
 
           <Controller
@@ -507,25 +505,14 @@ export function ProductForm({
             )}
           />
 
-          <Controller
-            name='taxRate'
+          <ControlledNumberField
             control={control}
-            render={({ field, fieldState }) => (
-              <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='form-product-tax-rate'>Tasa de impuesto (%)</FieldLabel>
-                <Input
-                  {...field}
-                  id='form-product-tax-rate'
-                  type='number'
-                  step='0.01'
-                  min='0'
-                  value={field.value ?? ''}
-                  aria-invalid={fieldState.invalid}
-                  placeholder='Ej: 16.00'
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
+            name='taxRate'
+            label='Tasa de impuesto (%)'
+            placeholder='Ej: 16.00'
+            min={0}
+            step='0.01'
+            nullable
           />
           <Controller
             name='tagIds'
@@ -950,94 +937,16 @@ export function ProductForm({
           ))}
         </div>
 
-        {/* Complementary Products Section */}
-        <div className='flex flex-col gap-4 pt-4 border-t'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h3 className='font-medium'>Productos complementarios</h3>
-              <p className='text-sm text-muted-foreground'>
-                Productos que complementan o mejoran la experiencia de uso junto a este producto
-              </p>
-            </div>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => appendComplementary({ linkedProductId: '' })}
-            >
-              Agregar complementario
-            </Button>
-          </div>
-
-          {complementaryFields.length === 0 ? (
-            <p className='text-sm text-muted-foreground'>Sin productos complementarios.</p>
-          ) : null}
-
-          {complementaryFields.map((item, index) => (
-            <Card key={item.fieldKey} data-slot='collection-item' size='sm'>
-              <CardHeader>
-                <CardTitle>Complemento {index + 1}</CardTitle>
-                <CardAction>
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => removeComplementary(index)}
-                    className='text-destructive hover:text-destructive'
-                  >
-                    Eliminar
-                  </Button>
-                </CardAction>
-              </CardHeader>
-              <CardContent>
-                <Controller
-                  name={`complementaryProducts.${index}.linkedProductId`}
-                  control={control}
-                  render={({ field, fieldState }) => {
-                    const selected =
-                      productOptions.find((opt) => opt.value === field.value) ?? null;
-                    return (
-                      <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                        <FieldLabel>
-                          Producto <span className='text-destructive'>*</span>
-                        </FieldLabel>
-                        <Combobox
-                          items={productOptions}
-                          value={selected}
-                          isItemEqualToValue={(a, b) => a?.value === b?.value}
-                          onValueChange={(next) => field.onChange(next?.value ?? '')}
-                        >
-                          <ComboboxInput
-                            aria-invalid={fieldState.invalid}
-                            placeholder='Buscar producto...'
-                            showClear={selected !== null}
-                          />
-                          <ComboboxContent>
-                            <ComboboxList>
-                              <ComboboxCollection>
-                                {(opt: Option) => (
-                                  <ComboboxItem key={opt.value} value={opt}>
-                                    {opt.label}
-                                  </ComboboxItem>
-                                )}
-                              </ComboboxCollection>
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
-                        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                      </Field>
-                    );
-                  }}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {errors.root && <div className='text-sm text-destructive'>{errors.root.message}</div>}
+        <FormProvider {...form}>
+          <ProductComplementarySection
+            productOptions={productOptions}
+            productVariantOptions={productVariantOptions}
+          />
+        </FormProvider>
 
         <div className='flex gap-2'>
           <Button type='submit' disabled={isSubmitting}>
-            {isSubmitting ? 'Creando...' : 'Crear producto'}
+            {product ? 'Guardar cambios' : 'Crear producto'}
           </Button>
           <Button type='button' variant='outline' asChild>
             <Link href='/dashboard/products'>Cancelar</Link>

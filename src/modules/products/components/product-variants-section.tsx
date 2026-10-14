@@ -19,12 +19,19 @@ export function ProductVariantsSection({ unitItems }: ProductVariantsSectionProp
     keyName: 'fieldKey',
   });
 
-  // Images linked to a removed variant fall back to the general gallery.
+  // Images and complements linked to a removed variant fall back to "general".
   function removeVariant(index: number) {
     const removedId = getValues(`variants.${index}.clientId`);
     getValues('images').forEach((image, imageIndex) => {
       if (image.variantId === removedId) {
         setValue(`images.${imageIndex}.variantId`, null, { shouldDirty: true });
+      }
+    });
+    getValues('complementaryProducts').forEach((complement, complementIndex) => {
+      if (complement.variantId === removedId) {
+        setValue(`complementaryProducts.${complementIndex}.variantId`, null, {
+          shouldDirty: true,
+        });
       }
     });
     remove(index);
