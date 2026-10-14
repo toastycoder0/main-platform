@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, isNull, ne, or, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import {
@@ -117,4 +117,37 @@ export async function listPriceListOptions(ctx: RequestContext): Promise<Option[
     .orderBy(asc(priceList.sortOrder), asc(priceList.id));
 
   return rows.map((r) => ({ value: r.id, label: r.name }));
+}
+
+export async function listProductOptions(
+  ctx: RequestContext,
+  opts?: { excludeId?: string; search?: string },
+): Promise<Option[]> {
+  const conditions: SQL[] = [isNull(product.deletedAt), eq(product.status, 'active')];
+
+  if (opts?.excludeId) {
+    conditions.push(ne(product.id, opts.excludeId));
+  }
+
+  if (opts?.search) {
+    const searchTerm = `%${opts.search}%`;
+    conditions.push(
+      or(
+        ilike(product.title, searchTerm),
+        ilike(product.slug, searchTerm),
+        ilike(product.code, searchTerm),
+      ) as SQL,
+    );
+  }
+
+  const where = conditions.length === 1 ? conditions[0] : and(...conditions);
+
+  const rows = await ctx.db
+    .select({ id: product.id, title: product.title })
+    .from(product)
+    .where(where)
+    .orderBy(asc(product.sortOrder), asc(product.id))
+    .limit(50);
+
+  return rows.map((r) => ({ value: r.id, label: r.title }));
 }
