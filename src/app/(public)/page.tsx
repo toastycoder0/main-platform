@@ -1,8 +1,6 @@
 function Home() {
   return (
-    <div className='p-8'>
-      <h1>Hello, World!</h1>
-    </div>
+    <section className='w-full rounded-lg aspect-square bg-[url(/assets/placeholder.svg)] bg-center lg:aspect-video' />
   );
 }
 
