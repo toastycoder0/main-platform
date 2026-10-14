@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import {
@@ -33,8 +33,10 @@ import { Switch } from '@/shared/components/switch';
 import { Textarea } from '@/shared/components/textarea';
 import type { ProductFormSchema } from '../application/products.validation';
 import { productFormSchema } from '../application/products.validation';
+import { createDefaultVariant } from '../application/products.variants';
 import type { Option } from '../infrastructure/products.query';
 import { ControlledNumberInput } from './product-form-fields';
+import { ProductVariantsSection } from './product-variants-section';
 
 export interface ProductPriceEntry {
   priceListId: string;
@@ -74,11 +76,7 @@ export function ProductForm({
   const tagAnchor = useComboboxAnchor();
   const categoryAnchor = useComboboxAnchor();
 
-  const {
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<ProductFormSchema>({
+  const form = useForm<ProductFormSchema>({
     resolver: zodResolver(productFormSchema) as never,
     defaultValues: {
       title: '',
@@ -103,8 +101,14 @@ export function ProductForm({
       details: [],
       documents: [],
       prices: defaultPrices,
+      variants: [createDefaultVariant()],
     },
   });
+  const {
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = form;
 
   async function onSubmit(values: ProductFormSchema) {
     setIsSubmitting(true);
@@ -652,6 +656,11 @@ export function ProductForm({
             </div>
           )}
         </div>
+
+        {/* Variants Section */}
+        <FormProvider {...form}>
+          <ProductVariantsSection unitItems={unitItems} />
+        </FormProvider>
 
         {/* Details Section */}
         <div className='flex flex-col gap-4 pt-4 border-t'>
