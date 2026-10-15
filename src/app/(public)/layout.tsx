@@ -28,7 +28,7 @@ async function PublicNavbar() {
 
   const categoryParentLink =
     categoryLinks.length > 0
-      ? [{ label: 'Categor\u00edas', href: '/category', children: categoryLinks }]
+      ? [{ label: 'Categor\u00edas', href: '/products', children: categoryLinks }]
       : [];
 
   const links = [
