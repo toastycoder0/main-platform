@@ -29,7 +29,7 @@ export function TechnicalLibraryFilterDrawer({
         </Button>
       </SheetTrigger>
       <SheetContent side='left' className='max-h-full overflow-y-auto'>
-        <SheetHeader>
+        <SheetHeader className='mt-16 md:mt-0'>
           <SheetTitle>Filtros</SheetTitle>
         </SheetHeader>
         <div className='px-4 pb-6'>
