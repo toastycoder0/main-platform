@@ -25,11 +25,9 @@ export function HomeProductSection({ title, products, viewAllHref }: HomeProduct
         </Link>
       </div>
 
-      <div className='-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-4 xl:grid-cols-5'>
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'>
         {products.map((product) => (
-          <div key={product.slug} className='min-w-48 shrink-0 snap-start md:min-w-0'>
-            <ProductCard product={product} />
-          </div>
+          <ProductCard key={product.slug} product={product} />
         ))}
       </div>
     </section>
