@@ -37,10 +37,10 @@ export function ListToolbar({ searchLabel, searchPlaceholder, children }: ListTo
   return (
     <div
       aria-busy={isPending}
-      className='flex flex-wrap items-center gap-3 w-full max-w-lg'
+      className='flex flex-wrap items-center gap-3 w-full'
       data-slot='list-toolbar'
     >
-      <InputGroup className='w-full mx-auto bg-white'>
+      <InputGroup className='w-full max-w-lg bg-white'>
         <InputGroupInput
           aria-label={searchLabel}
           onChange={(event) => setTerm(event.target.value)}
