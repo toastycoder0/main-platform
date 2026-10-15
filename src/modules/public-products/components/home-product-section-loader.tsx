@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
-import { Skeleton } from '@/shared/components/skeleton';
 import { ProductCardSkeleton } from '@/shared/components/product-card-skeleton';
+import { Skeleton } from '@/shared/components/skeleton';
 import { getHomeProducts } from '../infrastructure/public-products.query';
 import { HomeProductSection } from './home-product-section';
 

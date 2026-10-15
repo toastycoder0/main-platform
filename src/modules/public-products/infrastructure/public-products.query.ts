@@ -73,7 +73,7 @@ async function resolveHomePriceListId(ctx: RequestContext): Promise<string | nul
   return defaultRow?.id ?? null;
 }
 
-async function queryHomeFirstProductImages(
+async function queryFirstImageByProduct(
   ctx: RequestContext,
   productIds: string[],
 ): Promise<Map<string, string>> {
@@ -90,6 +90,13 @@ async function queryHomeFirstProductImages(
     }
   }
 
+  return firstImageIdByProduct;
+}
+
+async function resolveImageUrls(
+  ctx: RequestContext,
+  firstImageIdByProduct: Map<string, string>,
+): Promise<Map<string, string>> {
   if (firstImageIdByProduct.size === 0) {
     return new Map();
   }
@@ -122,6 +129,14 @@ async function queryHomeFirstProductImages(
   }
 
   return urlByProductId;
+}
+
+async function queryHomeFirstProductImages(
+  ctx: RequestContext,
+  productIds: string[],
+): Promise<Map<string, string>> {
+  const firstImageIdByProduct = await queryFirstImageByProduct(ctx, productIds);
+  return resolveImageUrls(ctx, firstImageIdByProduct);
 }
 
 interface ResolvedHomePrice {
