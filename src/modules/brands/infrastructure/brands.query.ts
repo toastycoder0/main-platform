@@ -2,7 +2,7 @@ import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import { brand } from '@/infrastructure/db/schema';
-import { listFilesByOwners, listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
+import { listFilesByOwners, listOwnerFiles } from '@/infrastructure/services/files';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type { BrandFormDTO, BrandListItemDTO, HomeBrandDTO } from '../application/brands.types';

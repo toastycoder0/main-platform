@@ -17,8 +17,8 @@ import {
   productTag,
   productUnit,
 } from '@/infrastructure/db/schema';
+import { listFilesByOwners } from '@/infrastructure/services/files';
 import { listCategoryOptions } from '@/modules/categories/infrastructure/categories.query';
-import { listFilesByOwners } from '@/modules/files/infrastructure/files.repository';
 import { listTagOptions } from '@/modules/tags/infrastructure/tags.query';
 import { AppError } from '@/shared/errors';
 import type { ListParams } from '@/shared/list/list-params';

@@ -1,5 +1,5 @@
-import type { DbLike } from '@/modules/files/infrastructure/files.repository';
-import { syncFiles } from '@/modules/files/infrastructure/files.repository';
+import type { DbLike } from '@/infrastructure/db/types';
+import { syncFiles } from '@/infrastructure/services/files';
 
 export async function syncCategoryImage(
   db: DbLike,

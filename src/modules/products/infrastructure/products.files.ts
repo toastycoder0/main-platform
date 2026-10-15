@@ -1,7 +1,7 @@
+import type { DbLike } from '@/infrastructure/db/types';
+import type { FileLocator } from '@/infrastructure/services/files';
+import { listOwnerFiles, syncFiles } from '@/infrastructure/services/files';
 import { isTempKey } from '@/infrastructure/storage/keys';
-import type { FileLocator } from '@/modules/files/application/files.types';
-import type { DbLike } from '@/modules/files/infrastructure/files.repository';
-import { listOwnerFiles, syncFiles } from '@/modules/files/infrastructure/files.repository';
 import { AppError } from '@/shared/errors';
 
 export const PRODUCT_IMAGE_FILES = { entity: 'product_images', scope: 'image' } as const;

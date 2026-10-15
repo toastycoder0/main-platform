@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { category } from '@/infrastructure/db/schema';
-import { listFilesByOwners, listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
+import { listFilesByOwners, listOwnerFiles } from '@/infrastructure/services/files';
 import { AppError } from '@/shared/errors';
 import type {
   CategoryFormDTO,

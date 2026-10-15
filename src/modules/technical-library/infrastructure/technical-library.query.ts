@@ -11,8 +11,8 @@ import {
   productDocument,
   productImage,
 } from '@/infrastructure/db/schema';
-import type { FileDTO } from '@/modules/files/application/files.types';
-import { listFilesByOwners } from '@/modules/files/infrastructure/files.repository';
+import type { FileDTO } from '@/infrastructure/services/files';
+import { listFilesByOwners } from '@/infrastructure/services/files';
 import type {
   LibraryFilterCounts,
   LibraryFilterOption,

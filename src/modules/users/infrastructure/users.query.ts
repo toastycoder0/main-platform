@@ -9,7 +9,7 @@ import {
   userRole,
   userTaxProfile,
 } from '@/infrastructure/db/schema';
-import { listOwnerFiles } from '@/modules/files/infrastructure/files.repository';
+import { listOwnerFiles } from '@/infrastructure/services/files';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type {
