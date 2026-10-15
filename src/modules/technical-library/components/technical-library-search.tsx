@@ -29,7 +29,7 @@ export function TechnicalLibrarySearch() {
   }, [term, q, setParams]);
 
   return (
-    <InputGroup className='w-full'>
+    <InputGroup className='w-full bg-white'>
       <InputGroupInput
         aria-label='Buscar en la biblioteca técnica'
         onChange={(event) => setTerm(event.target.value)}

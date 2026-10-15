@@ -9,6 +9,7 @@ import {
   loadLibraryParams,
 } from '@/modules/technical-library/infrastructure/technical-library.params';
 import { queryTechnicalLibrary } from '@/modules/technical-library/infrastructure/technical-library.query';
+import { CallToAction } from '@/shared/components/call-to-action';
 import { Skeleton } from '@/shared/components/skeleton';
 
 export const metadata: Metadata = {
@@ -58,15 +59,14 @@ const TechnicalLibraryPage = async ({ searchParams }: TechnicalLibraryPageProps)
 
   return (
     <div className='flex flex-col gap-6'>
-      <section className='flex flex-col gap-3'>
-        <div className='flex flex-col gap-1'>
-          <h1 className='text-2xl font-bold text-foreground'>Biblioteca Técnica</h1>
-          <p className='text-sm text-muted-foreground'>
-            Manuales, fichas técnicas y documentación de productos para descargar.
-          </p>
+      <CallToAction
+        title='Biblioteca Técnica'
+        description='Manuales, fichas técnicas y documentación de productos para descargar.'
+      >
+        <div className='w-full max-w-md'>
+          <TechnicalLibrarySearch />
         </div>
-        <TechnicalLibrarySearch />
-      </section>
+      </CallToAction>
 
       <Suspense fallback={<SearchSkeleton />}>
         <TechnicalLibraryContent ctx={ctx} params={loadLibraryParams(searchParams)} />
