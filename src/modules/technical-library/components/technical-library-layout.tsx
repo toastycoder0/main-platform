@@ -1,3 +1,5 @@
+import { ListPagination } from '@/shared/components/list-pagination';
+import type { ListHrefParams } from '@/shared/list/list-params';
 import type { LibraryParams } from '../infrastructure/technical-library.params';
 import type { TechnicalLibraryResult } from '../infrastructure/technical-library.query';
 import { TechnicalLibraryActiveFilters } from './technical-library-active-filters';
@@ -5,7 +7,8 @@ import { TechnicalLibraryCard } from './technical-library-card';
 import { TechnicalLibraryEmptyState } from './technical-library-empty-state';
 import { TechnicalLibraryFilterDrawer } from './technical-library-filter-drawer';
 import { TechnicalLibraryFilters } from './technical-library-filters';
-import { TechnicalLibraryPagination } from './technical-library-pagination';
+
+const BASE_PATH = '/technical-library';
 
 export function TechnicalLibraryLayout({
   result,
@@ -15,6 +18,21 @@ export function TechnicalLibraryLayout({
   params: LibraryParams;
 }) {
   const { items, totalProducts, totalDocuments, filterCounts } = result;
+
+  const extraParams: ListHrefParams = {};
+
+  if (params.docTypes?.length) {
+    extraParams.docTypes = params.docTypes.join(',');
+  }
+  if (params.categories?.length) {
+    extraParams.categories = params.categories.join(',');
+  }
+  if (params.brands?.length) {
+    extraParams.brands = params.brands.join(',');
+  }
+  if (params.sort) {
+    extraParams.sort = params.sort;
+  }
 
   return (
     <div className='lg:grid lg:grid-cols-[16rem_1fr] lg:gap-8'>
@@ -45,7 +63,12 @@ export function TechnicalLibraryLayout({
           </div>
         )}
 
-        <TechnicalLibraryPagination params={params} total={totalProducts} />
+        <ListPagination
+          basePath={BASE_PATH}
+          params={params}
+          total={totalProducts}
+          extraParams={extraParams}
+        />
       </div>
     </div>
   );
