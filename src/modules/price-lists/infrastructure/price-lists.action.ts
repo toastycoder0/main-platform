@@ -4,11 +4,10 @@ import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { priceList, productPrice } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
-import { slugifyPriceListName } from '../application/price-lists.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import {
   createPriceListSchema,
   priceListParamsSchema,
@@ -18,12 +17,7 @@ import {
 export const createPriceList = run(
   { permission: PERMISSIONS.admin.priceLists.create, input: createPriceListSchema },
   async (ctx, { name, description, isDefault }) => {
-    const slug = await resolveUniqueSlug(
-      ctx.db,
-      priceList,
-      slugifyPriceListName(name) || 'lista-de-precios',
-      'la lista de precios',
-    );
+    const slug = uniqueSlug(name);
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx

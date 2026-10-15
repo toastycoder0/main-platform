@@ -4,11 +4,10 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { brand } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
-import { slugifyBrandName } from '../application/brands.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import {
   brandParamsSchema,
   createBrandSchema,
@@ -19,12 +18,7 @@ import { syncBrandImage } from './brands.files';
 export const createBrand = run(
   { permission: PERMISSIONS.admin.brands.create, input: createBrandSchema },
   async (ctx, { name, description, isActive, image }) => {
-    const slug = await resolveUniqueSlug(
-      ctx.db,
-      brand,
-      slugifyBrandName(name) || 'marca',
-      'la marca',
-    );
+    const slug = uniqueSlug(name);
 
     const created = await ctx.db.transaction(async (tx) => {
       const [row] = await tx

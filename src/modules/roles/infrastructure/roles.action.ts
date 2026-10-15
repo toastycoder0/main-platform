@@ -5,11 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { permission, role, rolePermission, userRole } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
-import { slugifyRoleName } from '../application/roles.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import { createRoleSchema, updateRoleSchema } from '../application/roles.validation';
 
 function dedupePermissionIds(permissionIds: string[]): string[] {
@@ -40,7 +39,7 @@ export const createRole = run(
     const requestedIds = dedupePermissionIds(permissionIds);
     await assertPermissionIdsExist(ctx, requestedIds);
 
-    const slug = await resolveUniqueSlug(ctx.db, role, slugifyRoleName(name) || 'rol', 'el rol');
+    const slug = uniqueSlug(name);
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx

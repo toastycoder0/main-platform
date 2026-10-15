@@ -4,11 +4,10 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { productUnit } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
-import { slugifyProductUnitName } from '../application/product-units.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import {
   createProductUnitSchema,
   productUnitParamsSchema,
@@ -18,12 +17,7 @@ import {
 export const createProductUnit = run(
   { permission: PERMISSIONS.admin.productUnits.create, input: createProductUnitSchema },
   async (ctx, { name, abbreviation, taxCode, isActive }) => {
-    const slug = await resolveUniqueSlug(
-      ctx.db,
-      productUnit,
-      slugifyProductUnitName(name) || 'unidad',
-      'la unidad',
-    );
+    const slug = uniqueSlug(name);
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx

@@ -4,22 +4,16 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { tag } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
-import { slugifyTagName } from '../application/tags.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import { createTagSchema, tagParamsSchema, updateTagSchema } from '../application/tags.validation';
 
 export const createTag = run(
   { permission: PERMISSIONS.admin.tags.create, input: createTagSchema },
   async (ctx, { name, description, isActive }) => {
-    const slug = await resolveUniqueSlug(
-      ctx.db,
-      tag,
-      slugifyTagName(name) || 'etiqueta',
-      'la etiqueta',
-    );
+    const slug = uniqueSlug(name);
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx

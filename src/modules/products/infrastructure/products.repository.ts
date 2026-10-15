@@ -21,9 +21,8 @@ import {
   productUnit,
   tag,
 } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { AppError } from '@/shared/errors';
-import { slugifyProductTitle } from '../application/products.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import type { CreateProductSchema, UpdateProductSchema } from '../application/products.validation';
 import {
   detachProductFiles,
@@ -423,12 +422,7 @@ export async function createProduct(
   await assertReferences(ctx, data);
 
   const id = generateId('prd');
-  const slug = await resolveUniqueSlug(
-    ctx.db,
-    product,
-    slugifyProductTitle(data.title) || 'producto',
-    'el producto',
-  );
+  const slug = uniqueSlug(data.title);
 
   await ctx.db.transaction(async (tx) => {
     const [row] = await tx

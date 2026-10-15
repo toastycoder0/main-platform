@@ -4,11 +4,10 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { documentType } from '@/infrastructure/db/schema';
-import { resolveUniqueSlug } from '@/infrastructure/db/unique-slug';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
-import { slugifyDocumentTypeName } from '../application/document-types.slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import {
   createDocumentTypeSchema,
   documentTypeParamsSchema,
@@ -18,12 +17,7 @@ import {
 export const createDocumentType = run(
   { permission: PERMISSIONS.admin.documentTypes.create, input: createDocumentTypeSchema },
   async (ctx, { name, description, isActive }) => {
-    const slug = await resolveUniqueSlug(
-      ctx.db,
-      documentType,
-      slugifyDocumentTypeName(name) || 'tipo-de-documento',
-      'el tipo de documento',
-    );
+    const slug = uniqueSlug(name);
 
     await ctx.db.transaction(async (tx) => {
       const [row] = await tx
