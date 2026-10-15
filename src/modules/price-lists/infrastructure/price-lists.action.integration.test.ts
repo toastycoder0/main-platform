@@ -107,7 +107,7 @@ describe('createPriceList', () => {
       .limit(1);
     const created = rows[0];
 
-    expect(created?.slug).toBe(`${scope}-lista-de-mayoreo`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-lista-de-mayoreo-[a-f0-9]{6}$`));
     expect(created?.description).toBe('Precios al mayoreo');
     expect(created?.isDefault).toBe(true);
     if (created) {

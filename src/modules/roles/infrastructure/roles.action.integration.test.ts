@@ -278,7 +278,7 @@ describe('createRole', () => {
     await expect(resultPromise).rejects.toThrow();
 
     const [created] = await findRolesByName(name);
-    expect(created?.slug).toBe(`${scope}-gerente-de-compras`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-gerente-de-compras-[a-f0-9]{6}$`));
     expect(created?.description).toBe('Encargado de compras');
 
     if (created) {
@@ -298,7 +298,7 @@ describe('createRole', () => {
 
     const rows = await findRolesByName(name);
     const [first] = rows;
-    expect(first?.slug).toBe(`${scope}-slug-repetido`);
+    expect(first?.slug).toMatch(new RegExp(`^${scope}-slug-repetido-[a-f0-9]{6}$`));
     if (first) {
       createdRoleIds.push(first.id);
     }

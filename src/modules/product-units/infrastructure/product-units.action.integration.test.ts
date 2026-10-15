@@ -108,7 +108,7 @@ describe('createProductUnit', () => {
       .limit(1);
     const created = rows[0];
 
-    expect(created?.slug).toBe(`${scope}-metro-cuadrado`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-metro-cuadrado-[a-f0-9]{6}$`));
     expect(created?.abbreviation).toBe('m2');
     expect(created?.taxCode).toBe('MTR');
     if (created) {

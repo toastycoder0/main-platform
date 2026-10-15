@@ -98,7 +98,7 @@ describe('createTag', () => {
       .limit(1);
     const created = rows[0];
 
-    expect(created?.slug).toBe(`${scope}-oferta-especial`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-oferta-especial-[a-f0-9]{6}$`));
     expect(created?.description).toBe('Para ofertas');
     if (created) {
       createdTagIds.push(created.id);

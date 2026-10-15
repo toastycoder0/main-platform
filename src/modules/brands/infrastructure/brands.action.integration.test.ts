@@ -146,7 +146,7 @@ describe('createBrand', () => {
       .limit(1);
     const created = rows[0];
 
-    expect(created?.slug).toBe(`${scope}-ferreteria-del-norte`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-ferreteria-del-norte-[a-f0-9]{6}$`));
     expect(created?.description).toBe('Marca del norte');
     expect(created?.isActive).toBe(false);
 
@@ -169,8 +169,9 @@ describe('createBrand', () => {
 
     expect(rows).toHaveLength(2);
     const slugs = rows.map((row) => row.slug);
-    expect(slugs[0]).toBe(`${scope}-slug-repetido`);
+    expect(slugs[0]).toMatch(new RegExp(`^${scope}-slug-repetido-[a-f0-9]{6}$`));
     expect(slugs[1]?.startsWith(`${scope}-slug-repetido-`)).toBe(true);
+    expect(slugs[0]).not.toBe(slugs[1]);
 
     createdBrandIds.push(...rows.map((row) => row.id));
   });

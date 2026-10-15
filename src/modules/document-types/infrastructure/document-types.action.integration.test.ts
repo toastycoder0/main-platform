@@ -110,7 +110,7 @@ describe('createDocumentType', () => {
       .limit(1);
     const created = rows[0];
 
-    expect(created?.slug).toBe(`${scope}-ficha-tecnica`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-ficha-tecnica-[a-f0-9]{6}$`));
     expect(created?.description).toBe('Documento del producto');
     if (created) {
       createdDocumentTypeIds.push(created.id);

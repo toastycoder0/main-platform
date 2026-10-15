@@ -160,7 +160,7 @@ describe('createCategory', () => {
 
     const created = await findCategoryByName(name);
     expect(created).toBeDefined();
-    expect(created?.slug).toBe(`${scope}-pisos`);
+    expect(created?.slug).toMatch(new RegExp(`^${scope}-pisos-[a-f0-9]{6}$`));
     expect(created?.parentId).toBeNull();
     expect(created?.path).toBe(created?.id);
     expect(created?.sortOrder).toBeGreaterThanOrEqual(0);

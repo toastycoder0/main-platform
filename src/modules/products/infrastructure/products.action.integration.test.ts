@@ -249,7 +249,7 @@ describe('createProduct', () => {
     const id = await createAndFind(basePayload({ title: `${scope} Básico Ñandú` }));
 
     const [row] = await db.select().from(product).where(eq(product.id, id));
-    expect(row?.slug).toBe(`${scope}-basico-nandu`);
+    expect(row?.slug).toMatch(new RegExp(`^${scope}-basico-nandu-[a-f0-9]{6}$`));
     expect(row?.status).toBe('active');
     expect(row?.cost).toBeNull();
     expect(row?.subtitle).toBeNull();
