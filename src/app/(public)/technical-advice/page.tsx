@@ -19,7 +19,7 @@ const SOCIAL_LINKS = [
 
 const ContactPage = () => {
   return (
-    <section className='relative overflow-hidden rounded-2xl bg-neutral-950'>
+    <section className='relative overflow-hidden rounded-lg bg-neutral-950'>
       <picture>
         <img
           src='/assets/bg-generic.webp'
