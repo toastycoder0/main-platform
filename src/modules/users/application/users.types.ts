@@ -1,5 +1,14 @@
 export type PermissionEffect = 'allow' | 'deny';
 
+export type PermissionType = 'access' | 'action' | 'view';
+
+export interface PermissionOptionDTO {
+  id: string;
+  slug: string;
+  name: string;
+  type: PermissionType;
+}
+
 export interface RoleOptionDTO {
   id: string;
   slug: string;

@@ -2,10 +2,10 @@
 
 import type { Control, FieldValues } from 'react-hook-form';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import type { PermissionOptionDTO } from '@/modules/roles/application/roles.types';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { CFDI_USE_OPTIONS, FISCAL_REGIME_OPTIONS } from '../application/users.cfdi';
+import type { PermissionOptionDTO } from '../application/users.types';
 import type {
   AddressSchema,
   TaxProfileSchema,

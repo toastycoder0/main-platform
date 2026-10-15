@@ -3,6 +3,7 @@ import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import {
   brand,
+  category,
   currency,
   documentType,
   priceList,
@@ -16,10 +17,9 @@ import {
   productPrice,
   productTag,
   productUnit,
+  tag,
 } from '@/infrastructure/db/schema';
 import { listFilesByOwners } from '@/infrastructure/services/files';
-import { listCategoryOptions } from '@/modules/categories/infrastructure/categories.query';
-import { listTagOptions } from '@/modules/tags/infrastructure/tags.query';
 import { AppError } from '@/shared/errors';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
@@ -93,6 +93,24 @@ export async function listBrandOptions(ctx: RequestContext): Promise<Option[]> {
     .where(isNull(brand.deletedAt))
     .orderBy(asc(brand.name), asc(brand.id));
 
+  return rows.map((r) => ({ value: r.id, label: r.name }));
+}
+
+async function listCategoryOptions(ctx: RequestContext, excludeId?: string): Promise<Option[]> {
+  const rows = await ctx.db
+    .select({ id: category.id, name: category.name })
+    .from(category)
+    .where(and(isNull(category.deletedAt), excludeId ? ne(category.id, excludeId) : undefined))
+    .orderBy(asc(category.name), asc(category.id));
+  return rows.map((r) => ({ value: r.id, label: r.name }));
+}
+
+async function listTagOptions(ctx: RequestContext): Promise<Option[]> {
+  const rows = await ctx.db
+    .select({ id: tag.id, name: tag.name })
+    .from(tag)
+    .where(isNull(tag.deletedAt))
+    .orderBy(asc(tag.name), asc(tag.id));
   return rows.map((r) => ({ value: r.id, label: r.name }));
 }
 

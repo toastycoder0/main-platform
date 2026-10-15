@@ -3,7 +3,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form';
-import type { PermissionOptionDTO } from '@/modules/roles/application/roles.types';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
@@ -19,7 +18,7 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
-import type { RoleOptionDTO, UserFormDTO } from '../application/users.types';
+import type { PermissionOptionDTO, RoleOptionDTO, UserFormDTO } from '../application/users.types';
 import { type UserFormSchema, userFormSchema } from '../application/users.validation';
 import { createUser, updateUser } from '../infrastructure/users.action';
 import { AddressesSection, OverridesSection, TaxProfilesSection } from './user-form-collections';
