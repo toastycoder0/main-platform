@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { ProductCard } from '@/shared/components/product-card';
-import type { HomeProductDTO } from '../application/public-products.types';
+import type { PublicProductDTO } from '../application/public-products.types';
 
 interface HomeProductSectionProps {
   title: string;
-  products: HomeProductDTO[];
+  products: PublicProductDTO[];
   viewAllHref: string;
 }
 
