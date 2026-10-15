@@ -37,20 +37,22 @@ export async function ProductsResults({ ctx, filters, params, basePath }: Produc
 
   if (items.length === 0) {
     return (
-      <Empty>
-        <EmptyHeader>
-          <PackageSearchIcon className='size-8 text-muted-foreground' />
-          <EmptyTitle>No encontramos productos</EmptyTitle>
-          <EmptyDescription>
-            Prueba con otros filtros o limpia la búsqueda para ver más resultados.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <Button asChild variant='outline'>
-            <Link href={basePath}>Limpiar filtros</Link>
-          </Button>
-        </EmptyContent>
-      </Empty>
+      <div className='flex min-h-[calc(100svh-11rem)] items-center justify-center pb-28 lg:min-h-[calc(100svh-13rem)]'>
+        <Empty>
+          <EmptyHeader>
+            <PackageSearchIcon className='size-8 text-muted-foreground' />
+            <EmptyTitle>No encontramos productos</EmptyTitle>
+            <EmptyDescription>
+              Prueba con otros filtros o limpia la búsqueda para ver más resultados.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button asChild variant='outline'>
+              <Link href={basePath}>Limpiar filtros</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
+      </div>
     );
   }
 
