@@ -1,7 +1,34 @@
+import { ArrowRightIcon, BadgePercentIcon, HardHatIcon, LayersIcon, TruckIcon } from 'lucide-react';
+import Link from 'next/link';
 import { HomeBrandsMarqueeLoader } from '@/modules/brands/components/home-brands-marquee-loader';
 import { HomeCategoriesShowcaseLoader } from '@/modules/categories/components/home-categories-showcase-loader';
 import { HomeProductSectionLoader } from '@/modules/products/components/home-product-section-loader';
-import { FeaturesSection } from '@/shared/components/features-section';
+import { Button } from '@/shared/components/button';
+import { CallToAction } from '@/shared/components/call-to-action';
+import { type Feature, FeaturesSection } from '@/shared/components/features-section';
+
+const homeFeatures: Feature[] = [
+  {
+    title: 'Envíos a todo México',
+    icon: <TruckIcon className='size-6 text-neutral-500' />,
+    description: 'Cobertura en toda la República.',
+  },
+  {
+    title: 'Precios de mayoreo',
+    icon: <BadgePercentIcon className='size-6 text-neutral-500' />,
+    description: 'Importadores directos, mejores precios.',
+  },
+  {
+    title: 'Asesoría técnica',
+    icon: <HardHatIcon className='size-6 text-neutral-500' />,
+    description: 'Expertos que te apoyan en cada proyecto.',
+  },
+  {
+    title: 'Amplio catálogo',
+    icon: <LayersIcon className='size-6 text-neutral-500' />,
+    description: 'Marcas líderes para cada necesidad.',
+  },
+];
 
 function Home() {
   return (
@@ -19,7 +46,17 @@ function Home() {
         order='popular'
         viewAllHref='/products?sort=popular'
       />
-      <FeaturesSection />
+      <FeaturesSection features={homeFeatures} />
+      <CallToAction
+        title='¿Necesitas asesoría técnica?'
+        description='Expertos en recubrimientos y materiales de construcción listos para ayudarte con tu proyecto.'
+      >
+        <Button asChild>
+          <Link href='/technical-advice'>
+            Solicitar asesoría <ArrowRightIcon data-icon='inline-end' />
+          </Link>
+        </Button>
+      </CallToAction>
     </>
   );
 }
