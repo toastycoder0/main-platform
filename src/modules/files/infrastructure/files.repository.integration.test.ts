@@ -3,10 +3,10 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { db } from '@/infrastructure/db';
 import { file, user } from '@/infrastructure/db/schema';
+import type { FileLocator } from '@/infrastructure/services/files';
+import { syncFiles } from '@/infrastructure/services/files';
 import type { StorageClient } from '@/infrastructure/storage/client';
-import type { FileLocator } from '../application/files.types';
 import { cleanupOrphans } from './files.cleanup.service';
-import { syncFiles } from './files.repository';
 
 vi.mock('@/infrastructure/storage/client', () => ({
   storageClient: {

@@ -4,12 +4,8 @@ import { FileTextIcon, UploadIcon, XIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { Control, FieldValues, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
+import { confirmUpload, deleteTempUpload, requestUploadUrl } from '@/infrastructure/files/actions';
 import { extractExtension, isTempKey } from '@/infrastructure/storage/keys';
-import {
-  confirmUpload,
-  deleteTempUpload,
-  requestUploadUrl,
-} from '@/modules/files/infrastructure/files.action';
 import {
   Attachment,
   AttachmentAction,

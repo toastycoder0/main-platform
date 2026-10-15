@@ -7,12 +7,8 @@ import { storageClient } from '@/infrastructure/storage/client';
 import { extractExtension, generateTempKey } from '@/infrastructure/storage/keys';
 import { getScopeConfig } from '@/shared/constants/file-registry';
 import { AppError } from '@/shared/errors';
-import type { FileUploadResponse } from '../application/files.types';
-import {
-  confirmUploadSchema,
-  deleteTempUploadSchema,
-  requestUploadSchema,
-} from '../application/files.validation';
+import type { FileUploadResponse } from './types';
+import { confirmUploadSchema, deleteTempUploadSchema, requestUploadSchema } from './validation';
 
 export const requestUploadUrl = run({ input: requestUploadSchema }, async (ctx, data) => {
   const config = getScopeConfig(data.entity, data.scope);

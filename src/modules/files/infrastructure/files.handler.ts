@@ -2,9 +2,9 @@ import { timingSafeEqual } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { env } from '@/config/env';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
+import { cleanupQuerySchema } from '@/infrastructure/files/validation';
 import { storageClient } from '@/infrastructure/storage/client';
 import { AppError, isAppError } from '@/shared/errors';
-import { cleanupQuerySchema } from '../application/files.validation';
 import { cleanupOrphans } from './files.cleanup.service';
 
 function isAuthorized(request: NextRequest): boolean {

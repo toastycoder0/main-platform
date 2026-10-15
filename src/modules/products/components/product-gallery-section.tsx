@@ -3,8 +3,8 @@
 import { XIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { deleteTempUpload } from '@/infrastructure/files/actions';
 import { isTempKey } from '@/infrastructure/storage/keys';
-import { deleteTempUpload } from '@/modules/files/infrastructure/files.action';
 import {
   Attachment,
   AttachmentAction,
