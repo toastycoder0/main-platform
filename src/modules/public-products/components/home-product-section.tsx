@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import type { HomeProductDTO } from '../application/products.types';
-import { ProductCard } from './product-card';
+import { ProductCard } from '@/shared/components/product-card';
+import type { HomeProductDTO } from '../application/public-products.types';
 
 interface HomeProductSectionProps {
   title: string;

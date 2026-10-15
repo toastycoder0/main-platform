@@ -3,10 +3,18 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { formatCurrency } from '@/shared/utils/format-currency';
-import type { HomeProductDTO } from '../application/products.types';
+
+export interface ProductCardProduct {
+  slug: string;
+  title: string;
+  imageUrl: string | null;
+  brand: { name: string; logoUrl: string | null } | null;
+  price: { amount: number; currency: string; label: 'fixed' | 'starts_at' | 'variable' } | null;
+  unit: string | null;
+}
 
 interface ProductCardProps {
-  product: HomeProductDTO;
+  product: ProductCardProduct;
 }
 
 export function ProductCard({ product }: ProductCardProps) {

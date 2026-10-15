@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { Skeleton } from '@/shared/components/skeleton';
-import { getHomeProducts } from '../infrastructure/products.query';
+import { ProductCardSkeleton } from '@/shared/components/product-card-skeleton';
+import { getHomeProducts } from '../infrastructure/public-products.query';
 import { HomeProductSection } from './home-product-section';
-import { ProductCardSkeleton } from './product-card-skeleton';
 
 interface HomeProductSectionLoaderProps {
   title: string;

@@ -2,7 +2,7 @@ import { ArrowRightIcon, BadgePercentIcon, HardHatIcon, LayersIcon, TruckIcon } 
 import Link from 'next/link';
 import { HomeBrandsMarqueeLoader } from '@/modules/brands/components/home-brands-marquee-loader';
 import { HomeCategoriesShowcaseLoader } from '@/modules/categories/components/home-categories-showcase-loader';
-import { HomeProductSectionLoader } from '@/modules/products/components/home-product-section-loader';
+import { HomeProductSectionLoader } from '@/modules/public-products/components/home-product-section-loader';
 import { Button } from '@/shared/components/button';
 import { CallToAction } from '@/shared/components/call-to-action';
 import { type Feature, FeaturesSection } from '@/shared/components/features-section';
