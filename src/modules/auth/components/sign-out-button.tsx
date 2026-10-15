@@ -2,7 +2,7 @@
 
 import { LoaderCircleIcon, LogOutIcon } from 'lucide-react';
 import { useTransition } from 'react';
-import { logout } from '@/modules/auth/infrastructure/auth.action';
+import { logout } from '@/infrastructure/services/auth-actions';
 import { submitAction } from '@/shared/actions/submit-action';
 
 type SignOutButtonProps = React.ComponentProps<'button'>;

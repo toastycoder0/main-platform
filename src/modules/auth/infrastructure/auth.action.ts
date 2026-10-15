@@ -36,12 +36,6 @@ export const login = run(
   },
 );
 
-export const logout = run({}, async (_ctx) => {
-  await auth.api.signOut({ headers: await headers() });
-
-  redirect('/auth/login');
-});
-
 export const requestPasswordReset = run(
   { access: 'public', input: forgotPasswordSchema },
   async (ctx, { email }) => {

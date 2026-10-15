@@ -1,8 +1,10 @@
 'use client';
 
-import { HouseIcon, UserPen } from 'lucide-react';
+import { HouseIcon, LoaderCircleIcon, LogOutIcon, UserPen } from 'lucide-react';
 import Link from 'next/link';
-import { SignOutButton } from '@/modules/auth/components/sign-out-button';
+import { useTransition } from 'react';
+import { logout } from '@/infrastructure/services/auth-actions';
+import { submitAction } from '@/shared/actions/submit-action';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/avatar';
 import {
   DropdownMenuContent,
@@ -69,9 +71,34 @@ export function UserNavContent({
       <DropdownMenuSeparator />
       <DropdownMenuItem asChild>
         <SignOutButton className='flex w-full items-center gap-2 [&>svg]:size-4'>
-          Cerrar sesi&oacute;n
+          Cerrar sesión
         </SignOutButton>
       </DropdownMenuItem>
     </DropdownMenuContent>
+  );
+}
+
+function SignOutButton({ children, ...props }: React.ComponentProps<'button'>) {
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <button
+      type='button'
+      onClick={() =>
+        startTransition(async () => {
+          await submitAction(() => logout());
+        })
+      }
+      {...props}
+      disabled={isPending}
+      aria-busy={isPending}
+    >
+      {isPending ? (
+        <LoaderCircleIcon className='animate-spin' aria-hidden='true' />
+      ) : (
+        <LogOutIcon aria-hidden='true' />
+      )}
+      {children}
+    </button>
   );
 }
