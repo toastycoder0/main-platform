@@ -20,7 +20,7 @@ export function ProductsPagination({ basePath, params, totalPages }: ProductsPag
   const hasNext = params.page < totalPages;
 
   return (
-    <div className='flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4'>
+    <div className='flex flex-wrap items-center justify-between gap-3 pt-4'>
       <ProductsPageSize />
 
       <nav aria-label='Paginación' className='ml-auto flex items-center gap-1'>
