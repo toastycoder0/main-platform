@@ -2,13 +2,12 @@ import { Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { env } from '@/config/env';
 import { LogoLarge } from '@/shared/components/logo-large';
+import { cn } from '../utils/cn';
 
 const companyLinks = [
   { label: 'Recursos', href: '/technical-library' },
   { label: 'Asesor\u00edas', href: '/technical-advice' },
 ];
-
-const navLinks = [{ label: 'Marcas', href: '/products?brand=all' }];
 
 const legalLinks = [
   { label: 'T\u00e9rminos y Condiciones', href: '/terms' },
@@ -29,13 +28,15 @@ function LinkColumn({
   title,
   links,
   external,
+  className,
 }: {
   title: string;
   links: { label: string; href: string }[];
   external?: boolean;
+  className?: string;
 }) {
   return (
-    <div>
+    <div className={cn(className)}>
       <h3 className='text-sm font-semibold text-neutral-900'>{title}</h3>
       <ul className='mt-4 space-y-2.5'>
         {links.map((link) => (
@@ -91,8 +92,7 @@ const Footer = () => (
       <hr className='border-neutral-200' />
 
       <div className='grid gap-12 py-10 sm:grid-cols-4'>
-        <LinkColumn title='Empresa' links={companyLinks} />
-        <LinkColumn title='Navegaci&oacute;n' links={navLinks} />
+        <LinkColumn className='sm:col-span-2' title='Empresa' links={companyLinks} />
 
         <div>
           <h3 className='text-sm font-semibold text-neutral-900'>Contacto</h3>
