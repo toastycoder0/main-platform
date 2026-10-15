@@ -77,7 +77,7 @@ export async function getBrandImage(ctx: RequestContext, brandId: string): Promi
 
 export async function getActiveBrands(ctx: RequestContext): Promise<HomeBrandDTO[]> {
   const rows = await ctx.db
-    .select({ id: brand.id, name: brand.name })
+    .select({ id: brand.id, slug: brand.slug, name: brand.name })
     .from(brand)
     .where(and(isNull(brand.deletedAt), eq(brand.isActive, true)))
     .orderBy(asc(brand.sortOrder), asc(brand.id));
@@ -90,6 +90,7 @@ export async function getActiveBrands(ctx: RequestContext): Promise<HomeBrandDTO
 
   return rows.map((row) => ({
     id: row.id,
+    slug: row.slug,
     name: row.name,
     imageUrl: imageFiles.get(row.id)?.[0]?.url ?? null,
   }));

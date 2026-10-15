@@ -354,7 +354,10 @@ async function queryDocumentsByProduct(
   return docsByProduct;
 }
 
-async function countTotalDocuments(ctx: RequestContext, input: LibraryFilterInput): Promise<number> {
+async function countTotalDocuments(
+  ctx: RequestContext,
+  input: LibraryFilterInput,
+): Promise<number> {
   const [row] = await ctx.db
     .select({ count: sql<number>`count(*)::int` })
     .from(productDocument)

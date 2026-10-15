@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { getSession } from '@/modules/auth/infrastructure/auth.query';
+import { brandsToNavLinks } from '@/modules/brands/application/brands.nav-links';
+import { getActiveBrands } from '@/modules/brands/infrastructure/brands.query';
 import { categoriesToNavLinks } from '@/modules/categories/application/categories.nav-links';
 import { buildCategoryTree } from '@/modules/categories/application/categories.tree';
 import { getCategoryTree } from '@/modules/categories/infrastructure/categories.query';
@@ -26,13 +28,20 @@ async function PublicNavbar() {
   const categoryTree = buildCategoryTree(categoryRows);
   const categoryLinks = categoriesToNavLinks(categoryTree);
 
+  const brandRows = await getActiveBrands(ctx);
+  const brandLinks = brandsToNavLinks(brandRows);
+
   const categoryParentLink =
     categoryLinks.length > 0
       ? [{ label: 'Categor\u00edas', href: '/products', children: categoryLinks }]
       : [];
 
+  const brandParentLink =
+    brandLinks.length > 0 ? [{ label: 'Marcas', href: '/brands', children: brandLinks }] : [];
+
   const links = [
     ...categoryParentLink,
+    ...brandParentLink,
     ...staticLinks,
     ...(session ? [{ label: 'Panel de control', href: '/dashboard' }] : []),
   ];

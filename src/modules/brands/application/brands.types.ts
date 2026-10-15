@@ -16,6 +16,7 @@ export interface BrandFormDTO {
 
 export interface HomeBrandDTO {
   id: string;
+  slug: string;
   name: string;
   imageUrl: string | null;
 }
