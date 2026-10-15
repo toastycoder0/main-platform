@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { HomeBrandDTO } from '../application/brands.types';
 
@@ -77,16 +76,9 @@ export function HomeBrandsMarquee({ brands }: HomeBrandsMarqueeProps) {
         }
       `}</style>
 
-      <div className='mb-6 flex items-center justify-between'>
-        <h2 className='text-lg font-semibold text-neutral-900 uppercase'>Nuestras marcas</h2>
-
-        <Link
-          href='/products?brand=all'
-          className='text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900'
-        >
-          Ver todo
-        </Link>
-      </div>
+      <h2 className='text-lg mb-6 mr-auto font-semibold text-neutral-900 uppercase'>
+        Nuestras marcas
+      </h2>
 
       <div ref={viewportRef} className='overflow-hidden'>
         {prefersReducedMotion ? (
