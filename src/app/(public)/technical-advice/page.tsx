@@ -1,10 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next/types';
 import { env } from '@/config/env';
-import { Button } from '@/shared/components/button';
-import { Input } from '@/shared/components/input';
-import { Label } from '@/shared/components/label';
-import { Textarea } from '@/shared/components/textarea';
+import { TechnicalAdviceForm } from '@/modules/technical-advice/components/technical-advice-form';
 
 export const metadata: Metadata = {
   title: 'Asesor\u00edas',
@@ -93,61 +90,7 @@ const ContactPage = () => {
             horas.
           </p>
 
-          <form className='mt-8 flex flex-col space-y-5'>
-            <fieldset className='grid md:grid-cols-2 gap-4'>
-              <div className='space-y-1.5'>
-                <Label htmlFor='first-name'>Nombre</Label>
-                <Input
-                  id='first-name'
-                  type='text'
-                  placeholder='Carlos'
-                  className='w-full'
-                  required
-                />
-              </div>
-              <div className='space-y-1.5'>
-                <Label htmlFor='last-name'>Apellido</Label>
-                <Input
-                  id='last-name'
-                  type='text'
-                  placeholder='Mendoza'
-                  className='w-full'
-                  required
-                />
-              </div>
-            </fieldset>
-
-            <fieldset className='space-y-1.5'>
-              <Label htmlFor='phone'>Tel&eacute;fono</Label>
-              <Input id='phone' type='tel' placeholder='55 1234 5678' className='w-full' />
-            </fieldset>
-
-            <fieldset className='space-y-1.5'>
-              <Label htmlFor='email'>Correo electr&oacute;nico</Label>
-              <Input
-                id='email'
-                type='email'
-                placeholder='tu@correo.com'
-                className='w-full'
-                required
-              />
-            </fieldset>
-
-            <fieldset className='space-y-1.5'>
-              <Label htmlFor='message'>Mensaje</Label>
-              <Textarea
-                id='message'
-                rows={5}
-                placeholder='Describe tu proyecto o la información que necesitas...'
-                className='w-full resize-none'
-                required
-              />
-            </fieldset>
-
-            <Button type='submit' className='mt-2 w-full'>
-              Enviar
-            </Button>
-          </form>
+          <TechnicalAdviceForm />
         </div>
       </div>
     </section>
