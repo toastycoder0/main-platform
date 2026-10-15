@@ -1,10 +1,7 @@
 'use client';
 
-import { HouseIcon, LoaderCircleIcon, LogOutIcon, UserPen } from 'lucide-react';
+import { HouseIcon, UserPen } from 'lucide-react';
 import Link from 'next/link';
-import { useTransition } from 'react';
-import { logout } from '@/infrastructure/auth/actions';
-import { submitAction } from '@/shared/actions/submit-action';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/avatar';
 import {
   DropdownMenuContent,
@@ -12,6 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/shared/components/dropdown-menu';
+import { SignOutButton } from '@/shared/components/sign-out-button';
 
 export interface NavUser {
   name: string;
@@ -75,30 +73,5 @@ export function UserNavContent({
         </SignOutButton>
       </DropdownMenuItem>
     </DropdownMenuContent>
-  );
-}
-
-function SignOutButton({ children, ...props }: React.ComponentProps<'button'>) {
-  const [isPending, startTransition] = useTransition();
-
-  return (
-    <button
-      type='button'
-      onClick={() =>
-        startTransition(async () => {
-          await submitAction(() => logout());
-        })
-      }
-      {...props}
-      disabled={isPending}
-      aria-busy={isPending}
-    >
-      {isPending ? (
-        <LoaderCircleIcon className='animate-spin' aria-hidden='true' />
-      ) : (
-        <LogOutIcon aria-hidden='true' />
-      )}
-      {children}
-    </button>
   );
 }

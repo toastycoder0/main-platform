@@ -10,6 +10,7 @@ type SignOutButtonProps = React.ComponentProps<'button'>;
 export function SignOutButton({ onClick, children, ...props }: SignOutButtonProps) {
   const [isPending, startTransition] = useTransition();
 
+  // Under `asChild`, Radix Slot injects its own onClick; it must be chained, not overwritten.
   function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     onClick?.(e);
 
@@ -21,8 +22,8 @@ export function SignOutButton({ onClick, children, ...props }: SignOutButtonProp
   return (
     <button
       type='button'
-      onClick={handleClick}
       {...props}
+      onClick={handleClick}
       disabled={isPending}
       aria-busy={isPending}
     >
