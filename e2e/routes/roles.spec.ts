@@ -118,6 +118,7 @@ describe('Roles list E2E', () => {
     await page.getByRole('menuitem', { name: 'Editar' }).click();
 
     await page.waitForURL('**/dashboard/roles/form/**');
+    await page.waitForLoadState('networkidle');
     await page.waitForSelector('#role-form');
     expect(await page.getByLabel('Nombre').inputValue()).toBe(SEEDED_ROLE);
 

@@ -25,6 +25,7 @@ describe('file upload against real storage', () => {
       await page.waitForURL(`${BASE}/`);
 
       await page.goto(`${BASE}/account/billing`);
+      await page.waitForLoadState('networkidle');
       await page.getByRole('heading', { name: 'Perfiles de facturación' }).waitFor();
 
       await page.getByRole('button', { name: 'Agregar perfil' }).click();

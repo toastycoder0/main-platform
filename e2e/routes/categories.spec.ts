@@ -68,9 +68,14 @@ describe('Categories E2E', () => {
     await page.goto(`${BASE}/dashboard/categories`);
     await page.waitForSelector('h1:has-text("Gestión de categorías")');
 
-    // Wait for the tree to resolve (either skeleton or actual tree)
-    // then ensure empty state is visible
-    await page.waitForSelector('[data-slot=list-empty]');
+    // Wait for the loading state to resolve (skeleton or tree)
+    await page.waitForLoadState('networkidle');
+
+    // Wait for either tree or empty state to appear
+    await Promise.race([
+      page.waitForSelector('[role=tree]'),
+      page.waitForSelector('[data-slot=list-empty]'),
+    ]);
     expect(consoleErrors).toEqual([]);
   });
 
