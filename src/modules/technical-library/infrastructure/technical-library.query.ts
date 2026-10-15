@@ -82,10 +82,27 @@ function buildConditions(input: LibraryFilterInput): SQL | undefined {
   return conditions.length === 1 ? conditions[0] : and(...conditions);
 }
 
-async function queryMatchingProductIds(
+async function countMatchingProducts(
+  ctx: RequestContext,
+  input: LibraryFilterInput,
+): Promise<number> {
+  const [row] = await ctx.db
+    .select({ count: sql<number>`count(distinct ${product.id})::int` })
+    .from(product)
+    .innerJoin(productDocument, eq(product.id, productDocument.productId))
+    .leftJoin(documentType, eq(productDocument.documentTypeId, documentType.id))
+    .leftJoin(productCategory, eq(product.id, productCategory.productId))
+    .where(buildConditions(input));
+
+  return row?.count ?? 0;
+}
+
+async function queryPageProductIds(
   ctx: RequestContext,
   input: LibraryFilterInput,
   sort: LibrarySort,
+  page: number,
+  pageSize: number,
 ): Promise<string[]> {
   const rows = await ctx.db
     .select({ id: product.id })
@@ -95,7 +112,9 @@ async function queryMatchingProductIds(
     .leftJoin(productCategory, eq(product.id, productCategory.productId))
     .where(buildConditions(input))
     .groupBy(product.id)
-    .orderBy(sort === 'title' ? asc(product.title) : desc(product.updatedAt), asc(product.id));
+    .orderBy(sort === 'title' ? asc(product.title) : desc(product.updatedAt), asc(product.id))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
 
   return rows.map((r) => r.id);
 }
@@ -335,14 +354,11 @@ async function queryDocumentsByProduct(
   return docsByProduct;
 }
 
-async function countTotalDocuments(ctx: RequestContext, productIds: string[]): Promise<number> {
-  if (productIds.length === 0) {
-    return 0;
-  }
-
+async function countTotalDocuments(ctx: RequestContext, input: LibraryFilterInput): Promise<number> {
   const [row] = await ctx.db
     .select({ count: sql<number>`count(*)::int` })
     .from(productDocument)
+    .innerJoin(product, eq(product.id, productDocument.productId))
     .innerJoin(
       file,
       and(
@@ -351,9 +367,9 @@ async function countTotalDocuments(ctx: RequestContext, productIds: string[]): P
         eq(file.ownerId, productDocument.id),
       ),
     )
-    .where(
-      and(inArray(productDocument.productId, productIds), eq(productDocument.isVisible, true)),
-    );
+    .leftJoin(documentType, eq(productDocument.documentTypeId, documentType.id))
+    .leftJoin(productCategory, eq(product.id, productCategory.productId))
+    .where(buildConditions(input));
 
   return row?.count ?? 0;
 }
@@ -413,15 +429,19 @@ export async function queryTechnicalLibrary(
     brandIds: params.brands ?? [],
   };
 
-  const allIds = await queryMatchingProductIds(ctx, input, params.sort ?? 'title');
-  const totalProducts = allIds.length;
+  const sort = params.sort ?? 'title';
+  const page = params.page;
+  const pageSize = params.pageSize;
 
-  const pageIds = allIds.slice((params.page - 1) * params.pageSize, params.page * params.pageSize);
+  const [totalProducts, pageIds] = await Promise.all([
+    countMatchingProducts(ctx, input),
+    queryPageProductIds(ctx, input, sort, page, pageSize),
+  ]);
 
   const [filterCounts, items, totalDocuments] = await Promise.all([
     getFilterCounts(ctx, input),
     assembleItems(ctx, pageIds),
-    countTotalDocuments(ctx, allIds),
+    countTotalDocuments(ctx, input),
   ]);
 
   return { items, totalProducts, totalDocuments, filterCounts };
