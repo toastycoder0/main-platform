@@ -63,6 +63,8 @@ class E2EContainer {
         CLOUD_SECRET_ACCESS_KEY: MINIO_PASSWORD,
         CLOUD_BUCKET: BUCKET,
         NEXT_PUBLIC_CLOUD_URL: `${endpoint}/${BUCKET}`,
+        BETTER_AUTH_URL: `http://localhost:${PORT}`,
+        BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || 'test-secret-for-e2e',
       },
     });
 
