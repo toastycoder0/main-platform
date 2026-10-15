@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import { Suspense } from 'react';
+import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { getSession } from '@/modules/auth/infrastructure/auth.query';
+import { categoriesToNavLinks } from '@/modules/categories/application/categories.nav-links';
+import { buildCategoryTree } from '@/modules/categories/application/categories.tree';
+import { getCategoryTree } from '@/modules/categories/infrastructure/categories.query';
 import { Footer } from '@/shared/components/footer';
 import { Navbar, NavbarShell } from '@/shared/components/navbar';
 import { NavbarSkeleton } from '@/shared/components/navbar/navbar-skeleton';
@@ -9,7 +13,7 @@ interface PublicLayoutProps {
   children?: ReactNode;
 }
 
-const navLinks = [
+const staticLinks = [
   { label: 'Recursos', href: '/technical-library' },
   { label: 'Asesor\u00edas', href: '/technical-advice' },
 ];
@@ -17,9 +21,21 @@ const navLinks = [
 async function PublicNavbar() {
   const session = await getSession();
 
-  const links = session
-    ? [...navLinks, { label: 'Panel de control', href: '/dashboard' }]
-    : navLinks;
+  const ctx = await createRequestContext();
+  const categoryRows = await getCategoryTree(ctx);
+  const categoryTree = buildCategoryTree(categoryRows);
+  const categoryLinks = categoriesToNavLinks(categoryTree);
+
+  const categoryParentLink =
+    categoryLinks.length > 0
+      ? [{ label: 'Categor\u00edas', href: '/category', children: categoryLinks }]
+      : [];
+
+  const links = [
+    ...categoryParentLink,
+    ...staticLinks,
+    ...(session ? [{ label: 'Panel de control', href: '/dashboard' }] : []),
+  ];
 
   return (
     <Navbar

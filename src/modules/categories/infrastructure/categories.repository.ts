@@ -1,10 +1,9 @@
-import { randomBytes } from 'node:crypto';
 import { and, asc, count, eq, isNull, ne, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { generateId } from '@/infrastructure/db/id';
 import { category } from '@/infrastructure/db/schema';
 import { AppError } from '@/shared/errors';
-import { slugify } from '@/shared/utils/slug';
+import { uniqueSlug } from '@/shared/utils/slug';
 import type {
   CreateCategorySchema,
   UpdateCategorySchema,
@@ -27,36 +26,6 @@ async function acquireSiblingSortLock(
 
 function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (match) => `\\${match}`);
-}
-
-async function generateUniqueSlug(
-  ctx: RequestContext,
-  base: string,
-  parentId: string | null,
-): Promise<string> {
-  const sanitized = slugify(base) || 'categoria';
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = attempt === 0 ? sanitized : `${sanitized}-${randomBytes(2).toString('hex')}`;
-
-    const [existing] = await ctx.db
-      .select({ id: category.id })
-      .from(category)
-      .where(
-        and(
-          eq(category.slug, candidate),
-          isNull(category.deletedAt),
-          parentId ? eq(category.parentId, parentId) : isNull(category.parentId),
-        ),
-      )
-      .limit(1);
-
-    if (!existing) {
-      return candidate;
-    }
-  }
-
-  throw new AppError('internal', 'No se pudo generar un slug único para la categoría');
 }
 
 function assertNotOwnDescendant(existingPath: string, newParentPath: string): void {
@@ -83,7 +52,7 @@ export async function createCategory(
     path = `${parentResult.path}/${id}`;
   }
 
-  const slug = await generateUniqueSlug(ctx, data.name, data.parentId ?? null);
+  const slug = uniqueSlug(data.name);
 
   const created = await ctx.db.transaction(async (tx) => {
     await acquireSiblingSortLock(tx, data.parentId ?? null);
