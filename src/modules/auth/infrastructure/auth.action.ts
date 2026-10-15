@@ -3,6 +3,7 @@
 import { isAPIError } from 'better-auth/api';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { auth } from '@/infrastructure/auth/config';
 import { run } from '@/infrastructure/services/next-action';
 import { AppError } from '@/shared/errors';
 import {
@@ -10,7 +11,6 @@ import {
   loginSchema,
   resetPasswordSchema,
 } from '../application/auth.validation';
-import { auth } from './auth.config';
 
 export const login = run(
   { access: 'public', input: loginSchema },

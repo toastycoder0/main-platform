@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
+import { auth } from '@/infrastructure/auth/config';
 import { mapSessionUser } from '@/infrastructure/context/session-mapper';
 import type { SessionDTO } from '../application/auth.types';
-import { auth } from './auth.config';
 
 export async function getSession(): Promise<SessionDTO | null> {
   const session = await auth.api.getSession({ headers: await headers() });
