@@ -37,7 +37,7 @@ async function PublicNavbar() {
       : [];
 
   const brandParentLink =
-    brandLinks.length > 0 ? [{ label: 'Marcas', href: '/brands', children: brandLinks }] : [];
+    brandLinks.length > 0 ? [{ label: 'Marcas', href: '/products', children: brandLinks }] : [];
 
   const links = [
     ...categoryParentLink,

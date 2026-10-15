@@ -41,14 +41,14 @@ function SubLinks({ links, depth = 0 }: { links: NavLink[]; depth?: number }) {
 export function NavLinks({ links }: { links: NavLink[] }) {
   return links.map((link) =>
     link.children?.length ? (
-      <NavigationMenuItem key={link.href}>
+      <NavigationMenuItem key={`${link.label}:${link.href}`}>
         <NavigationMenuTrigger>{link.label}</NavigationMenuTrigger>
         <NavigationMenuContent>
           <CategoryDropdownContent links={link.children} />
         </NavigationMenuContent>
       </NavigationMenuItem>
     ) : (
-      <NavigationMenuItem key={link.href}>
+      <NavigationMenuItem key={`${link.label}:${link.href}`}>
         <NavigationMenuLink href={link.href} className={navigationMenuTriggerStyle()}>
           {link.label}
         </NavigationMenuLink>

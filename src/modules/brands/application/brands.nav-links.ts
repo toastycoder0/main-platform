@@ -4,6 +4,6 @@ import type { HomeBrandDTO } from './brands.types';
 export function brandsToNavLinks(brands: HomeBrandDTO[]): NavLink[] {
   return brands.map((brand) => ({
     label: brand.name,
-    href: `/brands/${brand.slug}`,
+    href: `/products?brand=${encodeURIComponent(brand.slug)}`,
   }));
 }

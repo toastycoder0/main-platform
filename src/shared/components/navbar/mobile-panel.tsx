@@ -53,7 +53,7 @@ export function MobileNavPanel({ navLinks }: MobileNavPanelProps) {
         )}
 
         {currentLinks.map((link) => (
-          <MobileNavLink key={link.href} link={link} onNavigate={pushLevel} />
+          <MobileNavLink key={`${link.label}:${link.href}`} link={link} onNavigate={pushLevel} />
         ))}
       </div>
     </nav>

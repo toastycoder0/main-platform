@@ -39,7 +39,7 @@ function Home() {
       <HomeProductSectionLoader
         title='Más nuevos'
         order='recent'
-        viewAllHref='/products?sort=createdAt'
+        viewAllHref='/products?sort=recent'
       />
       <HomeProductSectionLoader
         title='Populares'
