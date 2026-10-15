@@ -18,11 +18,17 @@ export interface CallToActionProps {
   title: string;
   description: string;
   children?: ReactNode;
+  className?: string;
 }
 
-export function CallToAction({ title, description, children }: CallToActionProps) {
+export function CallToAction({ title, description, children, className }: CallToActionProps) {
   return (
-    <div className='relative mx-auto flex w-full mt-28 max-w-7xl flex-col justify-between border-x'>
+    <div
+      className={cn(
+        'relative mx-auto flex w-full max-w-7xl flex-col justify-between border-x',
+        className,
+      )}
+    >
       <FullWidthDivider className='-top-px' />
       <div className='border-b px-2 py-8'>
         <h2 className='font-heading text-center font-semibold text-lg md:text-2xl'>{title}</h2>
