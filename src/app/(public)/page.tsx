@@ -50,6 +50,7 @@ function Home() {
       <CallToAction
         title='¿Necesitas asesoría técnica?'
         description='Expertos en recubrimientos y materiales de construcción listos para ayudarte con tu proyecto.'
+        className='mt-28'
       >
         <Button asChild>
           <Link href='/technical-advice'>
