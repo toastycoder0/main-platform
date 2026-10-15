@@ -1,14 +1,17 @@
-import { BadgePercentIcon, HardHatIcon, LayersIcon, TruckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/utils/cn';
 
-type FeatureType = {
+export interface Feature {
   title: string;
   icon: ReactNode;
   description: string;
-};
+}
 
-export function FeaturesSection() {
+export interface FeaturesSectionProps {
+  features: Feature[];
+}
+
+export function FeaturesSection({ features }: FeaturesSectionProps) {
   return (
     <div className='mx-auto grid grid-cols-2 gap-4 py-4 md:grid-cols-4'>
       {features.map((feature, index) => (
@@ -35,26 +38,3 @@ export function FeaturesSection() {
     </div>
   );
 }
-
-const features: FeatureType[] = [
-  {
-    title: 'Envíos a todo México',
-    icon: <TruckIcon className='size-6 text-neutral-500' />,
-    description: 'Cobertura en toda la República.',
-  },
-  {
-    title: 'Precios de mayoreo',
-    icon: <BadgePercentIcon className='size-6 text-neutral-500' />,
-    description: 'Importadores directos, mejores precios.',
-  },
-  {
-    title: 'Asesoría técnica',
-    icon: <HardHatIcon className='size-6 text-neutral-500' />,
-    description: 'Expertos que te apoyan en cada proyecto.',
-  },
-  {
-    title: 'Amplio catálogo',
-    icon: <LayersIcon className='size-6 text-neutral-500' />,
-    description: 'Marcas líderes para cada necesidad.',
-  },
-];
