@@ -19,7 +19,7 @@ import {
   productUnit,
   tag,
 } from '@/infrastructure/db/schema';
-import { listFilesByOwners } from '@/infrastructure/services/files';
+import { listFilesByOwners } from '@/infrastructure/files/service';
 import { AppError } from '@/shared/errors';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';

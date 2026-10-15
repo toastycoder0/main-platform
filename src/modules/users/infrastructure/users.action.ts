@@ -5,7 +5,9 @@ import { and, eq, inArray, isNull, like, ne, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { auth } from '@/infrastructure/auth/config';
 import type { RequestContext } from '@/infrastructure/context/types';
+import type { DbLike } from '@/infrastructure/db';
 import {
   permission,
   role,
@@ -15,8 +17,6 @@ import {
   userPermission,
   userRole,
 } from '@/infrastructure/db/schema';
-import type { DbLike } from '@/infrastructure/db/types';
-import { auth } from '@/infrastructure/services/auth';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';

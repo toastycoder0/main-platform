@@ -3,8 +3,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { db } from '@/infrastructure/db';
 import { file, user } from '@/infrastructure/db/schema';
-import type { FileLocator } from '@/infrastructure/services/files';
-import { syncFiles } from '@/infrastructure/services/files';
+import type { FileLocator } from '@/infrastructure/files/service';
+import { syncFiles } from '@/infrastructure/files/service';
 import type { StorageClient } from '@/infrastructure/storage/client';
 import { cleanupOrphans } from './files.cleanup.service';
 

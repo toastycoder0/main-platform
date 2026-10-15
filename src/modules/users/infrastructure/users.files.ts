@@ -1,5 +1,5 @@
-import type { DbLike } from '@/infrastructure/db/types';
-import { syncFiles } from '@/infrastructure/services/files';
+import type { DbLike } from '@/infrastructure/db';
+import { syncFiles } from '@/infrastructure/files/service';
 import type { TaxProfileSchema } from '../application/users.validation';
 
 /**

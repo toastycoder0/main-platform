@@ -1,6 +1,6 @@
-import type { DbLike } from '@/infrastructure/db/types';
-import type { FileLocator } from '@/infrastructure/services/files';
-import { listOwnerFiles, syncFiles } from '@/infrastructure/services/files';
+import type { DbLike } from '@/infrastructure/db';
+import type { FileLocator } from '@/infrastructure/files/service';
+import { listOwnerFiles, syncFiles } from '@/infrastructure/files/service';
 import { isTempKey } from '@/infrastructure/storage/keys';
 import { AppError } from '@/shared/errors';
 

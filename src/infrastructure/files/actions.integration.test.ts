@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
 import { file } from '@/infrastructure/db/schema';
-import { deleteTempUpload, requestUploadUrl } from './actions';
+import { deleteTempUpload, requestUploadUrl } from '@/infrastructure/files/actions';
 
 const state = vi.hoisted(() => ({ ctx: undefined as RequestContext | undefined }));
 

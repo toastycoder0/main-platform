@@ -1,5 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { env } from '@/config/env';
+import { auth } from '@/infrastructure/auth/config';
 import { db } from '@/infrastructure/db';
 import {
   currency,
@@ -14,7 +15,6 @@ import {
   userRole,
 } from '@/infrastructure/db/schema';
 import { logger } from '@/infrastructure/logger';
-import { auth } from '@/infrastructure/services/auth';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
 const { admin } = PERMISSIONS;

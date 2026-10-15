@@ -1,7 +1,7 @@
 import { cache } from 'react';
+import { auth } from '@/infrastructure/auth/config';
 import { db } from '@/infrastructure/db';
 import { logger } from '@/infrastructure/logger';
-import { auth } from '@/infrastructure/services/auth';
 import { buildRequestContext } from './factory';
 
 export const createRequestContext = cache(async () => {

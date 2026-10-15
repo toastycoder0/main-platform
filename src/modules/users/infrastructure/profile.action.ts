@@ -4,8 +4,8 @@ import { isAPIError } from 'better-auth/api';
 import { and, eq, ne } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { auth } from '@/infrastructure/auth/config';
 import { session } from '@/infrastructure/db/schema';
-import { auth } from '@/infrastructure/services/auth';
 import { run } from '@/infrastructure/services/next-action';
 import { AppError } from '@/shared/errors';
 import {

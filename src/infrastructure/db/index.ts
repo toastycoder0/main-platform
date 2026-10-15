@@ -7,3 +7,5 @@ export const db = drizzle({
 });
 
 export type DatabaseClient = typeof db;
+
+export type DbLike = Pick<DatabaseClient, 'select' | 'insert' | 'update' | 'delete'>;

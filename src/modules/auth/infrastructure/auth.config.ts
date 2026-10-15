@@ -1,1 +1,1 @@
-export { auth } from '@/infrastructure/services/auth';
+export { auth } from '@/infrastructure/auth/config';

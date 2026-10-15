@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import type { DbLike } from '@/infrastructure/db';
 import {
   brand,
   category,
@@ -7,7 +8,6 @@ import {
   productImage,
   user,
 } from '@/infrastructure/db/schema';
-import type { DbLike } from '@/infrastructure/db/types';
 import { storageClient } from '@/infrastructure/storage/client';
 import { extractExtension, generateFileKey, isTempKey } from '@/infrastructure/storage/keys';
 import { storageKeyToUrl, urlToStorageKey } from '@/infrastructure/storage/urls';

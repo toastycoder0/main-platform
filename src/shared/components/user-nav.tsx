@@ -3,7 +3,7 @@
 import { HouseIcon, LoaderCircleIcon, LogOutIcon, UserPen } from 'lucide-react';
 import Link from 'next/link';
 import { useTransition } from 'react';
-import { logout } from '@/infrastructure/services/auth-actions';
+import { logout } from '@/infrastructure/auth/actions';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/avatar';
 import {
