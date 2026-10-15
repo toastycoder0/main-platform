@@ -15,9 +15,9 @@ import {
   userPermission,
   userRole,
 } from '@/infrastructure/db/schema';
+import type { DbLike } from '@/infrastructure/db/types';
+import { auth } from '@/infrastructure/services/auth';
 import { run } from '@/infrastructure/services/next-action';
-import { auth } from '@/modules/auth/infrastructure/auth.config';
-import type { DbLike } from '@/modules/files/infrastructure/files.repository';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
 import type {

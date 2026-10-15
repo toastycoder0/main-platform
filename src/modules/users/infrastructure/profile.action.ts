@@ -5,8 +5,8 @@ import { and, eq, ne } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { session } from '@/infrastructure/db/schema';
+import { auth } from '@/infrastructure/services/auth';
 import { run } from '@/infrastructure/services/next-action';
-import { auth } from '@/modules/auth/infrastructure/auth.config';
 import { AppError } from '@/shared/errors';
 import {
   accountAddressesSchema,
