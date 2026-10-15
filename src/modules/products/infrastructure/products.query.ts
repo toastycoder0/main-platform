@@ -30,6 +30,8 @@ import type {
   ProductFormDTO,
   ProductListItemDTO,
   ProductVariantOption,
+  TechnicalLibraryDocumentDTO,
+  TechnicalLibraryItemDTO,
 } from '../application/products.types';
 import { fromItemOption, toNumber } from './products.mapper';
 
@@ -422,6 +424,181 @@ export async function findProductForm(ctx: RequestContext, id: string): Promise<
         linkedVariantId: link.linkedItemId,
       })),
   };
+}
+
+async function queryLibraryProductIds(ctx: RequestContext, q: string | null): Promise<string[]> {
+  const conditions: SQL[] = [
+    isNull(product.deletedAt),
+    eq(product.status, 'active'),
+    eq(productDocument.isVisible, true),
+  ];
+
+  if (q) {
+    const productSearch = searchILike([product.title, product.code, product.slug], q);
+    const docSearch = searchILike([productDocument.label], q);
+
+    const orConditions: SQL[] = [];
+    if (productSearch) {
+      orConditions.push(productSearch);
+    }
+    if (docSearch) {
+      orConditions.push(docSearch);
+    }
+
+    if (orConditions.length > 0) {
+      conditions.push(or(...orConditions) as SQL);
+    }
+  }
+
+  const rows = await ctx.db
+    .select({ id: product.id })
+    .from(product)
+    .innerJoin(productDocument, eq(product.id, productDocument.productId))
+    .where(and(...conditions))
+    .groupBy(product.id)
+    .orderBy(asc(product.sortOrder), asc(product.id));
+
+  return rows.map((r) => r.id);
+}
+
+async function queryFirstLibraryProductImages(
+  ctx: RequestContext,
+  productIds: string[],
+): Promise<Map<string, string>> {
+  if (productIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await ctx.db
+    .select({ id: productImage.id, productId: productImage.productId })
+    .from(productImage)
+    .where(and(inArray(productImage.productId, productIds), eq(productImage.isVisible, true)))
+    .orderBy(asc(productImage.sortOrder), asc(productImage.id));
+
+  const firstImageIdByProduct = new Map<string, string>();
+  for (const row of rows) {
+    if (!firstImageIdByProduct.has(row.productId)) {
+      firstImageIdByProduct.set(row.productId, row.id);
+    }
+  }
+
+  if (firstImageIdByProduct.size === 0) {
+    return new Map();
+  }
+
+  const files = await listFilesByOwners(ctx.db, { entity: 'product_images', scope: 'image' }, [
+    ...firstImageIdByProduct.values(),
+  ]);
+
+  const result = new Map<string, string>();
+  for (const [productId, imageId] of firstImageIdByProduct) {
+    const url = files.get(imageId)?.[0]?.url;
+    if (url) {
+      result.set(productId, url);
+    }
+  }
+
+  return result;
+}
+
+export async function listTechnicalLibrary(
+  ctx: RequestContext,
+  params: ListParams,
+): Promise<Paginated<TechnicalLibraryItemDTO>> {
+  const allIds = await queryLibraryProductIds(ctx, params.q);
+  const total = allIds.length;
+
+  const pageIds = allIds.slice((params.page - 1) * params.pageSize, params.page * params.pageSize);
+
+  if (pageIds.length === 0) {
+    return { items: [], total };
+  }
+
+  const productRows = await ctx.db
+    .select({
+      id: product.id,
+      slug: product.slug,
+      title: product.title,
+      code: product.code,
+      brandName: brand.name,
+    })
+    .from(product)
+    .leftJoin(brand, eq(product.brandId, brand.id))
+    .where(inArray(product.id, pageIds))
+    .orderBy(asc(product.sortOrder), asc(product.id));
+
+  const imageUrlByProduct = await queryFirstLibraryProductImages(ctx, pageIds);
+
+  const docRows = await ctx.db
+    .select()
+    .from(productDocument)
+    .where(and(inArray(productDocument.productId, pageIds), eq(productDocument.isVisible, true)))
+    .orderBy(asc(productDocument.sortOrder), asc(productDocument.id));
+
+  const docsByProduct = await resolveLibraryDocuments(ctx, docRows);
+
+  const items = productRows
+    .map((p) => ({
+      productId: p.id,
+      productTitle: p.title,
+      productSlug: p.slug,
+      productCode: p.code ?? null,
+      brandName: p.brandName ?? null,
+      imageUrl: imageUrlByProduct.get(p.id) ?? null,
+      documents: docsByProduct.get(p.id) ?? [],
+    }))
+    .filter((item) => item.documents.length > 0);
+
+  return { items, total };
+}
+
+async function resolveLibraryDocuments(
+  ctx: RequestContext,
+  docRows: {
+    id: string;
+    productId: string;
+    documentTypeId: string | null;
+    label: string;
+  }[],
+): Promise<Map<string, TechnicalLibraryDocumentDTO[]>> {
+  const docTypeIds = [
+    ...new Set(docRows.map((d) => d.documentTypeId).filter((id): id is string => id !== null)),
+  ];
+
+  const docTypeRows =
+    docTypeIds.length > 0
+      ? await ctx.db
+          .select({ id: documentType.id, name: documentType.name })
+          .from(documentType)
+          .where(inArray(documentType.id, docTypeIds))
+      : [];
+
+  const docTypeMap = new Map(docTypeRows.map((dt) => [dt.id, dt.name]));
+  const filesByDoc = await listFilesByOwners(
+    ctx.db,
+    { entity: 'product_documents', scope: 'document' },
+    docRows.map((d) => d.id),
+  );
+
+  const docsByProduct = new Map<string, TechnicalLibraryDocumentDTO[]>();
+  for (const doc of docRows) {
+    const fileUrl = filesByDoc.get(doc.id)?.[0]?.url ?? null;
+    if (!fileUrl) {
+      continue;
+    }
+
+    docsByProduct.set(doc.productId, [
+      ...(docsByProduct.get(doc.productId) ?? []),
+      {
+        documentId: doc.id,
+        label: doc.label,
+        documentTypeName: doc.documentTypeId ? (docTypeMap.get(doc.documentTypeId) ?? null) : null,
+        fileUrl,
+      },
+    ]);
+  }
+
+  return docsByProduct;
 }
 
 const HOME_PRODUCT_LIMIT = 10;

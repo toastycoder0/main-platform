@@ -25,6 +25,23 @@ export interface HomeProductPriceDTO {
   label: 'fixed' | 'starts_at' | 'variable';
 }
 
+export interface TechnicalLibraryDocumentDTO {
+  documentId: string;
+  label: string;
+  documentTypeName: string | null;
+  fileUrl: string;
+}
+
+export interface TechnicalLibraryItemDTO {
+  productId: string;
+  productTitle: string;
+  productSlug: string;
+  productCode: string | null;
+  brandName: string | null;
+  imageUrl: string | null;
+  documents: TechnicalLibraryDocumentDTO[];
+}
+
 export interface HomeProductDTO {
   slug: string;
   title: string;
