@@ -26,7 +26,6 @@ export interface LotState {
   isActive: boolean;
 }
 
-// cellId -> lotId -> quantity (current balance or net delta, depending on use).
 export type QuantitiesByCell = ReadonlyMap<string, ReadonlyMap<string, number>>;
 
 export interface StockContext {
@@ -55,8 +54,6 @@ function lotProblems(id: string, lot: LotState | undefined): MovementErrorDTO[] 
   return [];
 }
 
-// A missing or inactive reference rejects the whole movement; it is never
-// skipped silently.
 export function checkReferences(
   cellIds: readonly string[],
   lotIds: readonly string[],
@@ -100,8 +97,6 @@ function occupancyOf(stock: QuantitiesByCell, cellId: string): number {
   return total;
 }
 
-// Occupancy counts every lot in the cell, and only a net gain can be rejected,
-// so a cell already over capacity may still be emptied.
 function capacityExceeded(
   cellId: string,
   deltas: ReadonlyMap<string, number>,
@@ -132,8 +127,6 @@ function capacityExceeded(
   ];
 }
 
-// Validates the net result of the whole movement, never line by line, and
-// reports every problem at once.
 export function checkStock(deltas: QuantitiesByCell, context: StockContext): MovementErrorDTO[] {
   return [...deltas].flatMap(([cellId, byLot]) => [
     ...insufficientStock(cellId, byLot, context),

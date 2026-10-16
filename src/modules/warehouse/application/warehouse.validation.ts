@@ -4,7 +4,6 @@ import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 
 export const MAX_MOVEMENT_ENTRIES = 500;
 
-// Mirrors numeric(16, 4) for quantities and numeric(12, 4) for capacities.
 export const QUANTITY_SCALE = 4;
 const QUANTITY_STEP = 0.0001;
 const MAX_QUANTITY = 999_999_999_999;

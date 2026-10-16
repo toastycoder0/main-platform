@@ -59,7 +59,6 @@ function affectedIds(entries: Transfer[]): { cellIds: string[]; lotIds: string[]
 }
 
 // Locking the cells (not the balance rows) serializes every writer of a cell,
-// including those about to create a balance row that does not exist yet.
 async function lockCells(tx: DbLike, cellIds: string[]): Promise<Map<string, CellState>> {
   const rows = await tx
     .select({
@@ -92,8 +91,6 @@ async function readLots(tx: DbLike, lotIds: string[]): Promise<Map<string, LotSt
   );
 }
 
-// Must run after the cells are locked so it sees whatever the previous lock
-// holder committed.
 async function readStock(tx: DbLike, cellIds: string[]): Promise<QuantitiesByCell> {
   const rows = await tx
     .select({ cellId: cellLot.cellId, lotId: cellLot.lotId, quantity: cellLot.quantity })
@@ -171,7 +168,6 @@ async function applyDeltas(tx: DbLike, deltas: QuantitiesByCell): Promise<void> 
     }
   }
 
-  // A balance row only exists while it holds material.
   await tx
     .delete(cellLot)
     .where(and(inArray(cellLot.cellId, [...deltas.keys()]), eq(cellLot.quantity, '0')));
@@ -228,8 +224,7 @@ function rejectMovement(movementId: string, message: string): MovementRejectedEr
   return new MovementRejectedError([{ objectType: 'movement', objectId: movementId, message }]);
 }
 
-// Undoing is just another movement: the inverse entries go through the same
-// validations, so it fails if the material is no longer where it was put.
+// revert = inverse movement through the same engine.
 export async function revertMovement(
   tx: DbLike,
   userId: string,

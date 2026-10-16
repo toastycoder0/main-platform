@@ -89,9 +89,6 @@ export interface WarehouseMapDTO {
   nodes: NodeDTO[];
 }
 
-// Each kind pins the only reasons the ledger accepts for it (see the
-// movement_type_reason_check constraint). Reverts are produced by the engine
-// itself and are deliberately not requestable.
 export type MovementKind =
   | { type: 'assign'; reason: 'reception' }
   | { type: 'out'; reason: 'material_out' | 'delivery' }
