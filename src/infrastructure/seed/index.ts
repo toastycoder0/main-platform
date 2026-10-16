@@ -21,6 +21,32 @@ const { admin, warehouse } = PERMISSIONS;
 
 const INITIAL_PERMISSIONS = [
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
+  {
+    slug: warehouse.lots.access,
+    name: 'Acceso a gestión de lotes',
+    type: 'access' as const,
+  },
+  { slug: warehouse.lots.create, name: 'Crear lotes', type: 'action' as const },
+  { slug: warehouse.lots.edit, name: 'Editar lotes', type: 'action' as const },
+  { slug: warehouse.map.access, name: 'Ver el mapa del almacén', type: 'access' as const },
+  { slug: warehouse.map.edit, name: 'Editar celdas del almacén', type: 'action' as const },
+  { slug: warehouse.stock.reception, name: 'Asignar stock a celdas', type: 'action' as const },
+  { slug: warehouse.stock.transfer, name: 'Mover stock entre celdas', type: 'action' as const },
+  {
+    slug: warehouse.stock.materialOut,
+    name: 'Registrar salida de material',
+    type: 'action' as const,
+  },
+  {
+    slug: warehouse.stock.delivery,
+    name: 'Registrar entrega de material',
+    type: 'action' as const,
+  },
+  {
+    slug: warehouse.stock.revert,
+    name: 'Deshacer movimientos de stock',
+    type: 'action' as const,
+  },
   { slug: admin.access, name: 'Acceso al panel de administración', type: 'access' as const },
   { slug: admin.users.access, name: 'Acceso a gestión de usuarios', type: 'access' as const },
   { slug: admin.users.create, name: 'Crear usuarios', type: 'action' as const },
