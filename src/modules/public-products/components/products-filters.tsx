@@ -241,10 +241,10 @@ export function ProductsFilters(props: ProductsFiltersProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side='left' className='flex w-full max-w-sm flex-col gap-0 p-0'>
-            <SheetHeader>
+            <SheetHeader className='mt-16 md:mt-0'>
               <SheetTitle>Filtros</SheetTitle>
             </SheetHeader>
-            <div className='flex-1 overflow-y-auto px-4 pb-6'>
+            <div className='flex-1 overflow-y-auto pt-1 px-4 pb-6'>
               <FiltersBody {...props} />
             </div>
           </SheetContent>
