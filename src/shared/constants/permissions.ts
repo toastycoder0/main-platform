@@ -1,4 +1,7 @@
 export const PERMISSIONS = {
+  warehouse: {
+    access: 'warehouse.access',
+  },
   admin: {
     access: 'admin.access',
     users: {

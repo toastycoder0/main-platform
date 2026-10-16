@@ -17,9 +17,10 @@ import {
 import { logger } from '@/infrastructure/logger';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
-const { admin } = PERMISSIONS;
+const { admin, warehouse } = PERMISSIONS;
 
 const INITIAL_PERMISSIONS = [
+  { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
   { slug: admin.access, name: 'Acceso al panel de administración', type: 'access' as const },
   { slug: admin.users.access, name: 'Acceso a gestión de usuarios', type: 'access' as const },
   { slug: admin.users.create, name: 'Crear usuarios', type: 'action' as const },

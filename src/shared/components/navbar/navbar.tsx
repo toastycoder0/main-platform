@@ -1,11 +1,9 @@
 'use client';
 
-import { Menu, Search, ShoppingCart } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useRef } from 'react';
+import { Menu } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { buttonVariants } from '@/shared/components/button';
-import { Input } from '@/shared/components/input';
 import { NavigationMenu, NavigationMenuList } from '@/shared/components/navigation-menu';
 import {
   Sheet,
@@ -14,111 +12,90 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/shared/components/sheet';
-import { NavLinks } from './category-dropdown';
-import { MobileNavPanel } from './mobile-panel';
-import type { NavLink } from './nav-link';
-import { NavbarLogo } from './navbar-logo';
-import { DesktopUserArea, MobileAuthArea } from './user-area';
 
-export interface NavbarProps {
-  isAuthenticated: boolean;
-  userName: string | undefined;
-  userEmail?: string | undefined;
-  userLinks: NavLink[] | undefined;
-  cartItemCount?: number;
-  showCart?: boolean;
-  navLinks: NavLink[] | undefined;
+type NavbarSlotId = 'brand' | 'search' | 'links' | 'user' | 'cart';
+
+interface NavbarSlotContent {
+  desktop?: ReactNode;
+  mobile?: ReactNode;
 }
 
-export function Navbar({
-  isAuthenticated,
-  userName,
-  userEmail,
-  cartItemCount = 0,
-  showCart = true,
-  navLinks,
-}: NavbarProps) {
-  const searchRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
+interface NavbarContextValue {
+  register: (id: NavbarSlotId, content: NavbarSlotContent) => void;
+  unregister: (id: NavbarSlotId) => void;
+}
 
-  const submitSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const trimmed = searchRef.current?.value.trim();
-    if (!trimmed) {
-      return;
-    }
-    router.push(`/products?q=${encodeURIComponent(trimmed)}`);
-  };
+const NavbarContext = createContext<NavbarContextValue | null>(null);
 
-  const searchBar = (
-    <form
-      onSubmit={submitSearch}
-      className='group flex w-full rounded-md focus-within:ring-2 focus-within:ring-ring/50'
-    >
-      <Input
-        ref={searchRef}
-        type='text'
-        placeholder='Buscar productos, categorías o marcas…'
-        className='w-full bg-[#ECECED] rounded-r-none focus-visible:ring-0'
-        aria-label='Buscar productos'
-      />
-      <button
-        type='submit'
-        tabIndex={-1}
-        className='shrink-0 rounded-r-md border border-l-0 border-input bg-[#ECECED] px-3 text-neutral-400 group-focus-within:border-ring'
-        aria-label='Ejecutar búsqueda'
-      >
-        <Search className='size-4' />
-      </button>
-    </form>
-  );
+function useNavbar() {
+  const context = useContext(NavbarContext);
+  if (!context) {
+    throw new Error('useNavbar must be used within a Navbar.');
+  }
 
-  const logo = <NavbarLogo />;
+  return context;
+}
 
-  const cartButton = (
-    <Link
-      href='/cart'
-      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-      aria-label={`Carrito${cartItemCount > 0 ? `, ${cartItemCount} producto${cartItemCount !== 1 ? 's' : ''}` : ''}`}
-    >
-      <ShoppingCart className='size-5' />
-      {cartItemCount > 0 && (
-        <span className='absolute -right-1 -top-1 flex min-w-4.5 items-center justify-center rounded-full bg-neutral-900 px-1 text-[10px] font-bold leading-tight text-white'>
-          {cartItemCount > 99 ? '99+' : cartItemCount}
-        </span>
-      )}
-    </Link>
+interface NavbarProps {
+  children: ReactNode;
+}
+
+export function Navbar({ children }: NavbarProps) {
+  const [slots, setSlots] = useState<Partial<Record<NavbarSlotId, NavbarSlotContent>>>({});
+
+  const contextValue = useMemo<NavbarContextValue>(
+    () => ({
+      register: (id, content) => setSlots((prev) => ({ ...prev, [id]: content })),
+      unregister: (id) =>
+        setSlots((prev) => {
+          if (!prev[id]) {
+            return prev;
+          }
+
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        }),
+    }),
+    [],
   );
 
   return (
-    <>
-      <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-1.5 md:flex'>
-        <div className='flex-1'>{logo}</div>
-        <div className='w-72 lg:w-xl shrink-0'>{searchBar}</div>
+    <NavbarContext.Provider value={contextValue}>
+      {children}
+
+      <div
+        data-slot='navbar-top'
+        className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-3 md:flex'
+      >
+        <div className='flex-1'>{slots.brand?.desktop}</div>
+        {slots.search?.desktop && (
+          <div className='w-72 lg:w-xl shrink-0'>{slots.search.desktop}</div>
+        )}
 
         <div className='flex flex-1 items-center justify-end gap-3'>
-          <DesktopUserArea
-            isAuthenticated={isAuthenticated}
-            userName={userName}
-            userEmail={userEmail}
-          />
-          {showCart && isAuthenticated && cartButton}
+          {slots.user?.desktop}
+          {slots.cart?.desktop}
         </div>
       </div>
 
-      {navLinks?.length && (
-        <div className='mx-auto hidden max-w-7xl flex-wrap justify-center px-4 pb-1.5 md:flex'>
+      {slots.links?.desktop && (
+        <div
+          data-slot='navbar-links'
+          className='mx-auto hidden max-w-7xl flex-wrap justify-center px-4 pb-1.5 md:flex'
+        >
           <NavigationMenu className='max-w-max'>
-            <NavigationMenuList>
-              <NavLinks links={navLinks} />
-            </NavigationMenuList>
+            <NavigationMenuList>{slots.links.desktop}</NavigationMenuList>
           </NavigationMenu>
         </div>
       )}
 
-      <div className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'>
+      <div
+        data-slot='navbar-mobile'
+        className='flex items-center justify-end gap-1 px-4 py-3 md:hidden'
+      >
         <div className='flex items-center gap-1'>
-          {showCart && isAuthenticated && cartButton}
+          {slots.cart?.mobile}
           <Sheet>
             <SheetTrigger asChild>
               <button
@@ -135,22 +112,20 @@ export function Navbar({
               </SheetHeader>
 
               <div className='flex-1 overflow-y-auto px-4 pt-16'>
-                {searchBar}
-
-                <MobileNavPanel navLinks={navLinks ?? []} />
+                {slots.search?.mobile}
+                {slots.links?.mobile}
               </div>
 
               <div className='flex flex-col gap-2 border-t border-neutral-100 p-4'>
-                <MobileAuthArea
-                  isAuthenticated={isAuthenticated}
-                  userName={userName}
-                  userEmail={userEmail}
-                />
+                {slots.user?.mobile}
               </div>
             </SheetContent>
           </Sheet>
         </div>
       </div>
-    </>
+    </NavbarContext.Provider>
   );
 }
+
+export { useNavbar };
+export type { NavbarSlotContent, NavbarSlotId };

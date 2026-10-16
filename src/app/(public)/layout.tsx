@@ -8,8 +8,17 @@ import { categoriesToNavLinks } from '@/modules/categories/application/categorie
 import { buildCategoryTree } from '@/modules/categories/application/categories.tree';
 import { getCategoryTree } from '@/modules/categories/infrastructure/categories.query';
 import { Footer } from '@/shared/components/footer';
-import { Navbar, NavbarShell } from '@/shared/components/navbar';
+import {
+  Navbar,
+  NavbarBrand,
+  NavbarCart,
+  NavbarLinks,
+  NavbarSearch,
+  NavbarShell,
+  NavbarUser,
+} from '@/shared/components/navbar';
 import { NavbarSkeleton } from '@/shared/components/navbar/navbar-skeleton';
+import { PERMISSIONS } from '@/shared/constants/permissions';
 
 interface PublicLayoutProps {
   children?: ReactNode;
@@ -44,16 +53,23 @@ async function PublicNavbar() {
     ...brandParentLink,
     ...staticLinks,
     ...(session ? [{ label: 'Panel de control', href: '/dashboard' }] : []),
+    ...(ctx.permissions.has(PERMISSIONS.warehouse.access)
+      ? [{ label: 'Almacén', href: '/warehouse' }]
+      : []),
   ];
 
   return (
-    <Navbar
-      isAuthenticated={!!session}
-      userName={session?.user.name}
-      userEmail={session?.user.email}
-      userLinks={undefined}
-      navLinks={links}
-    />
+    <Navbar>
+      <NavbarBrand />
+      <NavbarSearch />
+      <NavbarLinks links={links} />
+      <NavbarUser
+        isAuthenticated={!!session}
+        userName={session?.user.name}
+        userEmail={session?.user.email}
+      />
+      {session && <NavbarCart />}
+    </Navbar>
   );
 }
 
