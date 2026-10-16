@@ -12,6 +12,7 @@ import { productsManifest } from './products/manifest';
 import { rolesManifest } from './roles/manifest';
 import { tagsManifest } from './tags/manifest';
 import { usersManifest } from './users/manifest';
+import { warehouseManifest } from './warehouse/manifest';
 
 // Composition root: modules register here manually via their manifests.
 // Decentralizing this list (auto-discovery of `modules/*/manifest.ts` via
@@ -32,6 +33,7 @@ const manifests: ModuleManifest[] = [
   rolesManifest,
   tagsManifest,
   usersManifest,
+  warehouseManifest,
 ];
 
 interface SectionMeta {
