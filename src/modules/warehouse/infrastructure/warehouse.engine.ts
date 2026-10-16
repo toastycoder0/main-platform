@@ -1,414 +1,252 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import type { DbLike } from '@/infrastructure/db';
 import { generateId } from '@/infrastructure/db/id';
 import { cellLot, lot, movement, movementEntry, warehouseCell } from '@/infrastructure/db/schema';
+import { AppError } from '@/shared/errors';
 import { computeNetDeltas, type Transfer } from '../application/warehouse.deltas';
+import { MovementRejectedError } from '../application/warehouse.errors';
+import {
+  type CellState,
+  checkReferences,
+  checkStock,
+  type LotState,
+  MOVEMENT_ERRORS,
+  type QuantitiesByCell,
+} from '../application/warehouse.rules';
+import type { MovementReceipt, MovementRequest } from '../application/warehouse.types';
+import {
+  MAX_MOVEMENT_ENTRIES,
+  type MovementReason,
+  type MovementType,
+  QUANTITY_SCALE,
+} from '../application/warehouse.validation';
 
-// biome-ignore lint/suspicious/noExplicitAny: Drizzle tx varies between db & transaction
-type SelectFn = (...args: readonly any[]) => any;
-// biome-ignore lint/suspicious/noExplicitAny: Drizzle tx varies between db & transaction
-type InsertFn = (...args: readonly any[]) => any;
-// biome-ignore lint/suspicious/noExplicitAny: Drizzle tx varies between db & transaction
-type UpdateFn = (...args: readonly any[]) => any;
-// biome-ignore lint/suspicious/noExplicitAny: Drizzle tx varies between db & transaction
-type DeleteFn = (...args: readonly any[]) => any;
+/*
+ * The only writer of stock. It never opens a transaction: callers pass their
+ * own `tx` so a movement can be combined with other steps atomically, and any
+ * rejection is thrown so that transaction rolls back.
+ */
 
-interface DbTx {
-  select: SelectFn;
-  insert: InsertFn;
-  update: UpdateFn;
-  delete: DeleteFn;
+interface LedgerHeader {
+  userId: string;
+  type: MovementType;
+  reason: MovementReason | null;
+  note: string | null;
+  reference: string | null;
+  revertsId: string | null;
 }
 
-export const MOVEMENT_ERRORS = {
-  cellNotFound: (id: string) => `La celda ${id} no existe`,
-  cellInactive: (id: string) => `La celda ${id} está inactiva`,
-  lotNotFound: (id: string) => `El lote ${id} no existe`,
-  lotInactive: (id: string) => `El lote ${id} está inactivo`,
-  insufficientStock: (cell: string, current: number, required: number) =>
-    `Stock insuficiente en celda ${cell}. Disponible: ${current}, requerido: ${required}`,
-  capacityExceeded: (cell: string, capacity: number, occupied: number, adding: number) =>
-    `Capacidad insuficiente en celda ${cell}. Capacidad: ${capacity}, ocupado: ${occupied}, a agregar: ${adding}`,
-  movementNotFound: (id: string) => `El movimiento ${id} no existe`,
-  alreadyReverted: (id: string) => `El movimiento ${id} ya fue deshecho`,
-  cannotRevertRevert: (id: string) => `No se puede deshacer una reversión (${id})`,
-  noEffect: 'El movimiento no tiene efecto neto sobre el stock',
-} as const;
-
-export interface MovementError {
-  objectType: 'cell' | 'lot';
-  objectId: string;
-  message: string;
-  details?: Record<string, unknown>;
+function toScale(value: number): string {
+  return value.toFixed(QUANTITY_SCALE);
 }
 
-export type MovementResult =
-  | { success: true; movementId: string; sequentialNumber: number }
-  | { success: false; errors: MovementError[] };
-
-type MovementType = 'assign' | 'move' | 'out' | 'revert';
-type MovementReason = 'reception' | 'material_out' | 'delivery' | 'transfer';
-
-interface CellRow {
-  id: string;
-  capacity: string;
-  isActive: boolean;
-}
-
-interface EngineOptions {
-  note?: string;
-  reference?: string;
-  revertsId?: string;
-}
-
-function err(
-  objectType: 'cell' | 'lot',
-  objectId: string,
-  message: string,
-  details?: Record<string, unknown>,
-): MovementError {
-  if (details !== undefined) {
-    return { objectType, objectId, message, details };
+function affectedIds(entries: Transfer[]): { cellIds: string[]; lotIds: string[] } {
+  const cellIds = new Set<string>();
+  for (const { originCellId, destinationCellId } of entries) {
+    if (originCellId) {
+      cellIds.add(originCellId);
+    }
+    if (destinationCellId) {
+      cellIds.add(destinationCellId);
+    }
   }
-  return { objectType, objectId, message };
+
+  // Ascending order keeps lock acquisition identical across transactions.
+  return {
+    cellIds: [...cellIds].sort(),
+    lotIds: [...new Set(entries.map((entry) => entry.lotId))],
+  };
 }
 
-function errResult(message: string): MovementResult {
-  return { success: false, errors: [err('cell', '', message)] };
-}
-
-async function validateCells(
-  tx: DbTx,
-  cellIds: string[],
-): Promise<{ cells: Map<string, CellRow>; errors: MovementError[] }> {
-  const rows: { id: string; capacity: string; isActive: boolean }[] = await tx
+// Locking the cells (not the balance rows) serializes every writer of a cell,
+// including those about to create a balance row that does not exist yet.
+async function lockCells(tx: DbLike, cellIds: string[]): Promise<Map<string, CellState>> {
+  const rows = await tx
     .select({
       id: warehouseCell.id,
+      code: warehouseCell.code,
       capacity: warehouseCell.capacity,
       isActive: warehouseCell.isActive,
     })
     .from(warehouseCell)
     .where(inArray(warehouseCell.id, cellIds))
-    .orderBy(warehouseCell.id);
+    .orderBy(warehouseCell.id)
+    .for('update');
 
-  const cells = new Map(rows.map((r) => [r.id, r]));
-  const errors: MovementError[] = [];
-
-  for (const cellId of cellIds) {
-    const cell = cells.get(cellId);
-    if (!cell) {
-      errors.push(err('cell', cellId, MOVEMENT_ERRORS.cellNotFound(cellId)));
-    } else if (!cell.isActive) {
-      errors.push(err('cell', cellId, MOVEMENT_ERRORS.cellInactive(cellId)));
-    }
-  }
-
-  return { cells, errors };
+  return new Map(
+    rows.map((row): [string, CellState] => [
+      row.id,
+      { code: row.code, capacity: Number(row.capacity), isActive: row.isActive },
+    ]),
+  );
 }
 
-async function validateLots(tx: DbTx, lotIds: string[]): Promise<MovementError[]> {
-  const rows: { id: string; isActive: boolean }[] = await tx
-    .select({ id: lot.id, isActive: lot.isActive })
+async function readLots(tx: DbLike, lotIds: string[]): Promise<Map<string, LotState>> {
+  const rows = await tx
+    .select({ id: lot.id, code: lot.code, isActive: lot.isActive })
     .from(lot)
     .where(inArray(lot.id, lotIds));
 
-  const lots = new Map(rows.map((r) => [r.id, r]));
-  const errors: MovementError[] = [];
-
-  for (const lotId of lotIds) {
-    const lotRow = lots.get(lotId);
-    if (!lotRow) {
-      errors.push(err('lot', lotId, MOVEMENT_ERRORS.lotNotFound(lotId)));
-    } else if (!lotRow.isActive) {
-      errors.push(err('lot', lotId, MOVEMENT_ERRORS.lotInactive(lotId)));
-    }
-  }
-
-  return errors;
+  return new Map(
+    rows.map((row): [string, LotState] => [row.id, { code: row.code, isActive: row.isActive }]),
+  );
 }
 
-async function readStock(tx: DbTx, cellIds: string[]): Promise<Map<string, Map<string, number>>> {
+// Must run after the cells are locked so it sees whatever the previous lock
+// holder committed.
+async function readStock(tx: DbLike, cellIds: string[]): Promise<QuantitiesByCell> {
   const rows = await tx
     .select({ cellId: cellLot.cellId, lotId: cellLot.lotId, quantity: cellLot.quantity })
     .from(cellLot)
     .where(inArray(cellLot.cellId, cellIds));
 
   const stock = new Map<string, Map<string, number>>();
-
   for (const { cellId, lotId, quantity } of rows) {
-    const byCell = stock.get(cellId);
-    if (byCell) {
-      byCell.set(lotId, Number(quantity));
-    } else {
-      stock.set(cellId, new Map([[lotId, Number(quantity)]]));
-    }
+    const byLot = stock.get(cellId) ?? new Map<string, number>();
+    byLot.set(lotId, Number(quantity));
+    stock.set(cellId, byLot);
   }
-
   return stock;
 }
 
-function cellTotal(stock: Map<string, Map<string, number>>, cellId: string): number {
-  let total = 0;
-  for (const qty of stock.get(cellId)?.values() ?? []) {
-    total += qty;
-  }
-  return total;
-}
-
-function validateSingleCell(
-  cellId: string,
-  byLot: Map<string, number>,
-  stock: Map<string, Map<string, number>>,
-  errors: MovementError[],
-): number {
-  let totalDelta = 0;
-
-  for (const [lotId, delta] of byLot) {
-    totalDelta += delta;
-
-    if (delta < 0) {
-      const currentQty = stock.get(cellId)?.get(lotId) ?? 0;
-
-      if (currentQty + delta < 0) {
-        errors.push(
-          err(
-            'cell',
-            cellId,
-            MOVEMENT_ERRORS.insufficientStock(cellId, currentQty, Math.abs(delta)),
-            {
-              currentQty,
-              required: Math.abs(delta),
-            },
-          ),
-        );
-      }
-    }
-  }
-
-  return totalDelta;
-}
-
-function validateCellCapacity(
-  cellId: string,
-  totalDelta: number,
-  stock: Map<string, Map<string, number>>,
-  cells: Map<string, CellRow>,
-  errors: MovementError[],
-): void {
-  if (totalDelta <= 0) {
-    return;
-  }
-
-  const cell = cells.get(cellId);
-  if (!cell) {
-    return;
-  }
-
-  const currentTotal = cellTotal(stock, cellId);
-  const capacity = Number(cell.capacity);
-
-  if (currentTotal + totalDelta > capacity) {
-    errors.push(
-      err(
-        'cell',
-        cellId,
-        MOVEMENT_ERRORS.capacityExceeded(cellId, capacity, currentTotal, totalDelta),
-        {
-          capacity,
-          occupied: currentTotal,
-          toAdd: totalDelta,
-        },
-      ),
-    );
-  }
-}
-
-function validateStockDeltas(
-  deltas: Map<string, Map<string, number>>,
-  stock: Map<string, Map<string, number>>,
-  cells: Map<string, CellRow>,
-): MovementError[] {
-  const errors: MovementError[] = [];
-
-  for (const [cellId, byLot] of deltas) {
-    const totalDelta = validateSingleCell(cellId, byLot, stock, errors);
-    validateCellCapacity(cellId, totalDelta, stock, cells, errors);
-  }
-
-  return errors;
-}
-
-async function applyStockDeltas(
-  tx: DbTx,
-  cellIds: string[],
-  deltas: Map<string, Map<string, number>>,
-  stock: Map<string, Map<string, number>>,
-): Promise<void> {
-  for (const [cellId, byLot] of deltas) {
-    for (const [lotId, delta] of byLot) {
-      const currentQty = stock.get(cellId)?.get(lotId) ?? 0;
-
-      if (currentQty === 0) {
-        const newQty = currentQty + delta;
-        await tx.insert(cellLot).values({ cellId, lotId, quantity: String(newQty) });
-      } else {
-        await tx
-          .update(cellLot)
-          .set({ quantity: sql`${cellLot.quantity} + ${String(delta)}` })
-          .where(and(eq(cellLot.cellId, cellId), eq(cellLot.lotId, lotId)));
-      }
-    }
-  }
-
-  await tx.delete(cellLot).where(and(inArray(cellLot.cellId, cellIds), eq(cellLot.quantity, '0')));
-}
-
-async function insertMovement(
-  tx: DbTx,
-  type: MovementType,
-  reason: MovementReason | null,
-  userId: string,
+async function insertLedger(
+  tx: DbLike,
+  header: LedgerHeader,
   entries: Transfer[],
-  options?: EngineOptions,
-) {
+): Promise<MovementReceipt> {
   const [inserted] = await tx
     .insert(movement)
-    .values({
-      type,
-      reason,
-      userId,
-      note: options?.note ?? null,
-      reference: options?.reference ?? null,
-      revertsId: options?.revertsId ?? null,
-    })
+    .values(header)
     .returning({ id: movement.id, sequentialNumber: movement.sequentialNumber });
 
   if (!inserted) {
-    return null;
+    throw new AppError('internal', 'No se pudo registrar el movimiento');
   }
 
-  const entryValues = entries.map((e) => ({
-    id: generateId('mve'),
-    movementId: inserted.id,
-    lotId: e.lotId,
-    originCellId: e.originCellId,
-    destinationCellId: e.destinationCellId,
-    quantity: String(e.quantity),
-  }));
+  await tx.insert(movementEntry).values(
+    entries.map((entry) => ({
+      id: generateId('mve'),
+      movementId: inserted.id,
+      lotId: entry.lotId,
+      originCellId: entry.originCellId,
+      destinationCellId: entry.destinationCellId,
+      quantity: toScale(entry.quantity),
+    })),
+  );
 
-  await tx.insert(movementEntry).values(entryValues);
-
-  return { id: inserted.id, sequentialNumber: inserted.sequentialNumber };
+  return { movementId: inserted.id, sequentialNumber: inserted.sequentialNumber };
 }
 
-const MAX_ENTRIES = 500;
+// Balances change by an increment computed inside the database, never by
+// writing back a value calculated here. A new row is only ever created with a
+// positive amount.
+async function applyDelta(tx: DbLike, cellId: string, lotId: string, delta: number): Promise<void> {
+  const amount = toScale(Math.abs(delta));
 
-function collectAffectedIds(entries: Transfer[]): { cellIds: string[]; lotIds: string[] } {
-  const cellIds = [
-    ...new Set(
-      entries.flatMap((e) => [e.originCellId, e.destinationCellId].filter(Boolean)) as string[],
-    ),
-  ].sort();
-  const lotIds = [...new Set(entries.map((e) => e.lotId))];
-  return { cellIds, lotIds };
-}
-
-async function recordMovementOnly(
-  tx: DbTx,
-  userId: string,
-  type: MovementType,
-  reason: MovementReason | null,
-  entries: Transfer[],
-  options?: EngineOptions,
-): Promise<MovementResult> {
-  const inserted = await insertMovement(tx, type, reason, userId, entries, options);
-
-  if (!inserted) {
-    return errResult('Error al crear el movimiento');
+  if (delta > 0) {
+    await tx
+      .insert(cellLot)
+      .values({ cellId, lotId, quantity: amount })
+      .onConflictDoUpdate({
+        target: [cellLot.cellId, cellLot.lotId],
+        set: { quantity: sql`${cellLot.quantity} + ${amount}`, updatedAt: new Date() },
+      });
+    return;
   }
 
-  return { success: true, movementId: inserted.id, sequentialNumber: inserted.sequentialNumber };
+  await tx
+    .update(cellLot)
+    .set({ quantity: sql`${cellLot.quantity} - ${amount}` })
+    .where(and(eq(cellLot.cellId, cellId), eq(cellLot.lotId, lotId)));
 }
 
-async function recordAndApply(
-  tx: DbTx,
-  userId: string,
-  type: MovementType,
-  reason: MovementReason | null,
-  entries: Transfer[],
-  cellIds: string[],
-  deltas: Map<string, Map<string, number>>,
-  stock: Map<string, Map<string, number>>,
-  options?: EngineOptions,
-): Promise<MovementResult> {
-  const inserted = await insertMovement(tx, type, reason, userId, entries, options);
-
-  if (!inserted) {
-    return errResult('Error al crear el movimiento');
+async function applyDeltas(tx: DbLike, deltas: QuantitiesByCell): Promise<void> {
+  if (deltas.size === 0) {
+    return;
   }
 
-  await applyStockDeltas(tx, cellIds, deltas, stock);
+  for (const [cellId, byLot] of deltas) {
+    for (const [lotId, delta] of byLot) {
+      await applyDelta(tx, cellId, lotId, delta);
+    }
+  }
 
-  return { success: true, movementId: inserted.id, sequentialNumber: inserted.sequentialNumber };
+  // A balance row only exists while it holds material.
+  await tx
+    .delete(cellLot)
+    .where(and(inArray(cellLot.cellId, [...deltas.keys()]), eq(cellLot.quantity, '0')));
 }
 
-export async function executeMovement(
-  tx: DbTx,
-  userId: string,
-  type: MovementType,
-  reason: MovementReason | null,
+async function applyMovement(
+  tx: DbLike,
+  header: LedgerHeader,
   entries: Transfer[],
-  options?: EngineOptions,
-): Promise<MovementResult> {
-  if (entries.length === 0 || entries.length > MAX_ENTRIES) {
-    return errResult(`El movimiento debe tener entre 1 y ${MAX_ENTRIES} entradas`);
+): Promise<MovementReceipt> {
+  if (entries.length === 0 || entries.length > MAX_MOVEMENT_ENTRIES) {
+    throw new AppError('invalid_input', MOVEMENT_ERRORS.entryCount(MAX_MOVEMENT_ENTRIES));
+  }
+
+  const { cellIds, lotIds } = affectedIds(entries);
+  const cells = await lockCells(tx, cellIds);
+  const lots = await readLots(tx, lotIds);
+
+  const referenceErrors = checkReferences(cellIds, lotIds, { cells, lots });
+  if (referenceErrors.length > 0) {
+    throw new MovementRejectedError(referenceErrors);
   }
 
   const deltas = computeNetDeltas(entries);
-  const { cellIds, lotIds } = collectAffectedIds(entries);
-
-  if (cellIds.length === 0) {
-    return recordMovementOnly(tx, userId, type, reason, entries, options);
-  }
-
-  const { cells, errors: cellErrors } = await validateCells(tx, cellIds);
-
-  if (cellErrors.length > 0) {
-    return { success: false, errors: cellErrors };
-  }
-
-  const lotErrors = await validateLots(tx, lotIds);
-
-  if (lotErrors.length > 0) {
-    return { success: false, errors: lotErrors };
-  }
-
   const stock = await readStock(tx, cellIds);
-  const validationErrors = validateStockDeltas(deltas, stock, cells);
-
-  if (validationErrors.length > 0) {
-    return { success: false, errors: validationErrors };
+  const stockErrors = checkStock(deltas, { cells, lots, stock });
+  if (stockErrors.length > 0) {
+    throw new MovementRejectedError(stockErrors);
   }
 
-  return recordAndApply(tx, userId, type, reason, entries, cellIds, deltas, stock, options);
+  const receipt = await insertLedger(tx, header, entries);
+  await applyDeltas(tx, deltas);
+  return receipt;
 }
 
+export function executeMovement(tx: DbLike, request: MovementRequest): Promise<MovementReceipt> {
+  const { userId, kind, entries, note, reference } = request;
+
+  return applyMovement(
+    tx,
+    {
+      userId,
+      type: kind.type,
+      reason: kind.reason,
+      note: note ?? null,
+      reference: reference ?? null,
+      revertsId: null,
+    },
+    entries,
+  );
+}
+
+function rejectMovement(movementId: string, message: string): MovementRejectedError {
+  return new MovementRejectedError([{ objectType: 'movement', objectId: movementId, message }]);
+}
+
+// Undoing is just another movement: the inverse entries go through the same
+// validations, so it fails if the material is no longer where it was put.
 export async function revertMovement(
-  tx: DbTx,
+  tx: DbLike,
   userId: string,
   movementId: string,
-): Promise<MovementResult> {
+): Promise<MovementReceipt> {
   const [original] = await tx
-    .select({ id: movement.id, type: movement.type })
+    .select({ type: movement.type })
     .from(movement)
     .where(eq(movement.id, movementId))
     .for('update');
 
   if (!original) {
-    return errResult(MOVEMENT_ERRORS.movementNotFound(movementId));
+    throw rejectMovement(movementId, MOVEMENT_ERRORS.movementNotFound(movementId));
   }
 
   if (original.type === 'revert') {
-    return errResult(MOVEMENT_ERRORS.cannotRevertRevert(movementId));
+    throw rejectMovement(movementId, MOVEMENT_ERRORS.cannotRevertRevert(movementId));
   }
 
   const [existingRevert] = await tx
@@ -418,7 +256,7 @@ export async function revertMovement(
     .limit(1);
 
   if (existingRevert) {
-    return errResult(MOVEMENT_ERRORS.alreadyReverted(movementId));
+    throw rejectMovement(movementId, MOVEMENT_ERRORS.alreadyReverted(movementId));
   }
 
   const originalEntries = await tx
@@ -431,19 +269,18 @@ export async function revertMovement(
     .from(movementEntry)
     .where(eq(movementEntry.movementId, movementId));
 
-  const inverseEntries: Transfer[] = originalEntries.map(
-    (e: {
-      lotId: string;
-      originCellId: string | null;
-      destinationCellId: string | null;
-      quantity: string;
-    }) => ({
-      lotId: e.lotId,
-      originCellId: e.destinationCellId,
-      destinationCellId: e.originCellId,
-      quantity: Number(e.quantity),
+  const inverse = originalEntries.map(
+    (entry): Transfer => ({
+      lotId: entry.lotId,
+      originCellId: entry.destinationCellId,
+      destinationCellId: entry.originCellId,
+      quantity: Number(entry.quantity),
     }),
   );
 
-  return executeMovement(tx, userId, 'revert', null, inverseEntries, { revertsId: movementId });
+  return applyMovement(
+    tx,
+    { userId, type: 'revert', reason: null, note: null, reference: null, revertsId: movementId },
+    inverse,
+  );
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import {
   assignSchema,
   bulkCreateCellSchema,
@@ -196,6 +197,54 @@ describe('bulkCreateCellSchema', () => {
         range: { start: 1.5, end: 10 },
         capacity: 100,
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe('movement quantities', () => {
+  it('accepts up to four decimals', () => {
+    const entry = { ...validAssignEntry(), quantity: 0.1234 };
+    expect(assignSchema.safeParse({ entries: [entry] }).success).toBe(true);
+  });
+
+  it('rejects more than four decimals', () => {
+    const entry = { ...validAssignEntry(), quantity: 0.12345 };
+    expect(assignSchema.safeParse({ entries: [entry] }).success).toBe(false);
+  });
+
+  it('rejects quantities beyond the column precision', () => {
+    const entry = { ...validAssignEntry(), quantity: 1e12 };
+    expect(assignSchema.safeParse({ entries: [entry] }).success).toBe(false);
+  });
+});
+
+describe('moveSchema messages', () => {
+  it('reports the same-cell error on the destination field', () => {
+    const result = moveSchema.safeParse({
+      entries: [{ ...validMoveEntry(), destinationCellId: 'wcel_1' }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(FIELD_ERRORS.sameCell);
+      expect(result.error.issues[0]?.path).toEqual(['entries', 0, 'destinationCellId']);
+    }
+  });
+});
+
+describe('text normalization', () => {
+  it('trims lot code and name', () => {
+    const result = createLotSchema.safeParse({ itemId: 'pitem_1', code: ' L-1 ', name: ' Lote ' });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toMatchObject({ code: 'L-1', name: 'Lote' });
+    }
+  });
+
+  it('rejects a blank lot code', () => {
+    expect(
+      createLotSchema.safeParse({ itemId: 'pitem_1', code: '   ', name: 'Lote' }).success,
     ).toBe(false);
   });
 });

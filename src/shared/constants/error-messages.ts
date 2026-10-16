@@ -11,6 +11,9 @@ export const FIELD_ERRORS = {
   rfc: 'El RFC no es válido',
   url: 'La URL no es válida',
   date: 'La fecha no es válida',
+  quantity: 'La cantidad no es válida (positiva, máximo 4 decimales)',
+  sameCell: 'El origen y el destino deben ser distintos',
+  rangeOrder: 'El inicio del rango debe ser menor o igual al final',
 } as const;
 
 export const UNEXPECTED_ERROR = 'Ocurrió un error inesperado. Intenta de nuevo.';

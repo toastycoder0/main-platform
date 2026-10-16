@@ -1,3 +1,6 @@
+import type { Transfer } from './warehouse.deltas';
+import type { MovementReason, MovementType } from './warehouse.validation';
+
 export interface CellStockDTO {
   cellId: string;
   cellCode: string;
@@ -23,8 +26,8 @@ export interface MovementEntryDTO {
 export interface MovementDTO {
   id: string;
   sequentialNumber: number;
-  type: 'assign' | 'move' | 'out' | 'revert';
-  reason: 'reception' | 'material_out' | 'delivery' | 'transfer' | null;
+  type: MovementType;
+  reason: MovementReason | null;
   userId: string;
   userName: string | null;
   note: string | null;
@@ -36,8 +39,8 @@ export interface MovementDTO {
 
 export interface KardexEntryDTO {
   sequentialNumber: number;
-  type: 'assign' | 'move' | 'out' | 'revert';
-  reason: 'reception' | 'material_out' | 'delivery' | 'transfer' | null;
+  type: MovementType;
+  reason: MovementReason | null;
   lotId: string;
   lotCode: string | null;
   lotName: string | null;
@@ -49,10 +52,10 @@ export interface KardexEntryDTO {
 }
 
 export interface MovementErrorDTO {
-  objectType: 'cell' | 'lot';
+  objectType: 'cell' | 'lot' | 'movement';
   objectId: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, number>;
 }
 
 export interface NodeDTO {
@@ -84,4 +87,25 @@ export interface LotDTO {
 
 export interface WarehouseMapDTO {
   nodes: NodeDTO[];
+}
+
+// Each kind pins the only reasons the ledger accepts for it (see the
+// movement_type_reason_check constraint). Reverts are produced by the engine
+// itself and are deliberately not requestable.
+export type MovementKind =
+  | { type: 'assign'; reason: 'reception' }
+  | { type: 'out'; reason: 'material_out' | 'delivery' }
+  | { type: 'move'; reason: 'transfer' };
+
+export interface MovementRequest {
+  userId: string;
+  kind: MovementKind;
+  entries: Transfer[];
+  note?: string | undefined;
+  reference?: string | undefined;
+}
+
+export interface MovementReceipt {
+  movementId: string;
+  sequentialNumber: number;
 }
