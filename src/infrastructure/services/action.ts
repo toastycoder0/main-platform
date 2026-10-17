@@ -115,7 +115,7 @@ export async function executeAction<TSchema extends z.ZodType, TResult>(
       throw error;
     }
     if (isAppError(error)) {
-      return fail(error.message) as Result<TResult>;
+      return fail(error.message, error.details) as Result<TResult>;
     }
     ctx?.logger.error({ err: error }, 'Unhandled server action error');
     return fail(new AppError('internal').message) as Result<TResult>;

@@ -5,7 +5,7 @@ import type { MovementErrorDTO } from './warehouse.types';
 // returned error value would let the caller commit.
 export class MovementRejectedError extends AppError {
   constructor(public readonly errors: readonly MovementErrorDTO[]) {
-    super('invalid_input', errors.map((error) => error.message).join('. '));
+    super('invalid_input', errors.map((error) => error.message).join('. '), errors);
     this.name = 'MovementRejectedError';
   }
 }
