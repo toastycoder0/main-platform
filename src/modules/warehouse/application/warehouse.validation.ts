@@ -122,13 +122,16 @@ export const updateCellSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export const kardexParamsSchema = z.object({
-  cellId: z.string().optional(),
-  lotId: z.string().optional(),
+export const movementFiltersSchema = z.object({
   type: movementTypeSchema.optional(),
   reason: movementReasonSchema.optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+});
+
+export const kardexParamsSchema = movementFiltersSchema.extend({
+  cellId: z.string().optional(),
+  lotId: z.string().optional(),
 });
 
 export const cellParamsSchema = z.object({ id: idSchema });
@@ -145,6 +148,7 @@ export type CreateNodeSchema = z.infer<typeof createNodeSchema>;
 export type CreateCellSchema = z.infer<typeof createCellSchema>;
 export type BulkCreateCellSchema = z.infer<typeof bulkCreateCellSchema>;
 export type UpdateCellSchema = z.infer<typeof updateCellSchema>;
+export type MovementFiltersSchema = z.infer<typeof movementFiltersSchema>;
 export type KardexParamsSchema = z.infer<typeof kardexParamsSchema>;
 export type CellParamsSchema = z.infer<typeof cellParamsSchema>;
 export type LotParamsSchema = z.infer<typeof lotParamsSchema>;

@@ -106,3 +106,64 @@ export interface MovementReceipt {
   movementId: string;
   sequentialNumber: number;
 }
+
+export interface WarehouseDTO {
+  id: string;
+  name: string;
+}
+
+export interface LotListItemDTO {
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface MovementListItemDTO {
+  id: string;
+  sequentialNumber: number;
+  type: MovementType;
+  reason: MovementReason | null;
+  userName: string;
+  note: string | null;
+  reference: string | null;
+  entryCount: number;
+  isReverted: boolean;
+  createdAt: Date;
+}
+
+export interface MovementEntryRowDTO {
+  id: string;
+  movementId: string;
+  sequentialNumber: number;
+  type: MovementType;
+  reason: MovementReason | null;
+  lotId: string;
+  lotCode: string;
+  lotName: string;
+  originCellId: string | null;
+  originCellCode: string | null;
+  destinationCellId: string | null;
+  destinationCellCode: string | null;
+  quantity: number;
+  userName: string;
+  createdAt: Date;
+}
+
+export interface ReconcileDifferenceDTO {
+  cellId: string;
+  cellCode: string;
+  lotId: string;
+  lotCode: string;
+  storedQuantity: number;
+  ledgerQuantity: number;
+  difference: number;
+}
+
+export interface ReconcileReportDTO {
+  warehouseId: string;
+  storedLines: number;
+  differences: ReconcileDifferenceDTO[];
+}
