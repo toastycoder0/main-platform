@@ -16,6 +16,7 @@ import {
 } from '@/infrastructure/db/schema';
 import { logger } from '@/infrastructure/logger';
 import { PERMISSIONS } from '@/shared/constants/permissions';
+import { seedWarehouse } from './warehouse.seed';
 
 const { admin, warehouse } = PERMISSIONS;
 
@@ -255,6 +256,7 @@ async function seed(): Promise<void> {
   await seedProductUnits();
   await seedDocumentTypes();
   await seedPriceLists();
+  await seedWarehouse();
 }
 
 async function seedCurrencies(): Promise<void> {
