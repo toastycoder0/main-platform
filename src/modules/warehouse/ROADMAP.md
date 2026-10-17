@@ -7,61 +7,52 @@
 - [x] Fase 3 — Motor (engine con DbLike, locks, upserts, errores por excepción)
 - [x] Tests de integración del motor (31 casos, incluido concurrencia)
 - [x] Tests unitarios de rules (13 casos)
-- [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅
+- [x] Fase 0b — Registro del módulo (permisos, `manifest.ts`, `registry.ts`, seed)
+- [x] Fase 4 — Queries: mapa, stock por celda, lotes, movimientos y entradas (kardex), detalle y reconciliación
+- [x] Fase 5 — Server Actions: assign, move, materialOut, delivery, revert, lotes y edición de celdas
+- [x] Errores estructurados (`Result.details`) para rechazos del motor
+- [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ✅
+
+## Diseño consolidado
+
+- Un **almacén único** creado por seed (`getPrimaryWarehouse`).
+- Página principal **`/warehouse`** con tabs **Lotes | Mapa** y un **dropdown de acciones** filtrado por permiso.
+- Dos kardex en rutas aparte: **`/warehouse/movements`** (cabeceras) y **`/warehouse/entries`** (entradas planas).
+- **Detalle de movimiento** en `/warehouse/movements/[id]` con todas sus entradas y el botón **Revertir**.
+- **Entregas** = movimiento `out` con motivo `delivery` (sin entidad de pedidos).
+- Permisos por **rol conceptual** (motivo del movimiento), no por `type` del motor.
+- **Solo celdas** se editan (`updateCell`); no hay `createNode` ni creación masiva de celdas.
+- Todas las actions **redirigen a la página de origen** (`/warehouse` o el detalle).
 
 ## Pendiente ❌
-
-### 0b — Registro del módulo
-
-| Tarea | Archivo |
-|---|---|
-| Agregar permisos warehouse a `PERMISSIONS` | `src/shared/constants/permissions.ts` |
-| Crear `manifest.ts` con nav + routeLabels | `src/modules/warehouse/manifest.ts` |
-| Registrar en `registry.ts` | `src/modules/registry.ts` |
-
-### 4 — Queries (warehouse.query.ts)
-
-| Consulta | Descripción |
-|---|---|
-| `getMap(whId)` | Leer nodos + celdas activas con ocupación, armar árbol en memoria |
-| `getCellStock(cellId)` | Celdas con lotes, cantidades y datos de producto |
-| `getKardex(cellId?, lotId?, pagination)` | Libro filtrado con saldo corrido (ventana SUM OVER) |
-| `reconcile(whId)` | Compara cell_lot contra suma de movement_entry, reporta diferencias |
-
-### 5 — Server Actions (warehouse.action.ts)
-
-Todas con `'use server'` + `run()`:
-
-| Acción | Permiso | Método |
-|---|---|---|
-| `assignToCell` | `warehouse.stock.assign` | Llama `executeMovement` con kind assign |
-| `moveBetweenCells` | `warehouse.stock.move` | Llama `executeMovement` con kind move |
-| `withdrawFromCell` | `warehouse.stock.withdraw` | Llama `executeMovement` con kind out |
-| `deliverOrder` | `warehouse.stock.withdraw` | Crea delivery + out movement (caso de uso 10.2) |
-| `revertMovementAction` | `warehouse.stock.revert` | Wrapper de `revertMovement` del motor |
-| `createLot`, `updateLot` | `warehouse.lots.*` | CRUD de lotes (alta de catálogo, no toca stock) |
-| `createNode`, `createCell` | `warehouse.structure.manage` | CRUD de estructura |
 
 ### 6 — UI Components
 
 | Componente | Tipo | Descripción |
 |---|---|---|
-| `warehouse-map.tsx` | Server | Árbol de nodos con celdas, barra de ocupación, hover con detalle |
-| `movement-dialog.tsx` | Client | Formulario multi-entry, selector de lote/celda, validación |
-| `kardex-table.tsx` | Server | Tabla paginada con filtros por celda/lote/tipo/fecha |
+| `warehouse-tabs.tsx` | Server/Client | Tabs Lotes \| Mapa, visibles según permiso |
+| `warehouse-map.tsx` | Server | Árbol de nodos con celdas y barra de ocupación |
+| `cell-edit-dialog.tsx` | Client | Editar capacidad/posición/código/activa (`map.edit`) |
+| `movement-dialog.tsx` | Client | Formulario multi-entrada filtrado por permiso; muestra `Result.details` |
+| `lots-table.tsx` | Server | Tabla paginada de lotes |
+| `lot-form.tsx` | Client | Alta/edición de lote |
+| `movements-table.tsx` | Server | Kardex 1 con filtros y paginación |
+| `entries-table.tsx` | Server | Kardex 2 con filtros y paginación |
+| `movement-detail.tsx` | Server/Client | Entradas del movimiento + revertir |
 
 ### 7 — App Pages
 
 | Ruta | Contenido |
 |---|---|
-| `/warehouse` (stub) | Redirigir a `/warehouse/map` |
-| `/warehouse/map` | WarehouseMap component + toolbar (asignar, mover, sacar) |
-| `/warehouse/kardex` | KardexTable + filtros |
-| `/warehouse/lots` | CRUD lotes (list + form) |
-| `/warehouse/structure` | CRUD nodos/celdas (tree view + forms) |
+| `/warehouse` | Tabs Lotes \| Mapa + dropdown de acciones |
+| `/warehouse/movements` | Kardex de movimientos + filtros |
+| `/warehouse/entries` | Kardex de entradas + filtros |
+| `/warehouse/movements/[id]` | Detalle + revertir |
 
-### 8 — Pendientes técnicos
+Cada ruta con `loading.tsx`, `Suspense` y guard de permiso.
 
-- [ ] Decidir si implementar idempotencia (clave de doble clic) — guía pregunta abierta #6
-- [ ] Decidir regla exacta de entregas contra pedidos — guía pregunta abierta #2
-- [ ] Decidir roles: quién puede revertir y quién modifica estructura — guía pregunta abierta #4
+### 8 — Backlog
+
+- [ ] Exportar kardex a Excel (filtros ya previstos)
+- [ ] Idempotencia de movimientos (doble clic) — diferida
+- [ ] Definir roles concretos sobre los permisos existentes (institucional, no código)
