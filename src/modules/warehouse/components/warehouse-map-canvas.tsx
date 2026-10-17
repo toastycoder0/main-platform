@@ -9,8 +9,8 @@ import {
 import { buildMapIndex, findMatchingCellIds } from '../application/warehouse.map';
 import type { MapStockRowDTO, NodeDTO } from '../application/warehouse.types';
 import { WarehouseCellPanel } from './warehouse-cell-panel';
+import { WarehouseMapBody } from './warehouse-map-body';
 import { WarehouseMapControls } from './warehouse-map-controls';
-import { WarehouseMapNode } from './warehouse-map-node';
 
 interface WarehouseMapCanvasProps {
   nodes: NodeDTO[];
@@ -129,15 +129,20 @@ export function WarehouseMapCanvas({
           >
             <div className='inline-flex flex-col gap-4 p-8'>
               {nodes.map((node) => (
-                <WarehouseMapNode
-                  hasSearch={hasSearch}
-                  index={index}
-                  key={node.id}
-                  matchedCellIds={matchedCellIds}
-                  node={node}
-                  onSelect={handleCellClick}
-                  selectedCellId={panelOpen ? selectedCellId : null}
-                />
+                <div className='flex flex-col gap-10' key={node.id}>
+                  <span className='text-xs font-semibold uppercase tracking-wide text-neutral-500 whitespace-nowrap'>
+                    {node.name}
+                  </span>
+                  <WarehouseMapBody
+                    depth={0}
+                    hasSearch={hasSearch}
+                    index={index}
+                    matchedCellIds={matchedCellIds}
+                    node={node}
+                    onSelect={handleCellClick}
+                    selectedCellId={panelOpen ? selectedCellId : null}
+                  />
+                </div>
               ))}
             </div>
           </TransformComponent>
