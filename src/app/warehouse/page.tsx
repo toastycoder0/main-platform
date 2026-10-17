@@ -1,20 +1,133 @@
+import { LockIcon } from 'lucide-react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
+import {
+  resolveWarehouseView,
+  type WarehouseView,
+} from '@/modules/warehouse/application/warehouse.view';
+import { LotsTable } from '@/modules/warehouse/components/lots-table';
+import { WarehouseMap } from '@/modules/warehouse/components/warehouse-map';
+import { WarehouseMapSkeleton } from '@/modules/warehouse/components/warehouse-map-skeleton';
+import type { WarehouseMovementId } from '@/modules/warehouse/components/warehouse-movements-menu';
+import { WarehouseToolbar } from '@/modules/warehouse/components/warehouse-toolbar';
+import { loadWarehouseParams } from '@/modules/warehouse/infrastructure/warehouse.params';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/shared/components/empty';
+import { ListSkeleton } from '@/shared/components/list-skeleton';
 import { PERMISSIONS } from '@/shared/constants/permissions';
+import { buildListHref } from '@/shared/list/list-params';
 
-export default async function WarehousePage() {
+interface WarehousePageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export const metadata: Metadata = {
+  title: 'Almacén',
+};
+
+const MOVEMENT_PERMISSIONS = [
+  ['reception', PERMISSIONS.warehouse.stock.reception],
+  ['transfer', PERMISSIONS.warehouse.stock.transfer],
+  ['materialOut', PERMISSIONS.warehouse.stock.materialOut],
+  ['delivery', PERMISSIONS.warehouse.stock.delivery],
+] as const;
+
+function buildMovementLinks(
+  permissions: Set<string>,
+  view: WarehouseView,
+  q: string | null,
+  page: number,
+  pageSize: number,
+) {
+  return MOVEMENT_PERMISSIONS.filter(([, permission]) => permissions.has(permission)).map(
+    ([id]): { id: WarehouseMovementId; href: string } => ({
+      id,
+      href: buildListHref('/warehouse', {
+        view: view === 'lots' ? null : view,
+        q,
+        page,
+        pageSize,
+        movement: id,
+      }),
+    }),
+  );
+}
+
+export default async function WarehousePage({ searchParams }: WarehousePageProps) {
   const ctx = await createRequestContext();
 
   if (!ctx.permissions.has(PERMISSIONS.warehouse.access)) {
     notFound();
   }
 
+  const params = await loadWarehouseParams(searchParams);
+  const canLots = ctx.permissions.has(PERMISSIONS.warehouse.lots.access);
+  const canMap = ctx.permissions.has(PERMISSIONS.warehouse.map.access);
+  const view = resolveWarehouseView(params.view, canLots, canMap);
+
+  if (!view) {
+    return (
+      <div className='flex flex-col gap-4'>
+        <h1 className='sr-only'>Almacén</h1>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant='icon'>
+              <LockIcon />
+            </EmptyMedia>
+            <EmptyTitle>Sin acceso a las vistas</EmptyTitle>
+            <EmptyDescription>
+              No tienes permiso para ver los lotes ni el mapa del almacén.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
+    );
+  }
+
+  const movementLinks = buildMovementLinks(
+    ctx.permissions,
+    view,
+    params.q,
+    params.page,
+    params.pageSize,
+  );
+
   return (
-    <div>
-      <h1 className='text-2xl font-semibold'>Almac&eacute;n</h1>
-      <p className='mt-2 text-neutral-500'>
-        Bienvenido. Esta secci&oacute;n est&aacute; en construcci&oacute;n.
-      </p>
+    <div className='flex flex-col gap-4'>
+      <h1 className='sr-only'>Almacén</h1>
+
+      <WarehouseToolbar
+        canLots={canLots}
+        canMap={canMap}
+        movementLinks={movementLinks}
+        page={params.page}
+        pageSize={params.pageSize}
+        q={params.q}
+        view={view}
+      />
+
+      {view === 'lots' ? (
+        <Suspense fallback={<ListSkeleton rows={8} />}>
+          <LotsTable
+            params={Promise.resolve({
+              q: params.q,
+              page: params.page,
+              pageSize: params.pageSize,
+            })}
+          />
+        </Suspense>
+      ) : (
+        <Suspense fallback={<WarehouseMapSkeleton />}>
+          <WarehouseMap highlight={params.highlight} q={params.q} />
+        </Suspense>
+      )}
     </div>
   );
 }
