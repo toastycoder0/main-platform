@@ -81,13 +81,13 @@ export const warehouseCell = snakeCase.table(
       .references(() => warehouseNode.id),
     code: text().notNull(),
     position: integer().notNull(),
-    capacity: numeric({ precision: 12, scale: 4 }).notNull(),
+    capacity: numeric({ precision: 12, scale: 4 }),
     isActive: boolean().default(true).notNull(),
     ...timestamps,
   },
   (table) => [
     unique('warehouse_cell_code_warehouse_unique').on(table.warehouseId, table.code),
-    check('warehouse_cell_capacity_check', sql`${table.capacity} > 0`),
+    check('warehouse_cell_capacity_check', sql`${table.capacity} IS NULL OR ${table.capacity} > 0`),
   ],
 );
 

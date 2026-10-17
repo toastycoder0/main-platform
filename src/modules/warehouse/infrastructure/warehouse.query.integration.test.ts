@@ -26,6 +26,7 @@ import {
   getMovement,
   getPrimaryWarehouse,
   listLots,
+  listMapStock,
   listMovementEntries,
   listMovements,
   reconcile,
@@ -231,6 +232,17 @@ describe('getMap', () => {
     expect(rack?.cells[0]?.capacity).toBe(100);
     expect(rack?.children[0]?.occupancy).toBe(5);
   });
+
+  it('returns a null capacity when the cell has none', async () => {
+    await db.update(warehouseCell).set({ capacity: null }).where(eq(warehouseCell.id, cellEmpty));
+
+    const { nodes } = await getMap(testContext(), whId);
+    const cell = nodes[0]?.children[0]?.cells.find((item) => item.id === cellEmpty);
+
+    expect(cell?.capacity).toBeNull();
+
+    await db.update(warehouseCell).set({ capacity: '10' }).where(eq(warehouseCell.id, cellEmpty));
+  });
 });
 
 describe('getCellStock', () => {
@@ -249,6 +261,27 @@ describe('getCellStock', () => {
   });
 });
 
+describe('listMapStock', () => {
+  it('returns one row per cell and lot with product data', async () => {
+    const rows = await listMapStock(testContext(), whId);
+
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => `${row.cellCode}:${row.lotCode}:${row.quantity}`).sort()).toEqual([
+      `A1:${scope}_L1:60`,
+      `A2:${scope}_L1:30`,
+      `B1:${scope}_L2:5`,
+    ]);
+    expect(rows[0]?.productTitle).toBe('Test Product');
+    expect(rows[0]?.itemTitle).toBe('Variante');
+  });
+
+  it('excludes cells without stock', async () => {
+    const rows = await listMapStock(testContext(), whId);
+
+    expect(rows.some((row) => row.cellId === cellEmpty)).toBe(false);
+  });
+});
+
 describe('listLots', () => {
   it('matches the search against lot code and item title', async () => {
     const result = await listLots(testContext(), params({ q: scope }));
@@ -256,6 +289,19 @@ describe('listLots', () => {
     expect(result.total).toBe(2);
     expect(result.items.map((item) => item.code).sort()).toEqual([`${scope}_L1`, `${scope}_L2`]);
     expect(result.items[0]?.itemTitle).toBe('Variante');
+    expect(result.items[0]?.productTitle).toBe('Test Product');
+  });
+
+  it('returns the aggregated stock and locations for each lot', async () => {
+    const result = await listLots(testContext(), params({ q: scope }));
+    const first = result.items.find((item) => item.code === `${scope}_L1`);
+    const second = result.items.find((item) => item.code === `${scope}_L2`);
+
+    expect(first?.stock).toBe(90);
+    expect(first?.locations).toEqual(['A1', 'A2']);
+    expect(second?.stock).toBe(5);
+    expect(second?.locations).toEqual(['B1']);
+    expect(first?.createdAt).toBeInstanceOf(Date);
   });
 
   it('applies pagination offsets', async () => {

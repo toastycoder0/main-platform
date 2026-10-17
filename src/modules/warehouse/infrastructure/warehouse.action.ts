@@ -10,6 +10,7 @@ import {
   moveSchema,
   outSchema,
   revertSchema,
+  updateCellCapacitySchema,
   updateCellSchema,
   updateLotSchema,
 } from '../application/warehouse.validation';
@@ -155,5 +156,15 @@ export const updateCell = run(
     await updateCellRepo(ctx, data);
     revalidatePath(WAREHOUSE_PATH);
     redirect(WAREHOUSE_PATH);
+  },
+);
+
+export const updateCellCapacity = run(
+  { permission: PERMISSIONS.warehouse.map.edit, input: updateCellCapacitySchema },
+  async (ctx, data) => {
+    await updateCellRepo(ctx, { id: data.id, capacity: data.capacity });
+    revalidatePath(WAREHOUSE_PATH);
+
+    return { id: data.id };
   },
 );

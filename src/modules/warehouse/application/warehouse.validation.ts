@@ -117,9 +117,14 @@ export const bulkCreateCellSchema = z
 export const updateCellSchema = z.object({
   id: idSchema,
   code: z.string().trim().min(1, FIELD_ERRORS.required).max(20, FIELD_ERRORS.tooLong).optional(),
-  capacity: capacitySchema.optional(),
+  capacity: capacitySchema.nullable().optional(),
   position: z.number().int().optional(),
   isActive: z.boolean().optional(),
+});
+
+export const updateCellCapacitySchema = z.object({
+  id: idSchema,
+  capacity: capacitySchema.nullable(),
 });
 
 export const movementFiltersSchema = z.object({
@@ -148,6 +153,7 @@ export type CreateNodeSchema = z.infer<typeof createNodeSchema>;
 export type CreateCellSchema = z.infer<typeof createCellSchema>;
 export type BulkCreateCellSchema = z.infer<typeof bulkCreateCellSchema>;
 export type UpdateCellSchema = z.infer<typeof updateCellSchema>;
+export type UpdateCellCapacitySchema = z.infer<typeof updateCellCapacitySchema>;
 export type MovementFiltersSchema = z.infer<typeof movementFiltersSchema>;
 export type KardexParamsSchema = z.infer<typeof kardexParamsSchema>;
 export type CellParamsSchema = z.infer<typeof cellParamsSchema>;

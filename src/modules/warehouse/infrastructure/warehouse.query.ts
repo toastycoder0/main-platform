@@ -6,6 +6,7 @@ import {
   lot,
   movement,
   movementEntry,
+  product,
   productItem,
   user,
   warehouse,
@@ -22,6 +23,7 @@ import {
 import type {
   CellStockDTO,
   LotListItemDTO,
+  MapStockRowDTO,
   MovementDTO,
   MovementEntryDTO,
   MovementEntryRowDTO,
@@ -149,12 +151,59 @@ export async function getMap(ctx: RequestContext, warehouseId: string): Promise<
     nodeId: row.nodeId,
     code: row.code,
     position: row.position,
-    capacity: toNumber(row.capacity),
+    capacity: row.capacity === null ? null : toNumber(row.capacity),
     occupancy: toNumber(row.occupancy),
     isActive: row.isActive,
   }));
 
   return { nodes: buildWarehouseTree(nodeRows as MapNodeRow[], cells) };
+}
+
+export async function listMapStock(
+  ctx: RequestContext,
+  warehouseId: string,
+): Promise<MapStockRowDTO[]> {
+  const rows = await ctx.db
+    .select({
+      cellId: cellLot.cellId,
+      cellCode: warehouseCell.code,
+      lotId: cellLot.lotId,
+      lotCode: lot.code,
+      lotName: lot.name,
+      productTitle: product.title,
+      itemTitle: productItem.title,
+      quantity: cellLot.quantity,
+    })
+    .from(cellLot)
+    .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+    .innerJoin(lot, eq(lot.id, cellLot.lotId))
+    .innerJoin(productItem, eq(productItem.id, lot.itemId))
+    .innerJoin(product, eq(product.id, productItem.productId))
+    .where(and(eq(warehouseCell.warehouseId, warehouseId), sql`${cellLot.quantity} > 0`))
+    .orderBy(asc(warehouseCell.code), asc(lot.code), asc(lot.id));
+
+  return rows.map((row) => ({ ...row, quantity: toNumber(row.quantity) }));
+}
+
+export interface MapViewData {
+  warehouse: WarehouseDTO;
+  map: WarehouseMapDTO;
+  stock: MapStockRowDTO[];
+}
+
+export async function getMapViewData(ctx: RequestContext): Promise<MapViewData | undefined> {
+  const warehouse = await getPrimaryWarehouse(ctx);
+
+  if (!warehouse) {
+    return undefined;
+  }
+
+  const [map, stock] = await Promise.all([
+    getMap(ctx, warehouse.id),
+    listMapStock(ctx, warehouse.id),
+  ]);
+
+  return { warehouse, map, stock };
 }
 
 export async function getCellStock(ctx: RequestContext, cellId: string): Promise<CellStockDTO[]> {
@@ -183,33 +232,68 @@ export async function listLots(
   params: ListParams,
 ): Promise<Paginated<LotListItemDTO>> {
   const where = params.q
-    ? searchILike([lot.code, lot.name, productItem.title], params.q)
+    ? searchILike([lot.code, lot.name, productItem.title, product.title], params.q)
     : undefined;
+
+  const stock = ctx.db
+    .select({
+      lotId: cellLot.lotId,
+      quantity: sql<string>`SUM(${cellLot.quantity})`.as('quantity'),
+      locations:
+        sql<string>`string_agg(DISTINCT ${warehouseCell.code}, ', ' ORDER BY ${warehouseCell.code})`.as(
+          'locations',
+        ),
+    })
+    .from(cellLot)
+    .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+    .groupBy(cellLot.lotId)
+    .as('lot_stock');
 
   const [counted, rows] = await Promise.all([
     ctx.db
       .select({ total: sql<number>`count(*)::int` })
       .from(lot)
       .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
       .where(where),
     ctx.db
       .select({
         id: lot.id,
         itemId: lot.itemId,
+        productTitle: product.title,
         itemTitle: productItem.title,
         code: lot.code,
         name: lot.name,
         isActive: lot.isActive,
+        createdAt: lot.createdAt,
+        stock: sql<string>`COALESCE(${stock.quantity}, 0)`,
+        locations: sql<string>`${stock.locations}`,
       })
       .from(lot)
       .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .leftJoin(stock, eq(stock.lotId, lot.id))
       .where(where)
       .orderBy(asc(lot.code), asc(lot.id))
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);
 
-  return { items: rows, total: counted[0]?.total ?? 0 };
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      itemId: row.itemId,
+      productTitle: row.productTitle,
+      itemTitle: row.itemTitle,
+      code: row.code,
+      name: row.name,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      stock: toNumber(row.stock),
+      locations: row.locations ? row.locations.split(', ') : [],
+    })),
+    total: counted[0]?.total ?? 0,
+  };
 }
 
 export async function listMovements(

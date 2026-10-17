@@ -102,6 +102,53 @@ export async function updateLot(ctx: RequestContext, data: UpdateLotSchema): Pro
   ctx.logger.info({ lotId: data.id }, 'Lot updated');
 }
 
+type CellIdentity = Pick<typeof warehouseCell.$inferSelect, 'id' | 'warehouseId' | 'code'>;
+
+async function assertCellCodeAvailable(
+  ctx: RequestContext,
+  existing: CellIdentity,
+  code: string | undefined,
+): Promise<void> {
+  if (code === undefined || code === existing.code) {
+    return;
+  }
+
+  const conflicts = await ctx.db
+    .select({ id: warehouseCell.id })
+    .from(warehouseCell)
+    .where(
+      and(
+        eq(warehouseCell.warehouseId, existing.warehouseId),
+        eq(warehouseCell.code, code),
+        ne(warehouseCell.id, existing.id),
+      ),
+    )
+    .limit(1);
+
+  if (conflicts.length > 0) {
+    throw new AppError('invalid_input', CELL_DUPLICATE);
+  }
+}
+
+function buildCellUpdate(data: UpdateCellSchema): Partial<typeof warehouseCell.$inferInsert> {
+  const update: Partial<typeof warehouseCell.$inferInsert> = {};
+
+  if (data.code !== undefined) {
+    update.code = data.code;
+  }
+  if (data.capacity !== undefined) {
+    update.capacity = data.capacity === null ? null : data.capacity.toFixed(4);
+  }
+  if (data.position !== undefined) {
+    update.position = data.position;
+  }
+  if (data.isActive !== undefined) {
+    update.isActive = data.isActive;
+  }
+
+  return update;
+}
+
 export async function updateCell(ctx: RequestContext, data: UpdateCellSchema): Promise<void> {
   const rows = await ctx.db
     .select({
@@ -119,38 +166,9 @@ export async function updateCell(ctx: RequestContext, data: UpdateCellSchema): P
     throw new AppError('not_found');
   }
 
-  if (data.code !== undefined && data.code !== existing.code) {
-    const conflicts = await ctx.db
-      .select({ id: warehouseCell.id })
-      .from(warehouseCell)
-      .where(
-        and(
-          eq(warehouseCell.warehouseId, existing.warehouseId),
-          eq(warehouseCell.code, data.code),
-          ne(warehouseCell.id, data.id),
-        ),
-      )
-      .limit(1);
+  await assertCellCodeAvailable(ctx, existing, data.code);
 
-    if (conflicts.length > 0) {
-      throw new AppError('invalid_input', CELL_DUPLICATE);
-    }
-  }
-
-  const update: Partial<typeof warehouseCell.$inferInsert> = {};
-
-  if (data.code !== undefined) {
-    update.code = data.code;
-  }
-  if (data.capacity !== undefined) {
-    update.capacity = data.capacity.toFixed(4);
-  }
-  if (data.position !== undefined) {
-    update.position = data.position;
-  }
-  if (data.isActive !== undefined) {
-    update.isActive = data.isActive;
-  }
+  const update = buildCellUpdate(data);
 
   if (Object.keys(update).length === 0) {
     return;

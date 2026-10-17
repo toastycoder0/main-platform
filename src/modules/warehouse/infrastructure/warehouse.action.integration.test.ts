@@ -25,6 +25,7 @@ import {
   moveBetweenCells,
   revertMovementAction,
   updateCell,
+  updateCellCapacity,
   updateLot,
 } from './warehouse.action';
 
@@ -432,5 +433,29 @@ describe('updateCell', () => {
     const result = await updateCell({ id: 'wcel_missing', capacity: 10 });
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
+  });
+});
+
+describe('updateCellCapacity', () => {
+  it('updates and clears the capacity', async () => {
+    const updated = await updateCellCapacity({ id: cellB1, capacity: 60 });
+    expect(updated.success).toBe(true);
+
+    const [updatedRow] = await db
+      .select({ capacity: warehouseCell.capacity })
+      .from(warehouseCell)
+      .where(eq(warehouseCell.id, cellB1));
+    expect(Number(updatedRow?.capacity)).toBe(60);
+
+    const cleared = await updateCellCapacity({ id: cellB1, capacity: null });
+    expect(cleared.success).toBe(true);
+
+    const [clearedRow] = await db
+      .select({ capacity: warehouseCell.capacity })
+      .from(warehouseCell)
+      .where(eq(warehouseCell.id, cellB1));
+    expect(clearedRow?.capacity).toBeNull();
+
+    await updateCellCapacity({ id: cellB1, capacity: 50 });
   });
 });
