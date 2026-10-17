@@ -1,5 +1,5 @@
 import { UsersIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const usersManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const usersManifest: ModuleManifest = {
       nav: [
         {
           id: 'users',
-          label: 'Usuarios',
+          label: PERMISSION_GROUP_LABELS['admin.users'],
           href: '/dashboard/users',
           icon: UsersIcon,
           permission: PERMISSIONS.admin.users.access,

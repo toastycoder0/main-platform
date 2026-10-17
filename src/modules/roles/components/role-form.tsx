@@ -20,14 +20,7 @@ import {
 } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { Textarea } from '@/shared/components/textarea';
-
-const GROUP_LABELS: Record<string, string> = {
-  admin: 'Panel de administración',
-  'admin.users': 'Usuarios',
-  'admin.roles': 'Roles',
-  'admin.categories': 'Categorías',
-  'admin.files': 'Archivos',
-};
+import { getPermissionGroupKey, getPermissionGroupLabel } from '@/shared/constants/permissions';
 
 interface PermissionGroup {
   key: string;
@@ -39,10 +32,7 @@ function groupPermissions(permissions: PermissionOptionDTO[]): PermissionGroup[]
   const groups = new Map<string, PermissionOptionDTO[]>();
 
   for (const permission of permissions) {
-    const segments = permission.slug.split('.');
-    const root = segments[0] ?? '';
-    const branch = segments[1];
-    const key = segments.length >= 3 && branch !== undefined ? `${root}.${branch}` : root;
+    const key = getPermissionGroupKey(permission.slug);
     const bucket = groups.get(key);
 
     if (bucket) {
@@ -54,7 +44,7 @@ function groupPermissions(permissions: PermissionOptionDTO[]): PermissionGroup[]
 
   return [...groups.entries()].map(([key, items]) => ({
     key,
-    label: GROUP_LABELS[key] ?? key,
+    label: getPermissionGroupLabel(items[0]?.slug ?? key),
     items,
   }));
 }

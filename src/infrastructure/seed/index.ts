@@ -15,17 +15,25 @@ import {
   userRole,
 } from '@/infrastructure/db/schema';
 import { logger } from '@/infrastructure/logger';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import {
+  PERMISSION_GROUP_LABELS,
+  PERMISSIONS,
+  type PermissionGroupKey,
+} from '@/shared/constants/permissions';
 
 const { admin, warehouse } = PERMISSIONS;
 
+function accessPermission(slug: string, group: PermissionGroupKey) {
+  return {
+    slug,
+    name: `Acceso a gestión de ${PERMISSION_GROUP_LABELS[group].toLowerCase()}`,
+    type: 'access' as const,
+  };
+}
+
 const INITIAL_PERMISSIONS = [
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
-  {
-    slug: warehouse.lots.access,
-    name: 'Acceso a gestión de lotes',
-    type: 'access' as const,
-  },
+  accessPermission(warehouse.lots.access, 'warehouse.lots'),
   { slug: warehouse.lots.create, name: 'Crear lotes', type: 'action' as const },
   { slug: warehouse.lots.edit, name: 'Editar lotes', type: 'action' as const },
   { slug: warehouse.map.access, name: 'Ver el mapa del almacén', type: 'access' as const },
@@ -48,36 +56,28 @@ const INITIAL_PERMISSIONS = [
     type: 'action' as const,
   },
   { slug: admin.access, name: 'Acceso al panel de administración', type: 'access' as const },
-  { slug: admin.users.access, name: 'Acceso a gestión de usuarios', type: 'access' as const },
+  accessPermission(admin.users.access, 'admin.users'),
   { slug: admin.users.create, name: 'Crear usuarios', type: 'action' as const },
   { slug: admin.users.edit, name: 'Editar usuarios', type: 'action' as const },
   { slug: admin.users.delete, name: 'Eliminar usuarios', type: 'action' as const },
   { slug: admin.users.ban, name: 'Banear usuarios', type: 'action' as const },
-  { slug: admin.roles.access, name: 'Acceso a gestión de roles', type: 'access' as const },
+  accessPermission(admin.roles.access, 'admin.roles'),
   { slug: admin.roles.create, name: 'Crear roles', type: 'action' as const },
   { slug: admin.roles.edit, name: 'Editar roles', type: 'action' as const },
   { slug: admin.files.upload, name: 'Subir archivos', type: 'action' as const },
-  {
-    slug: admin.categories.access,
-    name: 'Acceso a gestión de categorías',
-    type: 'access' as const,
-  },
+  accessPermission(admin.categories.access, 'admin.categories'),
   { slug: admin.categories.create, name: 'Crear categorías', type: 'action' as const },
   { slug: admin.categories.edit, name: 'Editar categorías', type: 'action' as const },
   { slug: admin.categories.delete, name: 'Archivar categorías', type: 'action' as const },
-  { slug: admin.brands.access, name: 'Acceso a gestión de marcas', type: 'access' as const },
+  accessPermission(admin.brands.access, 'admin.brands'),
   { slug: admin.brands.create, name: 'Crear marcas', type: 'action' as const },
   { slug: admin.brands.edit, name: 'Editar marcas', type: 'action' as const },
   { slug: admin.brands.delete, name: 'Archivar marcas', type: 'action' as const },
-  { slug: admin.tags.access, name: 'Acceso a gestión de etiquetas', type: 'access' as const },
+  accessPermission(admin.tags.access, 'admin.tags'),
   { slug: admin.tags.create, name: 'Crear etiquetas', type: 'action' as const },
   { slug: admin.tags.edit, name: 'Editar etiquetas', type: 'action' as const },
   { slug: admin.tags.delete, name: 'Archivar etiquetas', type: 'action' as const },
-  {
-    slug: admin.productUnits.access,
-    name: 'Acceso a gestión de unidades de medida',
-    type: 'access' as const,
-  },
+  accessPermission(admin.productUnits.access, 'admin.productUnits'),
   { slug: admin.productUnits.create, name: 'Crear unidades de medida', type: 'action' as const },
   { slug: admin.productUnits.edit, name: 'Editar unidades de medida', type: 'action' as const },
   {
@@ -85,11 +85,7 @@ const INITIAL_PERMISSIONS = [
     name: 'Archivar unidades de medida',
     type: 'action' as const,
   },
-  {
-    slug: admin.documentTypes.access,
-    name: 'Acceso a gestión de tipos de documento',
-    type: 'access' as const,
-  },
+  accessPermission(admin.documentTypes.access, 'admin.documentTypes'),
   { slug: admin.documentTypes.create, name: 'Crear tipos de documento', type: 'action' as const },
   { slug: admin.documentTypes.edit, name: 'Editar tipos de documento', type: 'action' as const },
   {
@@ -97,15 +93,11 @@ const INITIAL_PERMISSIONS = [
     name: 'Archivar tipos de documento',
     type: 'action' as const,
   },
-  { slug: admin.currencies.access, name: 'Acceso a gestión de monedas', type: 'access' as const },
+  accessPermission(admin.currencies.access, 'admin.currencies'),
   { slug: admin.currencies.create, name: 'Crear monedas', type: 'action' as const },
   { slug: admin.currencies.edit, name: 'Editar monedas', type: 'action' as const },
   { slug: admin.currencies.delete, name: 'Archivar monedas', type: 'action' as const },
-  {
-    slug: admin.exchangeRates.access,
-    name: 'Acceso a gestión de tipos de cambio',
-    type: 'access' as const,
-  },
+  accessPermission(admin.exchangeRates.access, 'admin.exchangeRates'),
   { slug: admin.exchangeRates.create, name: 'Crear tipos de cambio', type: 'action' as const },
   { slug: admin.exchangeRates.edit, name: 'Editar tipos de cambio', type: 'action' as const },
   {
@@ -113,11 +105,7 @@ const INITIAL_PERMISSIONS = [
     name: 'Archivar tipos de cambio',
     type: 'action' as const,
   },
-  {
-    slug: admin.priceLists.access,
-    name: 'Acceso a gestión de listas de precios',
-    type: 'access' as const,
-  },
+  accessPermission(admin.priceLists.access, 'admin.priceLists'),
   { slug: admin.priceLists.create, name: 'Crear listas de precios', type: 'action' as const },
   { slug: admin.priceLists.edit, name: 'Editar listas de precios', type: 'action' as const },
   {
@@ -125,7 +113,7 @@ const INITIAL_PERMISSIONS = [
     name: 'Eliminar listas de precios',
     type: 'action' as const,
   },
-  { slug: admin.products.access, name: 'Acceso a gestión de productos', type: 'access' as const },
+  accessPermission(admin.products.access, 'admin.products'),
   { slug: admin.products.create, name: 'Crear productos', type: 'action' as const },
   { slug: admin.products.edit, name: 'Editar productos', type: 'action' as const },
   { slug: admin.products.delete, name: 'Eliminar productos', type: 'action' as const },

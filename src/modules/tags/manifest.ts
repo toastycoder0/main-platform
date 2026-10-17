@@ -1,5 +1,5 @@
 import { TagIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const tagsManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const tagsManifest: ModuleManifest = {
       nav: [
         {
           id: 'tags',
-          label: 'Etiquetas',
+          label: PERMISSION_GROUP_LABELS['admin.tags'],
           href: '/dashboard/tags',
           icon: TagIcon,
           permission: PERMISSIONS.admin.tags.access,

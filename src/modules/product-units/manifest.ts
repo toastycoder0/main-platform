@@ -1,5 +1,5 @@
 import { RulerIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const productUnitsManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const productUnitsManifest: ModuleManifest = {
       nav: [
         {
           id: 'product-units',
-          label: 'Unidades de medida',
+          label: PERMISSION_GROUP_LABELS['admin.productUnits'],
           href: '/dashboard/product-units',
           icon: RulerIcon,
           permission: PERMISSIONS.admin.productUnits.access,

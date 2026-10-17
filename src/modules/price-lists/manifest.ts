@@ -1,5 +1,5 @@
 import { ListOrderedIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const priceListsManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const priceListsManifest: ModuleManifest = {
       nav: [
         {
           id: 'price-lists',
-          label: 'Listas de precios',
+          label: PERMISSION_GROUP_LABELS['admin.priceLists'],
           href: '/dashboard/price-lists',
           icon: ListOrderedIcon,
           permission: PERMISSIONS.admin.priceLists.access,

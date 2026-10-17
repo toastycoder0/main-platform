@@ -1,5 +1,5 @@
 import { FileTextIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const documentTypesManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const documentTypesManifest: ModuleManifest = {
       nav: [
         {
           id: 'document-types',
-          label: 'Tipos de documento',
+          label: PERMISSION_GROUP_LABELS['admin.documentTypes'],
           href: '/dashboard/document-types',
           icon: FileTextIcon,
           permission: PERMISSIONS.admin.documentTypes.access,

@@ -1,5 +1,5 @@
 import { AwardIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const brandsManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const brandsManifest: ModuleManifest = {
       nav: [
         {
           id: 'brands',
-          label: 'Marcas',
+          label: PERMISSION_GROUP_LABELS['admin.brands'],
           href: '/dashboard/brands',
           icon: AwardIcon,
           permission: PERMISSIONS.admin.brands.access,
