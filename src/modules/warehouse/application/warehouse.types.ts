@@ -37,20 +37,6 @@ export interface MovementDTO {
   createdAt: Date;
 }
 
-export interface KardexEntryDTO {
-  sequentialNumber: number;
-  type: MovementType;
-  reason: MovementReason | null;
-  lotId: string;
-  lotCode: string | null;
-  lotName: string | null;
-  cellId: string | null;
-  cellCode: string | null;
-  delta: number;
-  runningBalance: number;
-  createdAt: Date;
-}
-
 export interface MovementErrorDTO {
   objectType: 'cell' | 'lot' | 'movement';
   objectId: string;
@@ -65,7 +51,7 @@ export interface NodeDTO {
   path: string;
   children: NodeDTO[];
   cells: CellDTO[];
-  occupancy: number | null;
+  occupancy: number;
 }
 
 export interface CellDTO {

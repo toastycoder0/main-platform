@@ -69,7 +69,7 @@ export function buildWarehouseTree(nodes: MapNodeRow[], cells: MapCellRow[]): No
 
         const subtreeOccupancy =
           nodeCells.reduce((sum, cell) => sum + cell.occupancy, 0) +
-          children.reduce((sum, child) => sum + (child.occupancy ?? 0), 0);
+          children.reduce((sum, child) => sum + child.occupancy, 0);
 
         return {
           id: node.id,
