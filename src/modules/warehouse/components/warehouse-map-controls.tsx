@@ -3,12 +3,15 @@
 import { MinusIcon, PlusIcon, RotateCcwIcon } from 'lucide-react';
 import type { RefObject } from 'react';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
+import { Button } from '@/shared/components/button';
 import { cn } from '@/shared/utils/cn';
 
 interface WarehouseMapControlsProps {
   transformRef: RefObject<ReactZoomPanPinchRef | null>;
   panelOpen: boolean;
 }
+
+const CONTROL_CLASS = 'rounded-none text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900';
 
 export function WarehouseMapControls({ transformRef, panelOpen }: WarehouseMapControlsProps) {
   return (
@@ -18,32 +21,38 @@ export function WarehouseMapControls({ transformRef, panelOpen }: WarehouseMapCo
         panelOpen ? 'right-84' : 'right-4',
       )}
     >
-      <button
+      <Button
         aria-label='Alejar'
-        className='p-2 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900'
+        className={CONTROL_CLASS}
         onClick={() => transformRef.current?.zoomOut(0.25)}
+        size='icon-sm'
         type='button'
+        variant='ghost'
       >
         <MinusIcon className='size-4' />
-      </button>
+      </Button>
       <div className='mx-2 h-px bg-neutral-200' />
-      <button
+      <Button
         aria-label='Acercar'
-        className='p-2 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900'
+        className={CONTROL_CLASS}
         onClick={() => transformRef.current?.zoomIn(0.25)}
+        size='icon-sm'
         type='button'
+        variant='ghost'
       >
         <PlusIcon className='size-4' />
-      </button>
+      </Button>
       <div className='mx-2 h-px bg-neutral-200' />
-      <button
+      <Button
         aria-label='Restaurar vista inicial'
-        className='p-2 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900'
+        className={CONTROL_CLASS}
         onClick={() => transformRef.current?.resetTransform()}
+        size='icon-sm'
         type='button'
+        variant='ghost'
       >
         <RotateCcwIcon className='size-4' />
-      </button>
+      </Button>
     </div>
   );
 }
