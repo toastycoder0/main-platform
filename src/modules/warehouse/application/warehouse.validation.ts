@@ -75,13 +75,11 @@ export const revertSchema = z.object({
 export const createLotSchema = z.object({
   itemId: idSchema,
   code: z.string().trim().min(1, FIELD_ERRORS.required).max(100, FIELD_ERRORS.tooLong),
-  name: z.string().trim().min(1, FIELD_ERRORS.name).max(200, FIELD_ERRORS.tooLong),
 });
 
 export const updateLotSchema = z.object({
   id: idSchema,
   code: z.string().trim().min(1, FIELD_ERRORS.required).max(100, FIELD_ERRORS.tooLong).optional(),
-  name: z.string().trim().min(1, FIELD_ERRORS.name).max(200, FIELD_ERRORS.tooLong).optional(),
   isActive: z.boolean().optional(),
 });
 

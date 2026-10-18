@@ -106,19 +106,15 @@ describe('revertSchema', () => {
 
 describe('createLotSchema', () => {
   it('accepts valid lot', () => {
-    expect(
-      createLotSchema.safeParse({ itemId: 'pitem_1', code: 'LOTE-001', name: 'Lote 001' }).success,
-    ).toBe(true);
+    expect(createLotSchema.safeParse({ itemId: 'pitem_1', code: 'LOTE-001' }).success).toBe(true);
   });
 
   it('rejects missing itemId', () => {
-    expect(createLotSchema.safeParse({ code: 'LOTE-001', name: 'Lote 001' }).success).toBe(false);
+    expect(createLotSchema.safeParse({ code: 'LOTE-001' }).success).toBe(false);
   });
 
   it('rejects empty code', () => {
-    expect(
-      createLotSchema.safeParse({ itemId: 'pitem_1', code: '', name: 'Lote 001' }).success,
-    ).toBe(false);
+    expect(createLotSchema.safeParse({ itemId: 'pitem_1', code: '' }).success).toBe(false);
   });
 });
 
@@ -233,18 +229,16 @@ describe('moveSchema messages', () => {
 });
 
 describe('text normalization', () => {
-  it('trims lot code and name', () => {
-    const result = createLotSchema.safeParse({ itemId: 'pitem_1', code: ' L-1 ', name: ' Lote ' });
+  it('trims lot code', () => {
+    const result = createLotSchema.safeParse({ itemId: 'pitem_1', code: ' L-1 ' });
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toMatchObject({ code: 'L-1', name: 'Lote' });
+      expect(result.data).toMatchObject({ code: 'L-1' });
     }
   });
 
   it('rejects a blank lot code', () => {
-    expect(
-      createLotSchema.safeParse({ itemId: 'pitem_1', code: '   ', name: 'Lote' }).success,
-    ).toBe(false);
+    expect(createLotSchema.safeParse({ itemId: 'pitem_1', code: '   ' }).success).toBe(false);
   });
 });

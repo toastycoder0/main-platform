@@ -57,7 +57,6 @@ const stock: MapStockRowDTO[] = [
     cellCode: 'A1',
     lotId: 'lot-1',
     lotCode: 'LOTE-001',
-    lotName: 'Lote uno',
     productTitle: 'Pintura blanca',
     itemTitle: 'Blanco mate',
     quantity: 50,
@@ -93,10 +92,13 @@ describe('findMatchingCellIds', () => {
     expect(findMatchingCellIds(index, 'a1')).toEqual(new Set(['cell-a1']));
   });
 
-  it('matches by product, variant and lot', () => {
-    expect(findMatchingCellIds(index, 'pintura')).toEqual(new Set(['cell-a1']));
-    expect(findMatchingCellIds(index, 'blanco mate')).toEqual(new Set(['cell-a1']));
+  it('matches by lot code', () => {
     expect(findMatchingCellIds(index, 'lote-001')).toEqual(new Set(['cell-a1']));
+  });
+
+  it('ignores product and variant text', () => {
+    expect(findMatchingCellIds(index, 'pintura')).toEqual(new Set());
+    expect(findMatchingCellIds(index, 'blanco mate')).toEqual(new Set());
   });
 
   it('returns an empty set for an empty or missing query', () => {

@@ -6,7 +6,6 @@ export interface CellStockDTO {
   cellCode: string;
   lotId: string;
   lotCode: string | null;
-  lotName: string | null;
   itemName: string | null;
   quantity: number;
 }
@@ -15,7 +14,6 @@ export interface MovementEntryDTO {
   id: string;
   lotId: string;
   lotCode: string | null;
-  lotName: string | null;
   originCellId: string | null;
   originCellCode: string | null;
   destinationCellId: string | null;
@@ -68,7 +66,6 @@ export interface MapStockRowDTO {
   cellCode: string;
   lotId: string;
   lotCode: string;
-  lotName: string;
   productTitle: string;
   itemTitle: string;
   quantity: number;
@@ -78,7 +75,6 @@ export interface LotDTO {
   id: string;
   itemId: string;
   code: string;
-  name: string;
   isActive: boolean;
 }
 
@@ -115,7 +111,6 @@ export interface LotListItemDTO {
   productTitle: string;
   itemTitle: string;
   code: string;
-  name: string;
   stock: number;
   locations: string[];
   isActive: boolean;
@@ -133,7 +128,6 @@ export interface LotFormDTO {
   itemTitle: string;
   productTitle: string;
   code: string;
-  name: string;
   isActive: boolean;
 }
 
@@ -158,7 +152,6 @@ export interface MovementEntryRowDTO {
   reason: MovementReason | null;
   lotId: string;
   lotCode: string;
-  lotName: string;
   originCellId: string | null;
   originCellCode: string | null;
   destinationCellId: string | null;

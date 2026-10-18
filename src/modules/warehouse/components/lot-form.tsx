@@ -50,7 +50,6 @@ export function LotForm({ itemOptions = [], lot }: LotFormProps) {
     defaultValues: {
       itemId: lot?.itemId ?? '',
       code: lot?.code ?? '',
-      name: lot?.name ?? '',
       isActive: lot?.isActive ?? true,
     },
   });
@@ -61,13 +60,11 @@ export function LotForm({ itemOptions = [], lot }: LotFormProps) {
         ? updateLot({
             id: lot.id,
             code: values.code,
-            name: values.name,
             isActive: values.isActive,
           })
         : createLot({
             itemId: values.itemId,
             code: values.code,
-            name: values.name,
           }),
     );
   }
@@ -143,24 +140,6 @@ export function LotForm({ itemOptions = [], lot }: LotFormProps) {
                 placeholder='LOTE-001'
               />
               <FieldDescription>Código único del lote para el producto.</FieldDescription>
-              {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
-            </Field>
-          )}
-        />
-
-        <Controller
-          control={control}
-          name='name'
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} orientation='vertical'>
-              <FieldLabel htmlFor='form-lot-name'>Nombre</FieldLabel>
-              <Input
-                {...field}
-                aria-invalid={fieldState.invalid}
-                id='form-lot-name'
-                placeholder='Nombre del lote'
-              />
-              <FieldDescription>Nombre descriptivo del lote.</FieldDescription>
               {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
             </Field>
           )}

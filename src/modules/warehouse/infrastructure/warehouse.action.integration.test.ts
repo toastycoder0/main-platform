@@ -179,17 +179,13 @@ async function seedWarehouse(): Promise<void> {
       id: lot1,
       itemId,
       code: `${scope}_L1`,
-      name: 'Lote 1',
       normalizedCode: `${scope}_l1`,
-      normalizedName: 'lote 1',
     },
     {
       id: lot2,
       itemId,
       code: `${scope}_L2`,
-      name: 'Lote 2',
       normalizedCode: `${scope}_l2`,
-      normalizedName: 'lote 2',
     },
   ]);
 }
@@ -334,28 +330,25 @@ describe('revertMovementAction', () => {
 });
 
 describe('createLot', () => {
-  it('stores the lot with normalized code and name', async () => {
-    const result = await createLot({ itemId, code: 'NUEVO', name: 'Lote Nuevo' });
+  it('stores the lot with normalized code', async () => {
+    const result = await createLot({ itemId, code: 'NUEVO' });
 
     expect(result.success).toBe(true);
 
     const [row] = await db
       .select({
         code: lot.code,
-        name: lot.name,
         normalizedCode: lot.normalizedCode,
-        normalizedName: lot.normalizedName,
       })
       .from(lot)
       .where(eq(lot.normalizedCode, 'nuevo'));
 
     expect(row?.code).toBe('NUEVO');
     expect(row?.normalizedCode).toBe('nuevo');
-    expect(row?.normalizedName).toBe('lote nuevo');
   });
 
   it('rejects a duplicate lot for the same product', async () => {
-    const result = await createLot({ itemId, code: 'nuevo', name: 'Lote Nuevo' });
+    const result = await createLot({ itemId, code: 'nuevo' });
 
     expect(result.success).toBe(false);
 
@@ -365,7 +358,7 @@ describe('createLot', () => {
   });
 
   it('rejects a missing product', async () => {
-    const result = await createLot({ itemId: 'pitem_missing', code: 'X', name: 'X' });
+    const result = await createLot({ itemId: 'pitem_missing', code: 'X' });
 
     expect(result.success).toBe(false);
 
@@ -376,7 +369,7 @@ describe('createLot', () => {
 });
 
 describe('updateLot', () => {
-  it('recomputes the normalized fields when renaming', async () => {
+  it('recomputes the normalized code when changing the code', async () => {
     const [target] = await db
       .select({ id: lot.id })
       .from(lot)
@@ -386,20 +379,20 @@ describe('updateLot', () => {
       throw new Error('Missing lot to update');
     }
 
-    const result = await updateLot({ id: target.id, name: 'Renombrado' });
+    const result = await updateLot({ id: target.id, code: 'RENOMBRADO' });
 
     expect(result.success).toBe(true);
 
     const [row] = await db
-      .select({ name: lot.name, normalizedName: lot.normalizedName })
+      .select({ code: lot.code, normalizedCode: lot.normalizedCode })
       .from(lot)
       .where(eq(lot.id, target.id));
-    expect(row?.name).toBe('Renombrado');
-    expect(row?.normalizedName).toBe('renombrado');
+    expect(row?.code).toBe('RENOMBRADO');
+    expect(row?.normalizedCode).toBe('renombrado');
   });
 
   it('fails with not_found for a missing lot', async () => {
-    const result = await updateLot({ id: 'lot_missing', name: 'Cualquiera' });
+    const result = await updateLot({ id: 'lot_missing', code: 'X' });
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
   });

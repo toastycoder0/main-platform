@@ -144,17 +144,13 @@ async function seedWarehouse(): Promise<void> {
       id: lot1,
       itemId,
       code: `${scope}_L1`,
-      name: 'Lote 1',
       normalizedCode: `${scope}_l1`,
-      normalizedName: `lote 1`,
     },
     {
       id: lot2,
       itemId,
       code: `${scope}_L2`,
-      name: 'Lote 2',
       normalizedCode: `${scope}_l2`,
-      normalizedName: `lote 2`,
     },
   ]);
 }
@@ -285,7 +281,6 @@ describe('getLotById', () => {
       itemTitle: 'Variante',
       productTitle: 'Test Product',
       code: `${scope}_L1`,
-      name: 'Lote 1',
       isActive: true,
     });
   });

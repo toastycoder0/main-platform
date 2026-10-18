@@ -4,7 +4,6 @@ import type { CellDTO, MapStockRowDTO, NodeDTO } from './warehouse.types';
 export interface CellStockDetail {
   lotId: string;
   lotCode: string;
-  lotName: string;
   productTitle: string;
   itemTitle: string;
   quantity: number;
@@ -31,7 +30,6 @@ function toStockDetail(row: MapStockRowDTO): CellStockDetail {
   return {
     lotId: row.lotId,
     lotCode: row.lotCode,
-    lotName: row.lotName,
     productTitle: row.productTitle,
     itemTitle: row.itemTitle,
     quantity: row.quantity,
@@ -55,15 +53,7 @@ export function buildMapIndex(nodes: NodeDTO[], stock: MapStockRowDTO[]): MapInd
     for (const cell of node.cells) {
       const details = stockByCell.get(cell.id) ?? [];
       const searchText = normalizeMapSearch(
-        [
-          cell.code,
-          ...details.flatMap((detail) => [
-            detail.productTitle,
-            detail.itemTitle,
-            detail.lotCode,
-            detail.lotName,
-          ]),
-        ].join(' '),
+        [cell.code, ...details.map((detail) => detail.lotCode)].join(' '),
       );
 
       index.set(cell.id, {

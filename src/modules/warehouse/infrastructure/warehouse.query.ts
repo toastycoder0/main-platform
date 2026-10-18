@@ -171,7 +171,6 @@ export async function listMapStock(
       cellCode: warehouseCell.code,
       lotId: cellLot.lotId,
       lotCode: lot.code,
-      lotName: lot.name,
       productTitle: product.title,
       itemTitle: productItem.title,
       quantity: cellLot.quantity,
@@ -215,7 +214,6 @@ export async function getCellStock(ctx: RequestContext, cellId: string): Promise
       cellCode: warehouseCell.code,
       lotId: cellLot.lotId,
       lotCode: lot.code,
-      lotName: lot.name,
       itemName: productItem.title,
       quantity: cellLot.quantity,
     })
@@ -233,9 +231,7 @@ export async function listLots(
   ctx: RequestContext,
   params: ListParams,
 ): Promise<Paginated<LotListItemDTO>> {
-  const where = params.q
-    ? searchILike([lot.code, lot.name, productItem.title, product.title], params.q)
-    : undefined;
+  const where = params.q ? searchILike([lot.code], params.q) : undefined;
 
   const stock = ctx.db
     .select({
@@ -265,7 +261,6 @@ export async function listLots(
         productTitle: product.title,
         itemTitle: productItem.title,
         code: lot.code,
-        name: lot.name,
         isActive: lot.isActive,
         createdAt: lot.createdAt,
         stock: sql<string>`COALESCE(${stock.quantity}, 0)`,
@@ -288,7 +283,6 @@ export async function listLots(
       productTitle: row.productTitle,
       itemTitle: row.itemTitle,
       code: row.code,
-      name: row.name,
       isActive: row.isActive,
       createdAt: row.createdAt,
       stock: toNumber(row.stock),
@@ -331,7 +325,6 @@ export async function getLotById(ctx: RequestContext, id: string): Promise<LotFo
       itemTitle: productItem.title,
       productTitle: product.title,
       code: lot.code,
-      name: lot.name,
       isActive: lot.isActive,
     })
     .from(lot)
@@ -398,7 +391,6 @@ export async function listMovementEntries(
         reason: movement.reason,
         lotId: movementEntry.lotId,
         lotCode: lot.code,
-        lotName: lot.name,
         originCellId: movementEntry.originCellId,
         destinationCellId: movementEntry.destinationCellId,
         quantity: movementEntry.quantity,
@@ -429,7 +421,6 @@ export async function listMovementEntries(
       reason: row.reason,
       lotId: row.lotId,
       lotCode: row.lotCode,
-      lotName: row.lotName,
       originCellId: row.originCellId,
       originCellCode: row.originCellId ? (cellCodes.get(row.originCellId) ?? null) : null,
       destinationCellId: row.destinationCellId,
@@ -478,7 +469,6 @@ export async function getMovement(
       id: movementEntry.id,
       lotId: movementEntry.lotId,
       lotCode: lot.code,
-      lotName: lot.name,
       originCellId: movementEntry.originCellId,
       destinationCellId: movementEntry.destinationCellId,
       quantity: movementEntry.quantity,
@@ -498,7 +488,6 @@ export async function getMovement(
       id: row.id,
       lotId: row.lotId,
       lotCode: row.lotCode,
-      lotName: row.lotName,
       originCellId: row.originCellId,
       originCellCode: row.originCellId ? (cellCodes.get(row.originCellId) ?? null) : null,
       destinationCellId: row.destinationCellId,

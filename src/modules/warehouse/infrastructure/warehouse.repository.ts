@@ -9,7 +9,7 @@ import type {
   UpdateLotSchema,
 } from '../application/warehouse.validation';
 
-const LOT_DUPLICATE = 'Ya existe un lote con ese código y nombre para el producto';
+const LOT_DUPLICATE = 'Ya existe un lote con ese código para el producto';
 const CELL_DUPLICATE = 'Ya existe una celda con ese código en el almacén';
 
 async function assertItemExists(ctx: RequestContext, itemId: string): Promise<void> {
@@ -28,13 +28,11 @@ async function assertLotUnique(
   ctx: RequestContext,
   itemId: string,
   normalizedCode: string,
-  normalizedName: string,
   excludeId?: string,
 ): Promise<void> {
   const conditions = [
     eq(lot.itemId, itemId),
     eq(lot.normalizedCode, normalizedCode),
-    eq(lot.normalizedName, normalizedName),
     excludeId ? ne(lot.id, excludeId) : undefined,
   ];
 
@@ -53,15 +51,12 @@ export async function createLot(ctx: RequestContext, data: CreateLotSchema): Pro
   await assertItemExists(ctx, data.itemId);
 
   const normalizedCode = normalizeLotText(data.code);
-  const normalizedName = normalizeLotText(data.name);
-  await assertLotUnique(ctx, data.itemId, normalizedCode, normalizedName);
+  await assertLotUnique(ctx, data.itemId, normalizedCode);
 
   await ctx.db.insert(lot).values({
     itemId: data.itemId,
     code: data.code,
-    name: data.name,
     normalizedCode,
-    normalizedName,
   });
 
   ctx.logger.info({ itemId: data.itemId, code: data.code }, 'Lot created');
@@ -69,7 +64,7 @@ export async function createLot(ctx: RequestContext, data: CreateLotSchema): Pro
 
 export async function updateLot(ctx: RequestContext, data: UpdateLotSchema): Promise<void> {
   const rows = await ctx.db
-    .select({ id: lot.id, itemId: lot.itemId, code: lot.code, name: lot.name })
+    .select({ id: lot.id, itemId: lot.itemId, code: lot.code })
     .from(lot)
     .where(eq(lot.id, data.id))
     .limit(1);
@@ -81,16 +76,12 @@ export async function updateLot(ctx: RequestContext, data: UpdateLotSchema): Pro
   }
 
   const code = data.code ?? existing.code;
-  const name = data.name ?? existing.name;
   const normalizedCode = normalizeLotText(code);
-  const normalizedName = normalizeLotText(name);
-  await assertLotUnique(ctx, existing.itemId, normalizedCode, normalizedName, data.id);
+  await assertLotUnique(ctx, existing.itemId, normalizedCode, data.id);
 
   const update: Partial<typeof lot.$inferInsert> = {
     code,
-    name,
     normalizedCode,
-    normalizedName,
   };
 
   if (data.isActive !== undefined) {

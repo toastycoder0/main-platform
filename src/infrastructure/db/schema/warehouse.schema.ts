@@ -101,19 +101,11 @@ export const lot = snakeCase.table(
       .notNull()
       .references(() => productItem.id),
     code: text().notNull(),
-    name: text().notNull(),
     normalizedCode: text().notNull(),
-    normalizedName: text().notNull(),
     isActive: boolean().default(true).notNull(),
     ...timestamps,
   },
-  (table) => [
-    unique('lot_item_code_name_unique').on(
-      table.itemId,
-      table.normalizedCode,
-      table.normalizedName,
-    ),
-  ],
+  (table) => [unique('lot_item_code_unique').on(table.itemId, table.normalizedCode)],
 );
 
 export const cellLot = snakeCase.table(
