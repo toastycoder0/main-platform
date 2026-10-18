@@ -118,7 +118,7 @@ function CapacityEditor({ cellId, capacity }: CapacityEditorProps) {
           value={capacityValue}
         />
         <Button
-          className='shrink-0'
+          className='shrink-0 h-9'
           disabled={saving}
           onClick={handleSaveCapacity}
           size='sm'
