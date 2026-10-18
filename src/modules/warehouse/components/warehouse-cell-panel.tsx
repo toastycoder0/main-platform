@@ -6,7 +6,16 @@ import { useEffect, useRef, useState } from 'react';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Badge } from '@/shared/components/badge';
 import { Button } from '@/shared/components/button';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/shared/components/item';
 import { ok } from '@/shared/result';
 import type { CellStockDetail } from '../application/warehouse.map';
 import type { CellOccupancy } from '../application/warehouse.occupancy';
@@ -90,11 +99,11 @@ function CapacityEditor({ cellId, capacity }: CapacityEditorProps) {
   }
 
   return (
-    <div>
-      <p className='mb-1 text-xs font-medium text-neutral-500'>Capacidad (uds)</p>
+    <Field data-invalid={Boolean(capacityError)}>
+      <FieldLabel htmlFor='cell-capacity'>Capacidad (uds)</FieldLabel>
+
       <div className='flex gap-2'>
         <Input
-          aria-label='Capacidad (uds)'
           className='w-full text-sm tabular-nums'
           id='cell-capacity'
           min={0}
@@ -119,10 +128,13 @@ function CapacityEditor({ cellId, capacity }: CapacityEditorProps) {
           {saving ? 'Guardando...' : 'Guardar'}
         </Button>
       </div>
-      {capacityError ? <p className='mt-1 text-xs text-red-600'>{capacityError}</p> : null}
-      {capacityMessage ? <p className='mt-1 text-xs text-green-600'>{capacityMessage}</p> : null}
-      <p className='mt-1 text-[11px] text-neutral-400'>Dejar vacío quita la capacidad definida.</p>
-    </div>
+
+      {capacityError ? <FieldError>{capacityError}</FieldError> : null}
+      {capacityMessage ? (
+        <FieldDescription className='text-green-600'>{capacityMessage}</FieldDescription>
+      ) : null}
+      <FieldDescription>Dejar vacío quita la capacidad definida.</FieldDescription>
+    </Field>
   );
 }
 
@@ -154,15 +166,17 @@ export function WarehouseCellPanel({
             {stockCount} lote{stockCount !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
+        <Button
           aria-label='Cerrar panel'
-          className='ml-2 rounded-md p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'
+          className='ml-2'
           onClick={onClose}
           ref={closeButtonRef}
+          size='icon-sm'
           type='button'
+          variant='ghost'
         >
-          <XIcon className='size-4' />
-        </button>
+          <XIcon />
+        </Button>
       </div>
 
       <div className='space-y-3 border-b border-neutral-100 px-4 py-3'>
@@ -190,25 +204,22 @@ export function WarehouseCellPanel({
         {details.length === 0 ? (
           <p className='text-sm text-neutral-400'>Sin stock asignado</p>
         ) : (
-          <ul className='space-y-2'>
+          <ItemGroup className='gap-2'>
             {details.map((detail) => (
-              <li
-                className='rounded-md border border-neutral-100 bg-neutral-50 p-2.5'
-                key={detail.lotId}
-              >
-                <div className='flex items-start justify-between gap-2'>
-                  <div className='min-w-0 flex-1'>
-                    <p className='truncate text-sm font-medium text-neutral-800'>
-                      {detail.productTitle}
-                    </p>
-                    <p className='truncate text-xs text-neutral-500'>{detail.itemTitle}</p>
+              <Item asChild key={detail.lotId} size='sm' variant='muted'>
+                <li>
+                  <ItemContent>
+                    <ItemTitle>{detail.productTitle}</ItemTitle>
+                    <ItemDescription>{detail.itemTitle}</ItemDescription>
                     <code className='mt-0.5 block text-xs text-neutral-400'>{detail.lotCode}</code>
-                  </div>
-                  <Badge className='shrink-0'>{detail.quantity} uds</Badge>
-                </div>
-              </li>
+                  </ItemContent>
+                  <ItemActions>
+                    <Badge className='shrink-0'>{detail.quantity} uds</Badge>
+                  </ItemActions>
+                </li>
+              </Item>
             ))}
-          </ul>
+          </ItemGroup>
         )}
       </div>
 
