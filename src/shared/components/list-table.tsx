@@ -23,7 +23,7 @@ interface ListTableProps {
 
 export function ListTable({ columns, children, actions = false }: ListTableProps) {
   return (
-    <div data-slot='list-table' className='overflow-hidden rounded-md border'>
+    <div data-slot='list-table' className='overflow-x-auto rounded-md border'>
       <Table>
         <TableHeader className='bg-muted/50'>
           <TableRow>

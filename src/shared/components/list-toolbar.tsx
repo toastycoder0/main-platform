@@ -21,6 +21,10 @@ export function ListToolbar({ searchLabel, searchPlaceholder, children }: ListTo
   const [term, setTerm] = useState(q ?? '');
 
   useEffect(() => {
+    setTerm(q ?? '');
+  }, [q]);
+
+  useEffect(() => {
     if ((q ?? '') === term) {
       return;
     }
