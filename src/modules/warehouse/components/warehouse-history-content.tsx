@@ -14,6 +14,7 @@ import { MovementHistoryActiveFilters } from './warehouse-history-active-filters
 import { MovementHistoryEmptyState } from './warehouse-history-empty-state';
 import { MovementHistoryFilterDrawer } from './warehouse-history-filter-drawer';
 import { MovementHistoryFilters } from './warehouse-history-filters';
+import { MovementHistoryTabs } from './warehouse-history-tabs';
 import { WarehouseMovementEntriesTable } from './warehouse-movement-entries-table';
 import { WarehouseMovementsTable } from './warehouse-movements-table';
 
@@ -88,11 +89,18 @@ export async function WarehouseHistoryContent({ ctx, params, view }: WarehouseHi
       </aside>
 
       <div className='flex min-w-0 flex-col gap-5'>
-        <div className='flex flex-wrap items-center gap-3'>
-          <MovementHistoryFilterDrawer cells={options.cells} lots={options.lots} />
-          <p className='text-sm text-muted-foreground'>
-            {total} {total === 1 ? 'resultado' : 'resultados'}
-          </p>
+        <div
+          className='flex flex-wrap items-center justify-between gap-3'
+          data-slot='warehouse-history-summary'
+        >
+          <div className='flex items-center gap-3'>
+            <MovementHistoryFilterDrawer cells={options.cells} lots={options.lots} />
+            <p className='text-sm text-muted-foreground' data-slot='warehouse-history-count'>
+              {total} {total === 1 ? 'resultado' : 'resultados'}
+            </p>
+          </div>
+
+          <MovementHistoryTabs view={view} />
         </div>
 
         <MovementHistoryActiveFilters cells={options.cells} lots={options.lots} />

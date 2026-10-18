@@ -14,6 +14,7 @@ async function openMovements(page: Page) {
   await loginAsAdmin(page);
   await page.goto(`${BASE}/warehouse/movements`);
   await page.getByRole('heading', { name: 'Movimientos' }).waitFor();
+  await page.getByRole('tab', { name: 'Por movimiento' }).waitFor();
 }
 
 describe('Warehouse history E2E', () => {
@@ -61,6 +62,21 @@ describe('Warehouse history E2E', () => {
     await page.getByRole('heading', { name: 'Movimientos' }).waitFor();
   });
 
+  it('aligns the tabs with the results count', async () => {
+    await openMovements(page);
+
+    const count = await page.locator('[data-slot=warehouse-history-count]').boundingBox();
+    const tabs = await page.getByRole('tablist', { name: 'Vistas del historial' }).boundingBox();
+
+    expect(count).not.toBeNull();
+    expect(tabs).not.toBeNull();
+
+    if (count && tabs) {
+      expect(Math.abs(count.y - tabs.y)).toBeLessThan(20);
+      expect(tabs.x).toBeGreaterThan(count.x);
+    }
+  });
+
   it('applies and removes a type filter', async () => {
     await openMovements(page);
 
@@ -80,6 +96,13 @@ describe('Warehouse history E2E', () => {
     await page.locator('#history-sidebar-type').click();
     await page.getByRole('option', { name: 'Transferencia' }).click();
     await page.waitForFunction(() => window.location.search.includes('type=move'));
+
+    await page.waitForFunction(() => {
+      const link = document.querySelector<HTMLAnchorElement>(
+        'a[role="tab"][href*="/warehouse/entries"]',
+      );
+      return link?.getAttribute('href')?.includes('type=move') ?? false;
+    });
 
     await page.getByRole('tab', { name: 'Por elemento' }).click();
     await page.waitForURL(/\/warehouse\/entries\?.*type=move/);
@@ -107,7 +130,7 @@ describe('Warehouse history E2E', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openMovements(page);
 
-    await page.getByRole('button', { name: 'Filtros' }).click();
+    await page.getByRole('button', { name: 'Filtros', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('heading', { name: 'Filtros' }).waitFor();
     await dialog.locator('#history-drawer-type').waitFor();

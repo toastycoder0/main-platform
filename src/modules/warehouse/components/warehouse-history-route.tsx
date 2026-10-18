@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
+import { CallToAction } from '@/shared/components/call-to-action';
 import { ListSkeleton } from '@/shared/components/list-skeleton';
 import { ListToolbar } from '@/shared/components/list-toolbar';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { loadMovementHistoryParams } from '../infrastructure/warehouse.params';
 import { WarehouseHistoryContent } from './warehouse-history-content';
-import { MovementHistoryTabs } from './warehouse-history-tabs';
 
 type MovementHistoryView = 'movements' | 'entries';
 
@@ -50,15 +50,11 @@ export async function WarehouseHistoryRoute({ searchParams, view }: WarehouseHis
 
   return (
     <div className='flex flex-col gap-6'>
-      <div className='flex flex-wrap items-start justify-between gap-4'>
-        <div>
-          <h1 className='text-2xl font-semibold'>{copy.title}</h1>
-          <p className='text-sm text-muted-foreground'>{copy.description}</p>
+      <CallToAction description={copy.description} title={copy.title}>
+        <div className='w-full max-w-md'>
+          <ListToolbar searchLabel={copy.searchLabel} searchPlaceholder={copy.searchPlaceholder} />
         </div>
-        <MovementHistoryTabs params={params} view={view} />
-      </div>
-
-      <ListToolbar searchLabel={copy.searchLabel} searchPlaceholder={copy.searchPlaceholder} />
+      </CallToAction>
 
       <Suspense fallback={<ListSkeleton rows={8} />}>
         <WarehouseHistoryContent ctx={ctx} params={params} view={view} />

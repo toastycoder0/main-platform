@@ -1,13 +1,18 @@
+'use client';
+
 import Link from 'next/link';
+import { useQueryStates } from 'nuqs';
 import { buildListHref, type ListHrefParams } from '@/shared/list/list-params';
 import { cn } from '@/shared/utils/cn';
-import type { MovementHistoryParams } from '../infrastructure/warehouse.params';
+import {
+  type MovementHistoryParams,
+  movementHistoryParams,
+} from '../infrastructure/warehouse.params';
 
 type MovementHistoryView = 'movements' | 'entries';
 
 interface MovementHistoryTabsProps {
   view: MovementHistoryView;
-  params: MovementHistoryParams;
 }
 
 const TABS: Array<{ id: MovementHistoryView; label: string; href: string }> = [
@@ -33,7 +38,9 @@ function tabHref(tab: (typeof TABS)[number], params: MovementHistoryParams): str
   });
 }
 
-export function MovementHistoryTabs({ view, params }: MovementHistoryTabsProps) {
+export function MovementHistoryTabs({ view }: MovementHistoryTabsProps) {
+  const [params] = useQueryStates(movementHistoryParams);
+
   return (
     <div
       aria-label='Vistas del historial'
