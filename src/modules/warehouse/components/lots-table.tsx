@@ -54,7 +54,7 @@ export async function LotsTable({ params }: LotsTableProps) {
         {items.map((item) => (
           <TableRow key={item.id}>
             <ListCell className='font-medium'>{item.productTitle}</ListCell>
-            <ListCell>{item.itemTitle}</ListCell>
+            <ListCell className='text-muted-foreground'>{item.itemTitle}</ListCell>
             <ListCell className='font-mono text-xs'>{item.code}</ListCell>
             <ListCell className='max-w-64 truncate' title={item.locations.join(', ')}>
               {item.locations.length > 0 ? item.locations.join(', ') : 'Sin ubicación'}
