@@ -18,15 +18,6 @@ import {
 } from '@/shared/components/alert-dialog';
 import { Button } from '@/shared/components/button';
 import {
-  Combobox,
-  ComboboxCollection,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from '@/shared/components/combobox';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -70,6 +61,7 @@ import {
 import { registerMovement } from '../infrastructure/warehouse.action';
 import { movementParams } from '../infrastructure/warehouse.params';
 import { MOVEMENT_COLUMN_LABELS, MOVEMENT_FORM_KIND_CONFIG } from './warehouse-movement-config';
+import { type WarehouseOption, WarehouseOptionCombobox } from './warehouse-option-combobox';
 
 interface WarehouseMovementDialogProps {
   allowedKinds: readonly MovementFormKind[];
@@ -78,11 +70,6 @@ interface WarehouseMovementDialogProps {
   initialLotId: string | null;
   initialCellId: string | null;
   options: MovementFormOptionsDTO;
-}
-
-interface Option {
-  value: string;
-  label: string;
 }
 
 function todayISO(): string {
@@ -96,56 +83,6 @@ function todayISO(): string {
 
 function rowFieldId(index: number, column: MovementFormColumn): string {
   return `movement-row-${index}-${column}`;
-}
-
-function OptionCombobox({
-  id,
-  label,
-  value,
-  items,
-  placeholder,
-  invalid,
-  onValueChange,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  items: Option[];
-  placeholder: string;
-  invalid: boolean;
-  onValueChange: (value: string) => void;
-}) {
-  const selected = items.find((item) => item.value === value) ?? null;
-
-  return (
-    <Combobox
-      isItemEqualToValue={(item, current) => item.value === current.value}
-      items={items}
-      onValueChange={(next) => onValueChange(next?.value ?? '')}
-      value={selected}
-    >
-      <ComboboxInput
-        aria-invalid={invalid}
-        aria-label={label}
-        className='w-full min-w-40'
-        id={id}
-        placeholder={placeholder}
-        showClear={selected !== null}
-      />
-      <ComboboxContent>
-        <ComboboxList>
-          <ComboboxCollection>
-            {(item: Option) => (
-              <ComboboxItem key={item.value} value={item}>
-                {item.label}
-              </ComboboxItem>
-            )}
-          </ComboboxCollection>
-          <ComboboxEmpty>Sin resultados</ComboboxEmpty>
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
-  );
 }
 
 function lotLabel(lot: MovementLotOptionDTO): string {
@@ -169,11 +106,11 @@ export function WarehouseMovementDialog({
   const [isPending, startTransition] = useTransition();
   const [, setParams] = useQueryStates(movementParams);
 
-  const lotOptions = useMemo<Option[]>(
+  const lotOptions = useMemo<WarehouseOption[]>(
     () => options.lots.map((lot) => ({ value: lot.id, label: lotLabel(lot) })),
     [options.lots],
   );
-  const cellOptions = useMemo<Option[]>(
+  const cellOptions = useMemo<WarehouseOption[]>(
     () => options.cells.map((cell) => ({ value: cell.id, label: cellLabel(cell) })),
     [options.cells],
   );
@@ -464,8 +401,8 @@ function renderCell({
 }: {
   column: MovementFormColumn;
   index: number;
-  lotOptions: Option[];
-  cellOptions: Option[];
+  lotOptions: WarehouseOption[];
+  cellOptions: WarehouseOption[];
   control: Control<MovementFormSchema>;
 }) {
   const fieldId = rowFieldId(index, column);
@@ -478,7 +415,7 @@ function renderCell({
           name={`rows.${index}.lotId`}
           render={({ field, fieldState }) => (
             <div className='flex flex-col gap-1'>
-              <OptionCombobox
+              <WarehouseOptionCombobox
                 id={fieldId}
                 invalid={fieldState.invalid}
                 items={lotOptions}
@@ -500,7 +437,7 @@ function renderCell({
           name={`rows.${index}.originCellId`}
           render={({ field, fieldState }) => (
             <div className='flex flex-col gap-1'>
-              <OptionCombobox
+              <WarehouseOptionCombobox
                 id={fieldId}
                 invalid={fieldState.invalid}
                 items={cellOptions}
@@ -522,7 +459,7 @@ function renderCell({
           name={`rows.${index}.destinationCellId`}
           render={({ field, fieldState }) => (
             <div className='flex flex-col gap-1'>
-              <OptionCombobox
+              <WarehouseOptionCombobox
                 id={fieldId}
                 invalid={fieldState.invalid}
                 items={cellOptions}
