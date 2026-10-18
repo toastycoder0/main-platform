@@ -12,8 +12,11 @@ const QUANTITY_STEP = 0.0001;
 const MAX_QUANTITY = 999_999_999_999;
 const MAX_CAPACITY = 99_999_999;
 
-export const movementTypeSchema = z.enum(['assign', 'move', 'out', 'revert']);
-export const movementReasonSchema = z.enum(['reception', 'material_out', 'delivery', 'transfer']);
+export const MOVEMENT_TYPES = ['assign', 'move', 'out', 'revert'] as const;
+export const MOVEMENT_REASONS = ['reception', 'material_out', 'delivery', 'transfer'] as const;
+
+export const movementTypeSchema = z.enum(MOVEMENT_TYPES);
+export const movementReasonSchema = z.enum(MOVEMENT_REASONS);
 
 export type MovementType = z.infer<typeof movementTypeSchema>;
 export type MovementReason = z.infer<typeof movementReasonSchema>;
@@ -194,13 +197,13 @@ export const updateCellCapacitySchema = z.object({
 export const movementFiltersSchema = z.object({
   type: movementTypeSchema.optional(),
   reason: movementReasonSchema.optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
+  from: z.iso.date().optional(),
+  to: z.iso.date().optional(),
 });
 
-export const kardexParamsSchema = movementFiltersSchema.extend({
-  cellId: z.string().optional(),
-  lotId: z.string().optional(),
+export const movementHistoryFiltersSchema = movementFiltersSchema.extend({
+  lotId: idSchema.optional(),
+  cellId: idSchema.optional(),
 });
 
 export const cellParamsSchema = z.object({ id: idSchema });
@@ -221,6 +224,6 @@ export type BulkCreateCellSchema = z.infer<typeof bulkCreateCellSchema>;
 export type UpdateCellSchema = z.infer<typeof updateCellSchema>;
 export type UpdateCellCapacitySchema = z.infer<typeof updateCellCapacitySchema>;
 export type MovementFiltersSchema = z.infer<typeof movementFiltersSchema>;
-export type KardexParamsSchema = z.infer<typeof kardexParamsSchema>;
+export type MovementHistoryFiltersSchema = z.infer<typeof movementHistoryFiltersSchema>;
 export type CellParamsSchema = z.infer<typeof cellParamsSchema>;
 export type LotParamsSchema = z.infer<typeof lotParamsSchema>;

@@ -27,6 +27,7 @@ import {
   getMap,
   getMovement,
   getMovementFormOptions,
+  getMovementHistoryOptions,
   getPrimaryWarehouse,
   listLotItemOptions,
   listLotSiblings,
@@ -418,7 +419,7 @@ describe('listLotSiblings', () => {
 });
 
 describe('listMovements', () => {
-  it('reports entry counts, author and revert status', async () => {
+  it('reports entry counts for the newest movements', async () => {
     const result = await listMovements(testContext(), params(), {
       type: 'assign',
       reason: 'reception',
@@ -427,8 +428,21 @@ describe('listMovements', () => {
 
     expect(ours).toBeDefined();
     expect(ours?.entryCount).toBe(1);
-    expect(ours?.userName).toBe('Test User');
-    expect(ours?.isReverted).toBe(false);
+    expect(ours?.sequentialNumber).toBeGreaterThan(0);
+    expect(result.items.map((item) => item.sequentialNumber)).toEqual(
+      [...result.items.map((item) => item.sequentialNumber)].sort((a, b) => b - a),
+    );
+  });
+
+  it('filters by lot, cell and search term', async () => {
+    const byLot = await listMovements(testContext(), params(), { lotId: lot1 });
+    expect(byLot.total).toBe(3);
+
+    const byCell = await listMovements(testContext(), params(), { cellId: cellA2 });
+    expect(byCell.total).toBe(2);
+
+    const bySearch = await listMovements(testContext(), params({ q: 'A1' }), {});
+    expect(bySearch.total).toBe(2);
   });
 });
 
@@ -441,12 +455,36 @@ describe('listMovementEntries', () => {
     expect(result.items[0]?.originCellCode).toBe('A2');
     expect(result.items[0]?.destinationCellCode).toBeNull();
     expect(result.items[0]?.quantity).toBe(10);
+    expect(result.items[0]?.productTitle).toBe('Test Product');
+    expect(result.items[0]?.itemTitle).toBe('Variante');
   });
 
   it('filters entries by cell touching origin or destination', async () => {
     const result = await listMovementEntries(testContext(), params(), { cellId: cellA2 });
 
     expect(result.total).toBe(2);
+  });
+
+  it('searches entries by cell, product and lot', async () => {
+    const byCell = await listMovementEntries(testContext(), params({ q: 'A2' }), {});
+    expect(byCell.total).toBe(2);
+
+    const byProduct = await listMovementEntries(testContext(), params({ q: 'Test Product' }), {});
+    expect(byProduct.total).toBe(4);
+
+    const byLot = await listMovementEntries(testContext(), params({ q: `${scope}_L1` }), {});
+    expect(byLot.total).toBe(3);
+  });
+});
+
+describe('getMovementHistoryOptions', () => {
+  it('lists lots and cells for the history filters', async () => {
+    const options = await getMovementHistoryOptions(testContext(), whId);
+
+    expect(options.lots.map((item) => item.id)).toEqual(expect.arrayContaining([lot1, lot2]));
+    expect(options.cells.map((item) => item.id)).toEqual(
+      expect.arrayContaining([cellA1, cellA2, cellB1, cellEmpty]),
+    );
   });
 });
 

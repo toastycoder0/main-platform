@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lte, or, type SQL, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { searchILike } from '@/infrastructure/db/list-query';
+import { ilikePattern, searchILike } from '@/infrastructure/db/list-query';
 import {
   cellLot,
   lot,
@@ -28,28 +29,29 @@ import type {
   LotSiblingDTO,
   LotSummaryDTO,
   MapStockRowDTO,
-  MovementCellOptionDTO,
   MovementDTO,
   MovementEntryDTO,
   MovementEntryRowDTO,
   MovementFormOptionsDTO,
   MovementListItemDTO,
-  MovementLotOptionDTO,
   ReconcileDifferenceDTO,
   ReconcileReportDTO,
   WarehouseDTO,
   WarehouseMapDTO,
 } from '../application/warehouse.types';
 import type {
-  KardexParamsSchema,
   MovementFiltersSchema,
+  MovementHistoryFiltersSchema,
 } from '../application/warehouse.validation';
 
 function toNumber(value: string | number): number {
   return typeof value === 'number' ? value : Number(value);
 }
 
-function movementWhere(filters: MovementFiltersSchema): SQL | undefined {
+const originCell = alias(warehouseCell, 'origin_cell');
+const destinationCell = alias(warehouseCell, 'destination_cell');
+
+function headerConditions(filters: MovementFiltersSchema): SQL[] {
   const conditions: SQL[] = [];
 
   if (filters.type) {
@@ -65,12 +67,64 @@ function movementWhere(filters: MovementFiltersSchema): SQL | undefined {
     conditions.push(lte(movement.createdAt, new Date(`${filters.to}T23:59:59.999Z`)));
   }
 
+  return conditions;
+}
+
+function relatedMovementSearch(term: string): SQL {
+  const pattern = ilikePattern(term);
+
+  return sql`EXISTS (
+    SELECT 1
+    FROM "movement_entry" AS me
+    LEFT JOIN "lot" AS l ON l."id" = me."lot_id"
+    LEFT JOIN "product_item" AS pi ON pi."id" = l."item_id"
+    LEFT JOIN "product" AS p ON p."id" = pi."product_id"
+    LEFT JOIN "warehouse_cell" AS oc ON oc."id" = me."origin_cell_id"
+    LEFT JOIN "warehouse_cell" AS dc ON dc."id" = me."destination_cell_id"
+    WHERE me."movement_id" = "movement"."id"
+      AND (
+        l."code" ILIKE ${pattern}
+        OR pi."title" ILIKE ${pattern}
+        OR p."title" ILIKE ${pattern}
+        OR oc."code" ILIKE ${pattern}
+        OR dc."code" ILIKE ${pattern}
+      )
+  )`;
+}
+
+function movementSearchCondition(term: string): SQL {
+  const pattern = ilikePattern(term);
+  const header = sql`(
+    "movement"."note" ILIKE ${pattern}
+    OR "movement"."reference" ILIKE ${pattern}
+    OR "movement"."sequential_number"::text ILIKE ${pattern}
+  )`;
+
+  return sql`(${header} OR ${relatedMovementSearch(term)})`;
+}
+
+function movementWhere(filters: MovementHistoryFiltersSchema, q: string | null): SQL | undefined {
+  const conditions = headerConditions(filters);
+
+  if (q) {
+    conditions.push(movementSearchCondition(q));
+  }
+  if (filters.lotId) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM "movement_entry" AS me WHERE me."movement_id" = "movement"."id" AND me."lot_id" = ${filters.lotId})`,
+    );
+  }
+  if (filters.cellId) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM "movement_entry" AS me WHERE me."movement_id" = "movement"."id" AND (me."origin_cell_id" = ${filters.cellId} OR me."destination_cell_id" = ${filters.cellId}))`,
+    );
+  }
+
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
-function entryWhere(filters: KardexParamsSchema): SQL | undefined {
-  const header = movementWhere(filters);
-  const conditions: SQL[] = header ? [header] : [];
+function entryWhere(filters: MovementHistoryFiltersSchema, q: string | null): SQL | undefined {
+  const conditions = headerConditions(filters);
 
   if (filters.lotId) {
     conditions.push(eq(movementEntry.lotId, filters.lotId));
@@ -84,15 +138,28 @@ function entryWhere(filters: KardexParamsSchema): SQL | undefined {
       conditions.push(touchesCell);
     }
   }
+  if (q) {
+    const pattern = ilikePattern(q);
+    conditions.push(sql`(
+      "movement"."note" ILIKE ${pattern}
+      OR "movement"."reference" ILIKE ${pattern}
+      OR "movement"."sequential_number"::text ILIKE ${pattern}
+      OR "lot"."code" ILIKE ${pattern}
+      OR "product"."title" ILIKE ${pattern}
+      OR "product_item"."title" ILIKE ${pattern}
+      OR "origin_cell"."code" ILIKE ${pattern}
+      OR "destination_cell"."code" ILIKE ${pattern}
+    )`);
+  }
 
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
 const userNameSql = sql<string>`CONCAT_WS(' ', ${user.firstName}, ${user.lastName})`;
 
-const entryCountSql = sql<number>`(SELECT COUNT(*) FROM ${movementEntry} WHERE ${movementEntry.movementId} = ${movement.id})::int`;
+const entryCountSql = sql<number>`(SELECT COUNT(*) FROM "movement_entry" WHERE "movement_entry"."movement_id" = "movement"."id")::int`;
 
-const isRevertedSql = sql<boolean>`EXISTS (SELECT 1 FROM ${movement} AS reverting WHERE reverting.reverts_id = ${movement.id})`;
+const isRevertedSql = sql<boolean>`EXISTS (SELECT 1 FROM "movement" AS reverting WHERE "reverting"."reverts_id" = "movement"."id")`;
 
 async function readCellCodes(
   ctx: RequestContext,
@@ -322,16 +389,11 @@ export async function listLotItemOptions(ctx: RequestContext): Promise<LotItemOp
   }));
 }
 
-export async function getMovementFormOptions(
+async function readMovementOptions(
   ctx: RequestContext,
-  warehouseId?: string,
+  warehouseId: string,
+  activeOnly: boolean,
 ): Promise<MovementFormOptionsDTO> {
-  const targetWarehouseId = warehouseId ?? (await getPrimaryWarehouse(ctx))?.id;
-
-  if (!targetWarehouseId) {
-    return { lots: [], cells: [] };
-  }
-
   const [lotRows, cellRows] = await Promise.all([
     ctx.db
       .select({
@@ -343,21 +405,46 @@ export async function getMovementFormOptions(
       .from(lot)
       .innerJoin(productItem, eq(productItem.id, lot.itemId))
       .innerJoin(product, eq(product.id, productItem.productId))
-      .where(eq(lot.isActive, true))
+      .where(activeOnly ? eq(lot.isActive, true) : undefined)
       .orderBy(asc(lot.code), asc(lot.id)),
     ctx.db
       .select({ id: warehouseCell.id, code: warehouseCell.code })
       .from(warehouseCell)
       .where(
-        and(eq(warehouseCell.warehouseId, targetWarehouseId), eq(warehouseCell.isActive, true)),
+        activeOnly
+          ? and(eq(warehouseCell.warehouseId, warehouseId), eq(warehouseCell.isActive, true))
+          : eq(warehouseCell.warehouseId, warehouseId),
       )
       .orderBy(asc(warehouseCell.code), asc(warehouseCell.id)),
   ]);
 
-  const lots: MovementLotOptionDTO[] = lotRows;
-  const cells: MovementCellOptionDTO[] = cellRows;
+  return { lots: lotRows, cells: cellRows };
+}
 
-  return { lots, cells };
+export async function getMovementFormOptions(
+  ctx: RequestContext,
+  warehouseId?: string,
+): Promise<MovementFormOptionsDTO> {
+  const targetWarehouseId = warehouseId ?? (await getPrimaryWarehouse(ctx))?.id;
+
+  if (!targetWarehouseId) {
+    return { lots: [], cells: [] };
+  }
+
+  return readMovementOptions(ctx, targetWarehouseId, true);
+}
+
+export async function getMovementHistoryOptions(
+  ctx: RequestContext,
+  warehouseId?: string,
+): Promise<MovementFormOptionsDTO> {
+  const targetWarehouseId = warehouseId ?? (await getPrimaryWarehouse(ctx))?.id;
+
+  if (!targetWarehouseId) {
+    return { lots: [], cells: [] };
+  }
+
+  return readMovementOptions(ctx, targetWarehouseId, false);
 }
 
 export async function getLotById(ctx: RequestContext, id: string): Promise<LotFormDTO | undefined> {
@@ -460,9 +547,9 @@ export async function getLotSummary(
 export async function listMovements(
   ctx: RequestContext,
   params: ListParams,
-  filters: MovementFiltersSchema,
+  filters: MovementHistoryFiltersSchema,
 ): Promise<Paginated<MovementListItemDTO>> {
-  const where = movementWhere(filters);
+  const where = movementWhere(filters, params.q);
 
   const [counted, rows] = await Promise.all([
     ctx.db.select({ total: sql<number>`count(*)::int` }).from(movement).where(where),
@@ -475,12 +562,9 @@ export async function listMovements(
         note: movement.note,
         reference: movement.reference,
         createdAt: movement.createdAt,
-        userName: userNameSql,
         entryCount: entryCountSql,
-        isReverted: isRevertedSql,
       })
       .from(movement)
-      .innerJoin(user, eq(user.id, movement.userId))
       .where(where)
       .orderBy(desc(movement.sequentialNumber))
       .limit(params.pageSize)
@@ -493,15 +577,20 @@ export async function listMovements(
 export async function listMovementEntries(
   ctx: RequestContext,
   params: ListParams,
-  filters: KardexParamsSchema,
+  filters: MovementHistoryFiltersSchema,
 ): Promise<Paginated<MovementEntryRowDTO>> {
-  const where = entryWhere(filters);
+  const where = entryWhere(filters, params.q);
 
   const [counted, rows] = await Promise.all([
     ctx.db
       .select({ total: sql<number>`count(*)::int` })
       .from(movementEntry)
       .innerJoin(movement, eq(movement.id, movementEntry.movementId))
+      .innerJoin(lot, eq(lot.id, movementEntry.lotId))
+      .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .leftJoin(originCell, eq(originCell.id, movementEntry.originCellId))
+      .leftJoin(destinationCell, eq(destinationCell.id, movementEntry.destinationCellId))
       .where(where),
     ctx.db
       .select({
@@ -512,26 +601,27 @@ export async function listMovementEntries(
         reason: movement.reason,
         lotId: movementEntry.lotId,
         lotCode: lot.code,
+        productTitle: product.title,
+        itemTitle: productItem.title,
         originCellId: movementEntry.originCellId,
+        originCellCode: originCell.code,
         destinationCellId: movementEntry.destinationCellId,
+        destinationCellCode: destinationCell.code,
         quantity: movementEntry.quantity,
-        userName: userNameSql,
         createdAt: movement.createdAt,
       })
       .from(movementEntry)
       .innerJoin(movement, eq(movement.id, movementEntry.movementId))
       .innerJoin(lot, eq(lot.id, movementEntry.lotId))
-      .innerJoin(user, eq(user.id, movement.userId))
+      .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .leftJoin(originCell, eq(originCell.id, movementEntry.originCellId))
+      .leftJoin(destinationCell, eq(destinationCell.id, movementEntry.destinationCellId))
       .where(where)
       .orderBy(desc(movement.sequentialNumber), asc(movementEntry.id))
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);
-
-  const cellCodes = await readCellCodes(
-    ctx,
-    rows.flatMap((row) => [row.originCellId, row.destinationCellId]),
-  );
 
   const items = rows.map(
     (row): MovementEntryRowDTO => ({
@@ -542,14 +632,13 @@ export async function listMovementEntries(
       reason: row.reason,
       lotId: row.lotId,
       lotCode: row.lotCode,
+      productTitle: row.productTitle,
+      itemTitle: row.itemTitle,
       originCellId: row.originCellId,
-      originCellCode: row.originCellId ? (cellCodes.get(row.originCellId) ?? null) : null,
+      originCellCode: row.originCellCode,
       destinationCellId: row.destinationCellId,
-      destinationCellCode: row.destinationCellId
-        ? (cellCodes.get(row.destinationCellId) ?? null)
-        : null,
+      destinationCellCode: row.destinationCellCode,
       quantity: toNumber(row.quantity),
-      userName: row.userName,
       createdAt: row.createdAt,
     }),
   );

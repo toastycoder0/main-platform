@@ -176,11 +176,9 @@ export interface MovementListItemDTO {
   sequentialNumber: number;
   type: MovementType;
   reason: MovementReason | null;
-  userName: string;
   note: string | null;
   reference: string | null;
   entryCount: number;
-  isReverted: boolean;
   createdAt: Date;
 }
 
@@ -192,12 +190,13 @@ export interface MovementEntryRowDTO {
   reason: MovementReason | null;
   lotId: string;
   lotCode: string;
+  productTitle: string;
+  itemTitle: string;
   originCellId: string | null;
   originCellCode: string | null;
   destinationCellId: string | null;
   destinationCellCode: string | null;
   quantity: number;
-  userName: string;
   createdAt: Date;
 }
 
