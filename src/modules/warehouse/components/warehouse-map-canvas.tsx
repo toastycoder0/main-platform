@@ -120,7 +120,8 @@ export function WarehouseMapCanvas({
           panning={{ velocityDisabled: true }}
           pinch={{ step: 3 }}
           ref={transformRef}
-          wheel={{ step: 0.001 }}
+          trackPadPanning={{ disabled: false }}
+          wheel={{ step: 0.01, wheelDisabled: true }}
         >
           <TransformComponent
             contentClass='!w-auto !h-auto'
