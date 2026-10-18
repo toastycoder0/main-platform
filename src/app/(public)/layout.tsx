@@ -54,7 +54,9 @@ async function PublicNavbar() {
     ...categoryParentLink,
     ...brandParentLink,
     ...staticLinks,
-    ...(session ? [{ label: 'Panel de control', href: '/dashboard' }] : []),
+    ...(session && ctx.permissions.has(PERMISSIONS.admin.access)
+      ? [{ label: 'Panel de control', href: '/dashboard' }]
+      : []),
     ...(ctx.permissions.has(PERMISSIONS.warehouse.access)
       ? [{ label: 'Almacén', href: '/warehouse' }]
       : []),

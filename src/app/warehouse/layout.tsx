@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
-import { getNav } from '@/modules/registry';
+import { getNav, resolveLogoHref } from '@/modules/registry';
 import type { NavLink } from '@/shared/components/navbar';
 import {
   NavbarBar,
@@ -23,15 +23,17 @@ export default async function WarehouseLayout({ children }: WarehouseLayoutProps
     redirect('/auth/login');
   }
 
-  const navLinks = getNav('warehouse', Array.from(ctx.permissions)).map(
-    (item): NavLink => ({ label: item.label, href: item.href }),
-  );
+  const permissions = Array.from(ctx.permissions);
+  const logoHref = resolveLogoHref('warehouse', permissions);
+  const navLinks = getNav('warehouse', permissions)
+    .filter((item) => item.href !== logoHref)
+    .map((item): NavLink => ({ label: item.label, href: item.href }));
 
   return (
     <div className='flex min-h-dvh flex-col'>
-      <NavbarShell logoHref='/warehouse'>
+      <NavbarShell logoHref={logoHref}>
         <NavbarBar>
-          <NavbarLogo href='/warehouse' className='mr-4' />
+          <NavbarLogo href={logoHref} className='mr-4' />
           <NavbarLinks links={navLinks} />
           <NavbarUser
             isAuthenticated

@@ -21,6 +21,7 @@ import { seedWarehouse } from './warehouse.seed';
 const { admin, warehouse } = PERMISSIONS;
 
 const INITIAL_PERMISSIONS = [
+  { slug: PERMISSIONS.public.access, name: 'Acceso a la sección pública', type: 'access' as const },
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
   {
     slug: warehouse.lots.access,

@@ -1,7 +1,8 @@
 import { HouseIcon, TagIcon } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
+import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from './manifest';
-import { SECTIONS, selectBreadcrumbs, selectNav } from './registry';
+import { resolveLogoHref, SECTIONS, selectBreadcrumbs, selectNav } from './registry';
 
 const testManifest: ModuleManifest = {
   name: 'test',
@@ -47,6 +48,26 @@ describe('selectNav', () => {
 
   it('returns an empty list when no manifest contributes to the section', () => {
     expect(selectNav([testManifest], 'warehouse', ['test.alpha.access'])).toEqual([]);
+  });
+});
+
+describe('resolveLogoHref', () => {
+  it('always links to the public root from the public section', () => {
+    expect(resolveLogoHref('public', [])).toBe(SECTIONS.public.rootPath);
+  });
+
+  it('links to the public root when the user can reach the public section', () => {
+    expect(resolveLogoHref('warehouse', [PERMISSIONS.public.access])).toBe(
+      SECTIONS.public.rootPath,
+    );
+  });
+
+  it('keeps the logo inside the section for scoped profiles', () => {
+    expect(resolveLogoHref('warehouse', ['warehouse.access'])).toBe(SECTIONS.warehouse.rootPath);
+  });
+
+  it('generalizes to other operational sections', () => {
+    expect(resolveLogoHref('driver', ['driver.access'])).toBe(SECTIONS.driver.rootPath);
   });
 });
 

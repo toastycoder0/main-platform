@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '@/shared/constants/permissions';
 import { authManifest } from './auth/manifest';
 import { brandsManifest } from './brands/manifest';
 import { categoriesManifest } from './categories/manifest';
@@ -147,6 +148,19 @@ export function selectBreadcrumbs(
 
 export function getNav(section: SectionId, permissions: string[]): NavItem[] {
   return selectNav(manifests, section, permissions);
+}
+
+/**
+ * Profiles scoped to an operational section (e.g. warehouse staff without
+ * storefront access) keep the logo pointing at their section root instead of
+ * the public site, so the section remains self-contained.
+ */
+export function resolveLogoHref(section: SectionId, permissions: string[]): string {
+  if (section === 'public' || permissions.includes(PERMISSIONS.public.access)) {
+    return SECTIONS.public.rootPath;
+  }
+
+  return SECTIONS[section].rootPath;
 }
 
 export function resolveLabel(section: SectionId, pathname: string): string | undefined {
