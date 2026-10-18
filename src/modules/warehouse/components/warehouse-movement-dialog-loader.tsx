@@ -4,12 +4,14 @@ import { getMovementFormOptions } from '../infrastructure/warehouse.query';
 import { WarehouseMovementDialog } from './warehouse-movement-dialog';
 
 interface WarehouseMovementDialogLoaderProps {
+  allowedKinds: readonly MovementFormKind[];
   initialKind: MovementFormKind;
   initialLotId: string | null;
   initialCellId: string | null;
 }
 
 export async function WarehouseMovementDialogLoader({
+  allowedKinds,
   initialKind,
   initialLotId,
   initialCellId,
@@ -19,6 +21,7 @@ export async function WarehouseMovementDialogLoader({
 
   return (
     <WarehouseMovementDialog
+      allowedKinds={allowedKinds}
       initialCellId={initialCellId}
       initialKind={initialKind}
       initialLotId={initialLotId}

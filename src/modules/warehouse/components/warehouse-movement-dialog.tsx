@@ -53,7 +53,6 @@ import {
 import {
   createMovementRow,
   MOVEMENT_FORM_COLUMNS,
-  MOVEMENT_FORM_KINDS,
   type MovementFormColumn,
   type MovementFormKind,
 } from '../application/warehouse.movement';
@@ -71,6 +70,7 @@ import { movementParams } from '../infrastructure/warehouse.params';
 import { MOVEMENT_COLUMN_LABELS, MOVEMENT_FORM_KIND_CONFIG } from './warehouse-movement-config';
 
 interface WarehouseMovementDialogProps {
+  allowedKinds: readonly MovementFormKind[];
   initialKind: MovementFormKind;
   initialLotId: string | null;
   initialCellId: string | null;
@@ -154,6 +154,7 @@ function cellLabel(cell: MovementCellOptionDTO): string {
 }
 
 export function WarehouseMovementDialog({
+  allowedKinds,
   initialKind,
   initialLotId,
   initialCellId,
@@ -295,7 +296,7 @@ export function WarehouseMovementDialog({
                         <SelectValue placeholder='Seleccionar tipo' />
                       </SelectTrigger>
                       <SelectContent>
-                        {MOVEMENT_FORM_KINDS.map((item) => (
+                        {allowedKinds.map((item) => (
                           <SelectItem key={item} value={item}>
                             {MOVEMENT_FORM_KIND_CONFIG[item].label}
                           </SelectItem>

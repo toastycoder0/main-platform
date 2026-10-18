@@ -3,10 +3,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
-import {
-  MOVEMENT_FORM_KINDS,
-  type MovementFormKind,
-} from '@/modules/warehouse/application/warehouse.movement';
+import type { MovementFormKind } from '@/modules/warehouse/application/warehouse.movement';
+import { permittedMovementKinds } from '@/modules/warehouse/application/warehouse.permissions';
 import {
   resolveWarehouseView,
   type WarehouseView,
@@ -37,32 +35,23 @@ export const metadata: Metadata = {
   title: 'Almacén',
 };
 
-const MOVEMENT_PERMISSIONS: Record<MovementFormKind, string> = {
-  reception: PERMISSIONS.warehouse.stock.reception,
-  transfer: PERMISSIONS.warehouse.stock.transfer,
-  materialOut: PERMISSIONS.warehouse.stock.materialOut,
-  delivery: PERMISSIONS.warehouse.stock.delivery,
-};
-
 function buildMovementLinks(
-  permissions: Set<string>,
+  allowedKinds: readonly MovementFormKind[],
   view: WarehouseView,
   q: string | null,
   page: number,
   pageSize: number,
 ) {
-  return MOVEMENT_FORM_KINDS.filter((id) => permissions.has(MOVEMENT_PERMISSIONS[id])).map(
-    (id): { id: MovementFormKind; href: string } => ({
-      id,
-      href: buildListHref('/warehouse', {
-        view: view === 'lots' ? null : view,
-        q,
-        page,
-        pageSize,
-        movement: id,
-      }),
+  return allowedKinds.map((id): { id: MovementFormKind; href: string } => ({
+    id,
+    href: buildListHref('/warehouse', {
+      view: view === 'lots' ? null : view,
+      q,
+      page,
+      pageSize,
+      movement: id,
     }),
-  );
+  }));
 }
 
 export default async function WarehousePage({ searchParams }: WarehousePageProps) {
@@ -76,10 +65,9 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
   const canLots = ctx.permissions.has(PERMISSIONS.warehouse.lots.access);
   const canMap = ctx.permissions.has(PERMISSIONS.warehouse.map.access);
   const canCreateLot = ctx.permissions.has(PERMISSIONS.warehouse.lots.create) && canLots;
+  const allowedKinds = permittedMovementKinds(ctx.permissions);
   const movementKind = params.movement;
-  const canMovement = movementKind
-    ? ctx.permissions.has(MOVEMENT_PERMISSIONS[movementKind])
-    : false;
+  const canMovement = movementKind ? allowedKinds.includes(movementKind) : false;
   const view = resolveWarehouseView(params.view, canLots, canMap);
 
   if (!view) {
@@ -102,7 +90,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
   }
 
   const movementLinks = buildMovementLinks(
-    ctx.permissions,
+    allowedKinds,
     view,
     params.q,
     params.page,
@@ -143,6 +131,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
       {canMovement && movementKind ? (
         <Suspense fallback={<WarehouseMovementDialogSkeleton />}>
           <WarehouseMovementDialogLoader
+            allowedKinds={allowedKinds}
             initialCellId={params.cell}
             initialKind={movementKind}
             initialLotId={params.lot}
