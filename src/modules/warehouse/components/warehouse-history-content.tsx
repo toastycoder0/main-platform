@@ -3,7 +3,10 @@ import { ListPagination } from '@/shared/components/list-pagination';
 import type { ListHrefParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import type { MovementEntryRowDTO, MovementListItemDTO } from '../application/warehouse.types';
-import type { MovementHistoryFiltersSchema } from '../application/warehouse.validation';
+import {
+  type MovementHistoryFiltersSchema,
+  movementHistoryFiltersSchema,
+} from '../application/warehouse.validation';
 import type { MovementHistoryParams } from '../infrastructure/warehouse.params';
 import {
   getMovementHistoryOptions,
@@ -50,13 +53,13 @@ function MovementHistoryResults({ view, movements, entries, total }: MovementHis
 }
 
 function toFilters(params: MovementHistoryParams): MovementHistoryFiltersSchema {
-  return {
+  return movementHistoryFiltersSchema.parse({
     movements: params.movements,
     from: params.from ?? undefined,
     to: params.to ?? undefined,
     lotId: params.lot ?? undefined,
     cellId: params.cell ?? undefined,
-  };
+  });
 }
 
 export async function WarehouseHistoryContent({ ctx, params, view }: WarehouseHistoryContentProps) {
