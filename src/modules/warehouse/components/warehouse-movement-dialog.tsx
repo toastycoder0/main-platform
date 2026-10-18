@@ -56,6 +56,7 @@ import {
   MAX_MOVEMENT_ENTRIES,
   type MovementFormSchema,
   type MovementReturnContextSchema,
+  movementFormKindSchema,
   movementFormSchema,
 } from '../application/warehouse.validation';
 import { registerMovement } from '../infrastructure/warehouse.action';
@@ -152,8 +153,8 @@ export function WarehouseMovementDialog({
       return;
     }
 
-    setOpen(false);
     startTransition(() => {
+      setOpen(false);
       setParams({ movement: null, lot: null, cell: null });
     });
   }
@@ -166,7 +167,13 @@ export function WarehouseMovementDialog({
   }
 
   function requestKindChange(nextKind: string) {
-    const next = nextKind as MovementFormKind;
+    const parsed = movementFormKindSchema.safeParse(nextKind);
+
+    if (!parsed.success) {
+      return;
+    }
+
+    const next = parsed.data;
 
     if (next === kind) {
       return;
