@@ -101,7 +101,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
   );
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex min-h-0 flex-1 flex-col gap-4'>
       <h1 className='sr-only'>Almacén</h1>
 
       <WarehouseToolbar

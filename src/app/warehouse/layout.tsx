@@ -27,7 +27,7 @@ export default async function WarehouseLayout({ children }: WarehouseLayoutProps
   );
 
   return (
-    <>
+    <div className='flex min-h-dvh flex-col'>
       <NavbarShell logoHref='/warehouse'>
         <Navbar>
           <NavbarBrand href='/warehouse' />
@@ -39,7 +39,9 @@ export default async function WarehouseLayout({ children }: WarehouseLayoutProps
           />
         </Navbar>
       </NavbarShell>
-      <main className='mx-auto max-w-360 px-4 py-6 md:px-6'>{children}</main>
-    </>
+      <main className='mx-auto flex w-full min-h-0 max-w-360 flex-1 flex-col px-4 py-6 md:px-6'>
+        {children}
+      </main>
+    </div>
   );
 }
