@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Loader2Icon } from 'lucide-react';
+import { useQueryStates } from 'nuqs';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   type ReactZoomPanPinchRef,
   TransformComponent,
@@ -9,6 +11,7 @@ import {
 import { buildListHref } from '@/shared/list/list-params';
 import { buildMapIndex, findMatchingCellIds } from '../application/warehouse.map';
 import type { MapStockRowDTO, NodeDTO } from '../application/warehouse.types';
+import { warehouseParams } from '../infrastructure/warehouse.params';
 import { WarehouseCellPanel } from './warehouse-cell-panel';
 import { WarehouseMapBody } from './warehouse-map-body';
 import { WarehouseMapControls } from './warehouse-map-controls';
@@ -21,6 +24,12 @@ interface WarehouseMapCanvasProps {
   canEdit: boolean;
 }
 
+/*
+ * The selected cell lives in the `highlight` URL param (server-first): opening
+ * or closing the panel writes the param inside a transition, and the panel is
+ * derived from the server-provided value so deep links, back button and the UI
+ * never diverge. Zoom/pan stays local view state.
+ */
 export function WarehouseMapCanvas({
   nodes,
   stock,
@@ -29,20 +38,18 @@ export function WarehouseMapCanvas({
   canEdit,
 }: WarehouseMapCanvasProps) {
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
-  const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [hasCentered, setHasCentered] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [, setParams] = useQueryStates(warehouseParams);
   const prevQueryRef = useRef(q);
 
   const index = useMemo(() => buildMapIndex(nodes, stock), [nodes, stock]);
   const matchedCellIds = useMemo(() => findMatchingCellIds(index, q), [index, q]);
   const hasSearch = q.length > 0;
+  const selectedCellId = highlight !== '' ? highlight : null;
   const selectedEntry = selectedCellId ? index.get(selectedCellId) : undefined;
 
-  const handleCellClick = useCallback((cellId: string) => {
-    setSelectedCellId(cellId);
-    setPanelOpen(true);
-
+  const zoomToCell = useCallback((cellId: string) => {
     const element = document.getElementById(`map-cell-${cellId}`);
 
     if (element) {
@@ -50,11 +57,31 @@ export function WarehouseMapCanvas({
     }
   }, []);
 
-  const handlePanelClose = useCallback(() => {
-    setPanelOpen(false);
-    setSelectedCellId(null);
-  }, []);
+  const handleCellClick = useCallback(
+    (cellId: string) => {
+      if (isPending) {
+        return;
+      }
 
+      zoomToCell(cellId);
+      startTransition(() => {
+        setParams({ highlight: cellId });
+      });
+    },
+    [isPending, setParams, zoomToCell],
+  );
+
+  const handlePanelClose = useCallback(() => {
+    if (isPending) {
+      return;
+    }
+
+    startTransition(() => {
+      setParams({ highlight: null });
+    });
+  }, [isPending, setParams]);
+
+  // Center a deep-linked highlight once per selection session.
   useEffect(() => {
     if (!highlight || hasCentered || !transformRef.current) {
       return;
@@ -67,8 +94,6 @@ export function WarehouseMapCanvas({
     }
 
     transformRef.current.zoomToElement(element, 1.5, 400);
-    setSelectedCellId(highlight);
-    setPanelOpen(true);
     setHasCentered(true);
   }, [highlight, hasCentered]);
 
@@ -78,18 +103,20 @@ export function WarehouseMapCanvas({
     }
   }, [highlight]);
 
+  // A new search invalidates the previously selected cell.
   useEffect(() => {
     const queryChanged = prevQueryRef.current !== q;
     prevQueryRef.current = q;
 
-    if (queryChanged && q.length > 0) {
-      setPanelOpen(false);
-      setSelectedCellId(null);
+    if (queryChanged && q.length > 0 && highlight) {
+      startTransition(() => {
+        setParams({ highlight: null });
+      });
     }
-  }, [q]);
+  }, [q, highlight, setParams]);
 
   useEffect(() => {
-    if (!panelOpen) {
+    if (!selectedCellId) {
       return;
     }
 
@@ -102,10 +129,11 @@ export function WarehouseMapCanvas({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [panelOpen, handlePanelClose]);
+  }, [selectedCellId, handlePanelClose]);
 
   return (
     <div
+      aria-busy={isPending}
       className='relative flex min-h-0 flex-1 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100'
       data-slot='warehouse-map'
     >
@@ -140,7 +168,7 @@ export function WarehouseMapCanvas({
                     matchedCellIds={matchedCellIds}
                     node={node}
                     onSelect={handleCellClick}
-                    selectedCellId={panelOpen ? selectedCellId : null}
+                    selectedCellId={selectedCellId}
                   />
                 </div>
               ))}
@@ -149,7 +177,14 @@ export function WarehouseMapCanvas({
         </TransformWrapper>
       </div>
 
-      {panelOpen && selectedEntry ? (
+      {isPending ? (
+        <div className='absolute inset-0 z-30 flex items-center justify-center bg-neutral-100/40'>
+          <span className='sr-only'>Actualizando mapa…</span>
+          <Loader2Icon aria-hidden className='size-6 animate-spin text-neutral-500' />
+        </div>
+      ) : null}
+
+      {selectedEntry ? (
         <div className='absolute inset-y-0 right-0 z-10 flex w-80 flex-col pointer-events-none'>
           <div className='pointer-events-auto flex h-full flex-col rounded-r-lg ring-1 ring-black/5 backdrop-blur-sm bg-white/95'>
             <WarehouseCellPanel
@@ -171,7 +206,7 @@ export function WarehouseMapCanvas({
         </div>
       ) : null}
 
-      <WarehouseMapControls panelOpen={panelOpen} transformRef={transformRef} />
+      <WarehouseMapControls panelOpen={selectedEntry !== undefined} transformRef={transformRef} />
     </div>
   );
 }
