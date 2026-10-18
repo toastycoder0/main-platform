@@ -122,6 +122,21 @@ export interface LotListItemDTO {
   createdAt: Date;
 }
 
+export interface LotItemOptionDTO {
+  value: string;
+  label: string;
+}
+
+export interface LotFormDTO {
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  productTitle: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
 export interface MovementListItemDTO {
   id: string;
   sequentialNumber: number;

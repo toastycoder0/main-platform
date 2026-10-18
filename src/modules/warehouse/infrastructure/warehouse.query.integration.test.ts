@@ -22,9 +22,11 @@ import type { MovementKind } from '../application/warehouse.types';
 import { executeMovement } from './warehouse.engine';
 import {
   getCellStock,
+  getLotById,
   getMap,
   getMovement,
   getPrimaryWarehouse,
+  listLotItemOptions,
   listLots,
   listMapStock,
   listMovementEntries,
@@ -258,6 +260,38 @@ describe('getCellStock', () => {
 
   it('returns an empty list for a cell without stock', async () => {
     expect(await getCellStock(testContext(), cellEmpty)).toHaveLength(0);
+  });
+});
+
+describe('listLotItemOptions', () => {
+  it('lists inventory items with their product title', async () => {
+    const options = await listLotItemOptions(testContext());
+    const option = options.find((item) => item.value === itemId);
+
+    expect(option).toEqual({
+      value: itemId,
+      label: `Test Product — Variante (${scope}_VAR)`,
+    });
+  });
+});
+
+describe('getLotById', () => {
+  it('returns the stored lot with product data', async () => {
+    const stored = await getLotById(testContext(), lot1);
+
+    expect(stored).toMatchObject({
+      id: lot1,
+      itemId,
+      itemTitle: 'Variante',
+      productTitle: 'Test Product',
+      code: `${scope}_L1`,
+      name: 'Lote 1',
+      isActive: true,
+    });
+  });
+
+  it('returns undefined for a missing lot', async () => {
+    expect(await getLotById(testContext(), 'lot_missing')).toBeUndefined();
   });
 });
 

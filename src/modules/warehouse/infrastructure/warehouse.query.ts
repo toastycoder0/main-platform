@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import {
@@ -22,6 +22,8 @@ import {
 } from '../application/warehouse.tree';
 import type {
   CellStockDTO,
+  LotFormDTO,
+  LotItemOptionDTO,
   LotListItemDTO,
   MapStockRowDTO,
   MovementDTO,
@@ -294,6 +296,51 @@ export async function listLots(
     })),
     total: counted[0]?.total ?? 0,
   };
+}
+
+export async function listLotItemOptions(ctx: RequestContext): Promise<LotItemOptionDTO[]> {
+  const rows = await ctx.db
+    .select({
+      value: productItem.id,
+      productTitle: product.title,
+      itemTitle: productItem.title,
+      itemCode: productItem.code,
+    })
+    .from(productItem)
+    .innerJoin(product, eq(product.id, productItem.productId))
+    .where(
+      and(
+        eq(productItem.isActive, true),
+        eq(productItem.managesInventory, true),
+        isNull(product.deletedAt),
+      ),
+    )
+    .orderBy(asc(product.title), asc(productItem.sortOrder), asc(productItem.id));
+
+  return rows.map((row) => ({
+    value: row.value,
+    label: `${row.productTitle} — ${row.itemTitle} (${row.itemCode})`,
+  }));
+}
+
+export async function getLotById(ctx: RequestContext, id: string): Promise<LotFormDTO | undefined> {
+  const rows = await ctx.db
+    .select({
+      id: lot.id,
+      itemId: lot.itemId,
+      itemTitle: productItem.title,
+      productTitle: product.title,
+      code: lot.code,
+      name: lot.name,
+      isActive: lot.isActive,
+    })
+    .from(lot)
+    .innerJoin(productItem, eq(productItem.id, lot.itemId))
+    .innerJoin(product, eq(product.id, productItem.productId))
+    .where(eq(lot.id, id))
+    .limit(1);
+
+  return rows[0];
 }
 
 export async function listMovements(
