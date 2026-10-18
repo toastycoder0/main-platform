@@ -84,9 +84,10 @@ describe('Warehouse E2E', () => {
 
     await page.getByLabel('Buscar en el almacén').fill('A29');
     await page.waitForFunction(() => window.location.search.includes('q=A29'));
-    await expect
-      .poll(() => page.getByRole('button', { name: /Celda A29/ }).getAttribute('data-search-match'))
-      .toBe('true');
+
+    await page
+      .locator('[data-slot="warehouse-map"] [aria-label^="Celda A29"][data-search-match="true"]')
+      .waitFor();
   });
 
   it('shows the movement links for an admin', async () => {
