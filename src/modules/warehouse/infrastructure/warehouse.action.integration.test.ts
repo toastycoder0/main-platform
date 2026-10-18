@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
@@ -17,12 +18,11 @@ import {
   warehouseNode,
 } from '@/infrastructure/db/schema';
 import { PERMISSIONS } from '@/shared/constants/permissions';
+import type { MovementFormKind } from '../application/warehouse.movement';
+import type { WarehouseView } from '../application/warehouse.view';
 import {
-  assignToCell,
   createLot,
-  deliverMaterial,
-  materialOut,
-  moveBetweenCells,
+  registerMovement,
   revertMovementAction,
   updateCell,
   updateCellCapacity,
@@ -118,6 +118,17 @@ async function stockQty(cellId: string, lotId: string): Promise<number> {
     .where(and(eq(cellLot.cellId, cellId), eq(cellLot.lotId, lotId)));
 
   return row ? Number(row.quantity) : 0;
+}
+
+interface MovementRow {
+  lotId: string;
+  originCellId: string;
+  destinationCellId: string;
+  quantity: string;
+}
+
+function submitMovement(kind: MovementFormKind, rows: MovementRow[], view: WarehouseView = 'lots') {
+  return registerMovement({ kind, title: 'Integration movement', rows, view });
 }
 
 async function latestMovementId(): Promise<string> {
@@ -221,26 +232,49 @@ beforeAll(async () => {
 
 beforeEach(() => {
   state.ctx = testContext();
+  vi.mocked(redirect).mockClear();
 });
 
 afterAll(async () => {
   await cleanup();
 });
 
-describe('assignToCell', () => {
-  it('assigns stock to a cell', async () => {
-    const result = await assignToCell({
-      entries: [{ lotId: lot1, destinationCellId: cellA1, quantity: 100 }],
-    });
+describe('registerMovement', () => {
+  it('assigns stock to a cell for a reception', async () => {
+    const result = await submitMovement('reception', [
+      { lotId: lot1, originCellId: '', destinationCellId: cellA1, quantity: '100' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellA1, lot1)).toBe(100);
+    expect(vi.mocked(redirect)).toHaveBeenCalledWith('/warehouse');
+
+    const [created] = await db
+      .select({ type: movement.type, reason: movement.reason, note: movement.note })
+      .from(movement)
+      .where(eq(movement.id, await latestMovementId()));
+    expect(created).toEqual({
+      type: 'assign',
+      reason: 'reception',
+      note: 'Integration movement',
+    });
+  });
+
+  it('redirects back to the map view', async () => {
+    const result = await submitMovement(
+      'reception',
+      [{ lotId: lot2, originCellId: '', destinationCellId: cellC1, quantity: '1' }],
+      'map',
+    );
+
+    expect(result.success).toBe(true);
+    expect(vi.mocked(redirect)).toHaveBeenCalledWith('/warehouse?view=map');
   });
 
   it('rejects the movement when it exceeds capacity, returning structured details', async () => {
-    const result = await assignToCell({
-      entries: [{ lotId: lot1, destinationCellId: cellA1, quantity: 200 }],
-    });
+    const result = await submitMovement('reception', [
+      { lotId: lot1, originCellId: '', destinationCellId: cellA1, quantity: '200' },
+    ]);
 
     expect(result.success).toBe(false);
 
@@ -253,50 +287,76 @@ describe('assignToCell', () => {
     expect(result.details?.[0]?.objectId).toBe(cellA1);
   });
 
-  it('forbids the actor without the reception permission', async () => {
-    state.ctx = { ...testContext(), permissions: new Set([PERMISSIONS.warehouse.access]) };
+  it('forbids every kind without its permission', async () => {
+    const cases: Array<{
+      kind: MovementFormKind;
+      permission: string;
+      rows: MovementRow[];
+    }> = [
+      {
+        kind: 'reception',
+        permission: PERMISSIONS.warehouse.stock.reception,
+        rows: [{ lotId: lot1, originCellId: '', destinationCellId: cellA1, quantity: '1' }],
+      },
+      {
+        kind: 'transfer',
+        permission: PERMISSIONS.warehouse.stock.transfer,
+        rows: [{ lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: '1' }],
+      },
+      {
+        kind: 'materialOut',
+        permission: PERMISSIONS.warehouse.stock.materialOut,
+        rows: [{ lotId: lot1, originCellId: cellA1, destinationCellId: '', quantity: '1' }],
+      },
+      {
+        kind: 'delivery',
+        permission: PERMISSIONS.warehouse.stock.delivery,
+        rows: [{ lotId: lot1, originCellId: cellA1, destinationCellId: '', quantity: '1' }],
+      },
+    ];
 
-    const result = await assignToCell({
-      entries: [{ lotId: lot1, destinationCellId: cellA1, quantity: 1 }],
-    });
+    for (const { kind, permission, rows } of cases) {
+      state.ctx = {
+        ...testContext(),
+        permissions: new Set(ALL_PERMISSIONS.filter((item) => item !== permission)),
+      };
 
-    expect(result).toEqual({
-      success: false,
-      error: 'No tienes permiso para realizar esta acción',
-    });
+      const result = await submitMovement(kind, rows);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'No tienes permiso para realizar esta acción',
+      });
+    }
   });
-});
 
-describe('moveBetweenCells', () => {
   it('moves stock between cells', async () => {
-    const result = await moveBetweenCells({
-      entries: [{ lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: 40 }],
-    });
+    const result = await submitMovement('transfer', [
+      { lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: '40' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellA1, lot1)).toBe(60);
     expect(await stockQty(cellA2, lot1)).toBe(40);
   });
-});
 
-describe('materialOut', () => {
   it('removes material from a cell', async () => {
-    const result = await materialOut({
-      entries: [{ lotId: lot1, originCellId: cellA2, quantity: 10 }],
-    });
+    const result = await submitMovement('materialOut', [
+      { lotId: lot1, originCellId: cellA2, destinationCellId: '', quantity: '10' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellA2, lot1)).toBe(30);
   });
-});
 
-describe('deliverMaterial', () => {
   it('delivers material with the delivery reason', async () => {
-    await assignToCell({ entries: [{ lotId: lot2, destinationCellId: cellB1, quantity: 5 }] });
+    await submitMovement('reception', [
+      { lotId: lot2, originCellId: '', destinationCellId: cellB1, quantity: '5' },
+    ]);
 
-    const result = await deliverMaterial({
-      entries: [{ lotId: lot2, originCellId: cellB1, quantity: 5 }],
-    });
+    const result = await submitMovement('delivery', [
+      { lotId: lot2, originCellId: cellB1, destinationCellId: '', quantity: '5' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellB1, lot2)).toBe(0);
@@ -311,7 +371,9 @@ describe('deliverMaterial', () => {
 
 describe('revertMovementAction', () => {
   it('reverts a movement and restores the previous balance', async () => {
-    await assignToCell({ entries: [{ lotId: lot1, destinationCellId: cellC1, quantity: 20 }] });
+    await submitMovement('reception', [
+      { lotId: lot1, originCellId: '', destinationCellId: cellC1, quantity: '20' },
+    ]);
     const originalId = await latestMovementId();
     expect(await stockQty(cellC1, lot1)).toBe(20);
 

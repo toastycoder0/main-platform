@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import { MOVEMENT_FORM_KINDS, usesDestination, usesOrigin } from './warehouse.movement';
+import { WAREHOUSE_VIEWS } from './warehouse.view';
 
 export const MAX_MOVEMENT_ENTRIES = 500;
 
@@ -18,56 +19,11 @@ export type MovementReason = z.infer<typeof movementReasonSchema>;
 
 const idSchema = z.string().min(1, FIELD_ERRORS.required);
 
-const quantitySchema = z
-  .number()
-  .positive(FIELD_ERRORS.quantity)
-  .max(MAX_QUANTITY, FIELD_ERRORS.quantity)
-  .multipleOf(QUANTITY_STEP, FIELD_ERRORS.quantity);
-
 const capacitySchema = z
   .number()
   .positive(FIELD_ERRORS.quantity)
   .max(MAX_CAPACITY, FIELD_ERRORS.quantity)
   .multipleOf(QUANTITY_STEP, FIELD_ERRORS.quantity);
-
-export const assignEntrySchema = z.object({
-  lotId: idSchema,
-  destinationCellId: idSchema,
-  quantity: quantitySchema,
-});
-
-export const moveEntrySchema = z
-  .object({
-    lotId: idSchema,
-    originCellId: idSchema,
-    destinationCellId: idSchema,
-    quantity: quantitySchema,
-  })
-  .refine((entry) => entry.originCellId !== entry.destinationCellId, {
-    message: FIELD_ERRORS.sameCell,
-    path: ['destinationCellId'],
-  });
-
-export const outEntrySchema = z.object({
-  lotId: idSchema,
-  originCellId: idSchema,
-  quantity: quantitySchema,
-});
-
-function movementSchema<TEntry extends z.ZodType>(entry: TEntry) {
-  return z.object({
-    entries: z
-      .array(entry)
-      .min(1, FIELD_ERRORS.required)
-      .max(MAX_MOVEMENT_ENTRIES, FIELD_ERRORS.tooLong),
-    note: z.string().trim().max(500, FIELD_ERRORS.tooLong).optional(),
-    reference: z.string().trim().max(200, FIELD_ERRORS.tooLong).optional(),
-  });
-}
-
-export const assignSchema = movementSchema(assignEntrySchema);
-export const moveSchema = movementSchema(moveEntrySchema);
-export const outSchema = movementSchema(outEntrySchema);
 
 export const movementFormKindSchema = z.enum(MOVEMENT_FORM_KINDS);
 
@@ -158,6 +114,10 @@ export const movementFormSchema = z
     });
   });
 
+export const registerMovementSchema = movementFormSchema.extend({
+  view: z.enum(WAREHOUSE_VIEWS),
+});
+
 export const revertSchema = z.object({
   movementId: idSchema,
 });
@@ -232,12 +192,10 @@ export const cellParamsSchema = z.object({ id: idSchema });
 
 export const lotParamsSchema = z.object({ id: idSchema });
 
-export type AssignSchema = z.infer<typeof assignSchema>;
-export type MoveSchema = z.infer<typeof moveSchema>;
-export type OutSchema = z.infer<typeof outSchema>;
 export type MovementFormKindSchema = z.infer<typeof movementFormKindSchema>;
 export type MovementFormRowSchema = z.infer<typeof movementFormRowSchema>;
 export type MovementFormSchema = z.infer<typeof movementFormSchema>;
+export type RegisterMovementSchema = z.infer<typeof registerMovementSchema>;
 export type RevertSchema = z.infer<typeof revertSchema>;
 export type CreateLotSchema = z.infer<typeof createLotSchema>;
 export type UpdateLotSchema = z.infer<typeof updateLotSchema>;

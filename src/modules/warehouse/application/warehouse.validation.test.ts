@@ -1,99 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import {
-  assignSchema,
   bulkCreateCellSchema,
   createCellSchema,
   createLotSchema,
   createNodeSchema,
   movementFormSchema,
-  moveSchema,
-  outSchema,
+  registerMovementSchema,
   revertSchema,
 } from './warehouse.validation';
-
-const validAssignEntry = () => ({ lotId: 'lot_1', destinationCellId: 'wcel_1', quantity: 60 });
-
-const validMoveEntry = () => ({
-  lotId: 'lot_1',
-  originCellId: 'wcel_1',
-  destinationCellId: 'wcel_2',
-  quantity: 60,
-});
-
-const validOutEntry = () => ({ lotId: 'lot_1', originCellId: 'wcel_1', quantity: 60 });
-
-describe('assignSchema', () => {
-  it('accepts valid assign with one entry', () => {
-    expect(assignSchema.safeParse({ entries: [validAssignEntry()] }).success).toBe(true);
-  });
-
-  it('rejects entry with quantity = 0', () => {
-    const result = assignSchema.safeParse({ entries: [{ ...validAssignEntry(), quantity: 0 }] });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects entry with negative quantity', () => {
-    const result = assignSchema.safeParse({ entries: [{ ...validAssignEntry(), quantity: -1 }] });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects entry with missing destinationCellId', () => {
-    const result = assignSchema.safeParse({
-      entries: [{ lotId: 'lot_1', quantity: 60 }],
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects empty entries', () => {
-    const result = assignSchema.safeParse({ entries: [] });
-    expect(result.success).toBe(false);
-  });
-
-  it('accepts 500 entries', () => {
-    const entries = Array.from({ length: 500 }, () => validAssignEntry());
-    expect(assignSchema.safeParse({ entries }).success).toBe(true);
-  });
-
-  it('rejects more than 500 entries', () => {
-    const entries = Array.from({ length: 501 }, () => validAssignEntry());
-    const result = assignSchema.safeParse({ entries });
-    expect(result.success).toBe(false);
-  });
-});
-
-describe('moveSchema', () => {
-  it('accepts valid move with one entry', () => {
-    expect(moveSchema.safeParse({ entries: [validMoveEntry()] }).success).toBe(true);
-  });
-
-  it('rejects entry where origin equals destination', () => {
-    const result = moveSchema.safeParse({
-      entries: [{ ...validMoveEntry(), destinationCellId: 'wcel_1' }],
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects entry with missing originCellId', () => {
-    const result = moveSchema.safeParse({
-      entries: [{ lotId: 'lot_1', destinationCellId: 'wcel_2', quantity: 60 }],
-    });
-    expect(result.success).toBe(false);
-  });
-});
-
-describe('outSchema', () => {
-  it('accepts valid out with one entry', () => {
-    expect(outSchema.safeParse({ entries: [validOutEntry()] }).success).toBe(true);
-  });
-
-  it('rejects entry with missing originCellId', () => {
-    const result = outSchema.safeParse({
-      entries: [{ lotId: 'lot_1', quantity: 60 }],
-    });
-    expect(result.success).toBe(false);
-  });
-});
 
 describe('revertSchema', () => {
   it('accepts valid revert', () => {
@@ -214,37 +129,6 @@ describe('bulkCreateCellSchema', () => {
   });
 });
 
-describe('movement quantities', () => {
-  it('accepts up to four decimals', () => {
-    const entry = { ...validAssignEntry(), quantity: 0.1234 };
-    expect(assignSchema.safeParse({ entries: [entry] }).success).toBe(true);
-  });
-
-  it('rejects more than four decimals', () => {
-    const entry = { ...validAssignEntry(), quantity: 0.12345 };
-    expect(assignSchema.safeParse({ entries: [entry] }).success).toBe(false);
-  });
-
-  it('rejects quantities beyond the column precision', () => {
-    const entry = { ...validAssignEntry(), quantity: 1e12 };
-    expect(assignSchema.safeParse({ entries: [entry] }).success).toBe(false);
-  });
-});
-
-describe('moveSchema messages', () => {
-  it('reports the same-cell error on the destination field', () => {
-    const result = moveSchema.safeParse({
-      entries: [{ ...validMoveEntry(), destinationCellId: 'wcel_1' }],
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(FIELD_ERRORS.sameCell);
-      expect(result.error.issues[0]?.path).toEqual(['entries', 0, 'destinationCellId']);
-    }
-  });
-});
-
 describe('text normalization', () => {
   it('trims lot code', () => {
     const result = createLotSchema.safeParse({ itemId: 'pitem_1', code: ' L-1 ' });
@@ -347,5 +231,65 @@ describe('movementFormSchema', () => {
 
       expect(result.success).toBe(false);
     }
+  });
+
+  it('accepts quantities up to four decimals', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'transfer',
+      title: 'Transferencia',
+      rows: [{ ...validFormRow(), quantity: '0.1234' }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts 500 rows and rejects 501', () => {
+    const rows = Array.from({ length: 500 }, () => validFormRow());
+
+    expect(movementFormSchema.safeParse({ kind: 'delivery', title: 'Entrega', rows }).success).toBe(
+      true,
+    );
+    expect(
+      movementFormSchema.safeParse({
+        kind: 'delivery',
+        title: 'Entrega',
+        rows: [...rows, validFormRow()],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('registerMovementSchema', () => {
+  it('accepts a valid view', () => {
+    const result = registerMovementSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), originCellId: '' }],
+      view: 'map',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an unknown view', () => {
+    const result = registerMovementSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), originCellId: '' }],
+      view: 'dashboard',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('keeps the movement row refinements', () => {
+    const result = registerMovementSchema.safeParse({
+      kind: 'transfer',
+      title: 'Transferencia',
+      rows: [{ ...validFormRow(), destinationCellId: 'wcel_1' }],
+      view: 'lots',
+    });
+
+    expect(result.success).toBe(false);
   });
 });

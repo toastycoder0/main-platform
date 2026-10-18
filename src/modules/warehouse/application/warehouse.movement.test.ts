@@ -3,6 +3,7 @@ import {
   createMovementRow,
   MOVEMENT_FORM_COLUMNS,
   MOVEMENT_KIND_MAP,
+  toMovementEntries,
   usesDestination,
   usesOrigin,
 } from './warehouse.movement';
@@ -92,5 +93,39 @@ describe('createMovementRow', () => {
       destinationCellId: '',
       quantity: '',
     });
+  });
+});
+
+describe('toMovementEntries', () => {
+  const row = {
+    lotId: 'lot_1',
+    originCellId: 'wcel_1',
+    destinationCellId: 'wcel_2',
+    quantity: '1.5',
+  };
+
+  it('maps reception rows to destination-only entries', () => {
+    expect(toMovementEntries('reception', [row])).toEqual([
+      { lotId: 'lot_1', originCellId: null, destinationCellId: 'wcel_2', quantity: 1.5 },
+    ]);
+  });
+
+  it('maps transfer rows with both endpoints', () => {
+    expect(toMovementEntries('transfer', [row])).toEqual([
+      {
+        lotId: 'lot_1',
+        originCellId: 'wcel_1',
+        destinationCellId: 'wcel_2',
+        quantity: 1.5,
+      },
+    ]);
+  });
+
+  it('maps out rows to origin-only entries', () => {
+    for (const kind of ['materialOut', 'delivery'] as const) {
+      expect(toMovementEntries(kind, [row])).toEqual([
+        { lotId: 'lot_1', originCellId: 'wcel_1', destinationCellId: null, quantity: 1.5 },
+      ]);
+    }
   });
 });

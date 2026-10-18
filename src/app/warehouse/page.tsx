@@ -135,6 +135,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
             initialCellId={params.cell}
             initialKind={movementKind}
             initialLotId={params.lot}
+            initialView={view}
           />
         </Suspense>
       ) : null}

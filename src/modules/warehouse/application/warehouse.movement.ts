@@ -1,3 +1,5 @@
+import type { Transfer } from './warehouse.deltas';
+
 export const MOVEMENT_FORM_KINDS = ['reception', 'transfer', 'materialOut', 'delivery'] as const;
 
 export type MovementFormKind = (typeof MOVEMENT_FORM_KINDS)[number];
@@ -48,4 +50,16 @@ export function createMovementRow(
     destinationCellId: kind === 'reception' ? (prefill.cellId ?? '') : '',
     quantity: '',
   };
+}
+
+export function toMovementEntries(
+  kind: MovementFormKind,
+  rows: readonly MovementFormRow[],
+): Transfer[] {
+  return rows.map((row) => ({
+    lotId: row.lotId,
+    originCellId: usesOrigin(kind) ? row.originCellId : null,
+    destinationCellId: usesDestination(kind) ? row.destinationCellId : null,
+    quantity: Number(row.quantity),
+  }));
 }

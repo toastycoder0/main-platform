@@ -4,11 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
+import { AppError } from '@/shared/errors';
+import { MOVEMENT_KIND_MAP, toMovementEntries } from '../application/warehouse.movement';
+import { MOVEMENT_FORM_PERMISSIONS } from '../application/warehouse.permissions';
 import {
-  assignSchema,
   createLotSchema,
-  moveSchema,
-  outSchema,
+  registerMovementSchema,
   revertSchema,
   updateCellCapacitySchema,
   updateCellSchema,
@@ -24,101 +25,25 @@ import {
 const WAREHOUSE_PATH = '/warehouse';
 const MOVEMENTS_PATH = '/warehouse/movements';
 
-export const assignToCell = run(
-  { permission: PERMISSIONS.warehouse.stock.reception, input: assignSchema },
-  async (ctx, data) => {
-    await ctx.db.transaction((tx) =>
-      executeMovement(tx, {
-        userId: ctx.session.user.id,
-        kind: { type: 'assign', reason: 'reception' },
-        entries: data.entries.map((entry) => ({
-          lotId: entry.lotId,
-          originCellId: null,
-          destinationCellId: entry.destinationCellId,
-          quantity: entry.quantity,
-        })),
-        note: data.note,
-        reference: data.reference,
-      }),
-    );
+export const registerMovement = run({ input: registerMovementSchema }, async (ctx, data) => {
+  // The required permission depends on the kind, so it cannot be declared in `run`.
+  if (!ctx.permissions.has(MOVEMENT_FORM_PERMISSIONS[data.kind])) {
+    throw new AppError('forbidden');
+  }
 
-    ctx.logger.info({ entries: data.entries.length }, 'Stock assigned to cells');
-    revalidatePath(WAREHOUSE_PATH);
-    redirect(WAREHOUSE_PATH);
-  },
-);
+  await ctx.db.transaction((tx) =>
+    executeMovement(tx, {
+      userId: ctx.session.user.id,
+      kind: MOVEMENT_KIND_MAP[data.kind],
+      entries: toMovementEntries(data.kind, data.rows),
+      note: data.title,
+    }),
+  );
 
-export const moveBetweenCells = run(
-  { permission: PERMISSIONS.warehouse.stock.transfer, input: moveSchema },
-  async (ctx, data) => {
-    await ctx.db.transaction((tx) =>
-      executeMovement(tx, {
-        userId: ctx.session.user.id,
-        kind: { type: 'move', reason: 'transfer' },
-        entries: data.entries.map((entry) => ({
-          lotId: entry.lotId,
-          originCellId: entry.originCellId,
-          destinationCellId: entry.destinationCellId,
-          quantity: entry.quantity,
-        })),
-        note: data.note,
-        reference: data.reference,
-      }),
-    );
-
-    ctx.logger.info({ entries: data.entries.length }, 'Stock moved between cells');
-    revalidatePath(WAREHOUSE_PATH);
-    redirect(WAREHOUSE_PATH);
-  },
-);
-
-export const materialOut = run(
-  { permission: PERMISSIONS.warehouse.stock.materialOut, input: outSchema },
-  async (ctx, data) => {
-    await ctx.db.transaction((tx) =>
-      executeMovement(tx, {
-        userId: ctx.session.user.id,
-        kind: { type: 'out', reason: 'material_out' },
-        entries: data.entries.map((entry) => ({
-          lotId: entry.lotId,
-          originCellId: entry.originCellId,
-          destinationCellId: null,
-          quantity: entry.quantity,
-        })),
-        note: data.note,
-        reference: data.reference,
-      }),
-    );
-
-    ctx.logger.info({ entries: data.entries.length }, 'Material taken out of the warehouse');
-    revalidatePath(WAREHOUSE_PATH);
-    redirect(WAREHOUSE_PATH);
-  },
-);
-
-export const deliverMaterial = run(
-  { permission: PERMISSIONS.warehouse.stock.delivery, input: outSchema },
-  async (ctx, data) => {
-    await ctx.db.transaction((tx) =>
-      executeMovement(tx, {
-        userId: ctx.session.user.id,
-        kind: { type: 'out', reason: 'delivery' },
-        entries: data.entries.map((entry) => ({
-          lotId: entry.lotId,
-          originCellId: entry.originCellId,
-          destinationCellId: null,
-          quantity: entry.quantity,
-        })),
-        note: data.note,
-        reference: data.reference,
-      }),
-    );
-
-    ctx.logger.info({ entries: data.entries.length }, 'Material delivered');
-    revalidatePath(WAREHOUSE_PATH);
-    redirect(WAREHOUSE_PATH);
-  },
-);
+  ctx.logger.info({ kind: data.kind, entries: data.rows.length }, 'Movement registered');
+  revalidatePath(WAREHOUSE_PATH);
+  redirect(data.view === 'map' ? `${WAREHOUSE_PATH}?view=map` : WAREHOUSE_PATH);
+});
 
 export const revertMovementAction = run(
   { permission: PERMISSIONS.warehouse.stock.revert, input: revertSchema },

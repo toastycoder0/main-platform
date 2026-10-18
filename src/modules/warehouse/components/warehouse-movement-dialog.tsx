@@ -5,7 +5,7 @@ import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useQueryStates } from 'nuqs';
 import { useMemo, useState, useTransition } from 'react';
 import { type Control, Controller, useFieldArray, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import { submitAction } from '@/shared/actions/submit-action';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,12 +66,15 @@ import {
   type MovementFormSchema,
   movementFormSchema,
 } from '../application/warehouse.validation';
+import type { WarehouseView } from '../application/warehouse.view';
+import { registerMovement } from '../infrastructure/warehouse.action';
 import { movementParams } from '../infrastructure/warehouse.params';
 import { MOVEMENT_COLUMN_LABELS, MOVEMENT_FORM_KIND_CONFIG } from './warehouse-movement-config';
 
 interface WarehouseMovementDialogProps {
   allowedKinds: readonly MovementFormKind[];
   initialKind: MovementFormKind;
+  initialView: WarehouseView;
   initialLotId: string | null;
   initialCellId: string | null;
   options: MovementFormOptionsDTO;
@@ -156,6 +159,7 @@ function cellLabel(cell: MovementCellOptionDTO): string {
 export function WarehouseMovementDialog({
   allowedKinds,
   initialKind,
+  initialView,
   initialLotId,
   initialCellId,
   options,
@@ -256,9 +260,17 @@ export function WarehouseMovementDialog({
     });
   }
 
-  function onSubmit() {
-    toast.success('Movimiento validado (sin guardar)');
-    close();
+  async function onSubmit(values: MovementFormSchema) {
+    await submitAction(
+      () =>
+        registerMovement({
+          kind: values.kind,
+          title: values.title,
+          rows: values.rows,
+          view: initialView,
+        }),
+      'Movimiento registrado',
+    );
   }
 
   return (
