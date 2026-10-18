@@ -1,4 +1,4 @@
-import { WarehouseIcon } from 'lucide-react';
+import { HistoryIcon, WarehouseIcon } from 'lucide-react';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
@@ -14,14 +14,20 @@ export const warehouseManifest: ModuleManifest = {
           icon: WarehouseIcon,
           permission: PERMISSIONS.warehouse.access,
         },
+        {
+          id: 'warehouse-movements',
+          label: 'Movimientos',
+          href: '/warehouse/movements',
+          icon: HistoryIcon,
+          permission: PERMISSIONS.warehouse.access,
+        },
       ],
       routeLabels: {
         '/warehouse': 'Almacén',
         '/warehouse/lots/new': 'Crear lote',
         '/warehouse/lots/form/[id]': 'Editar lote',
         '/warehouse/movements': 'Movimientos',
-        '/warehouse/entries': 'Entradas',
-        '/warehouse/movements/[id]': 'Detalle de movimiento',
+        '/warehouse/entries': 'Elementos',
       },
     },
   },
