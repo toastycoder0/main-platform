@@ -8,7 +8,6 @@ import {
   EmptyTitle,
 } from '@/shared/components/empty';
 import { PERMISSIONS } from '@/shared/constants/permissions';
-import { buildListHref } from '@/shared/list/list-params';
 import { getMapViewData } from '../infrastructure/warehouse.query';
 import { WarehouseMapCanvas } from './warehouse-map-canvas';
 
@@ -46,18 +45,12 @@ export async function WarehouseMap({ q, highlight }: WarehouseMapProps) {
   }
 
   const canEdit = ctx.permissions.has(PERMISSIONS.warehouse.map.edit);
-  const movementHref = buildListHref('/warehouse', {
-    view: 'map',
-    q,
-    movement: 'transfer',
-  });
 
   return (
     <div className={MAP_HEIGHT}>
       <WarehouseMapCanvas
         canEdit={canEdit}
         highlight={highlight ?? ''}
-        movementHref={movementHref}
         nodes={data.map.nodes}
         q={q ?? ''}
         stock={data.stock}

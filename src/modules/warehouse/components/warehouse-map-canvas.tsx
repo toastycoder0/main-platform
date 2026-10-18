@@ -6,6 +6,7 @@ import {
   TransformComponent,
   TransformWrapper,
 } from 'react-zoom-pan-pinch';
+import { buildListHref } from '@/shared/list/list-params';
 import { buildMapIndex, findMatchingCellIds } from '../application/warehouse.map';
 import type { MapStockRowDTO, NodeDTO } from '../application/warehouse.types';
 import { WarehouseCellPanel } from './warehouse-cell-panel';
@@ -18,7 +19,6 @@ interface WarehouseMapCanvasProps {
   q: string;
   highlight: string;
   canEdit: boolean;
-  movementHref: string;
 }
 
 export function WarehouseMapCanvas({
@@ -27,7 +27,6 @@ export function WarehouseMapCanvas({
   q,
   highlight,
   canEdit,
-  movementHref,
 }: WarehouseMapCanvasProps) {
   const transformRef = useRef<ReactZoomPanPinchRef | null>(null);
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
@@ -158,7 +157,12 @@ export function WarehouseMapCanvas({
               cellCode={selectedEntry.cell.code}
               cellId={selectedEntry.cell.id}
               details={selectedEntry.stock}
-              movementHref={movementHref}
+              movementHref={buildListHref('/warehouse', {
+                view: 'map',
+                q,
+                movement: 'transfer',
+                cell: selectedEntry.cell.id,
+              })}
               occupancy={selectedEntry.occupancy}
               onClose={handlePanelClose}
               stockCount={selectedEntry.stock.length}

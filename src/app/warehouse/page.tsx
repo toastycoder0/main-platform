@@ -4,13 +4,18 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import {
+  MOVEMENT_FORM_KINDS,
+  type MovementFormKind,
+} from '@/modules/warehouse/application/warehouse.movement';
+import {
   resolveWarehouseView,
   type WarehouseView,
 } from '@/modules/warehouse/application/warehouse.view';
 import { LotsTable } from '@/modules/warehouse/components/lots-table';
 import { WarehouseMap } from '@/modules/warehouse/components/warehouse-map';
 import { WarehouseMapSkeleton } from '@/modules/warehouse/components/warehouse-map-skeleton';
-import type { WarehouseMovementId } from '@/modules/warehouse/components/warehouse-movements-menu';
+import { WarehouseMovementDialogLoader } from '@/modules/warehouse/components/warehouse-movement-dialog-loader';
+import { WarehouseMovementDialogSkeleton } from '@/modules/warehouse/components/warehouse-movement-dialog-skeleton';
 import { WarehouseToolbar } from '@/modules/warehouse/components/warehouse-toolbar';
 import { loadWarehouseParams } from '@/modules/warehouse/infrastructure/warehouse.params';
 import {
@@ -32,12 +37,12 @@ export const metadata: Metadata = {
   title: 'Almacén',
 };
 
-const MOVEMENT_PERMISSIONS = [
-  ['reception', PERMISSIONS.warehouse.stock.reception],
-  ['transfer', PERMISSIONS.warehouse.stock.transfer],
-  ['materialOut', PERMISSIONS.warehouse.stock.materialOut],
-  ['delivery', PERMISSIONS.warehouse.stock.delivery],
-] as const;
+const MOVEMENT_PERMISSIONS: Record<MovementFormKind, string> = {
+  reception: PERMISSIONS.warehouse.stock.reception,
+  transfer: PERMISSIONS.warehouse.stock.transfer,
+  materialOut: PERMISSIONS.warehouse.stock.materialOut,
+  delivery: PERMISSIONS.warehouse.stock.delivery,
+};
 
 function buildMovementLinks(
   permissions: Set<string>,
@@ -46,8 +51,8 @@ function buildMovementLinks(
   page: number,
   pageSize: number,
 ) {
-  return MOVEMENT_PERMISSIONS.filter(([, permission]) => permissions.has(permission)).map(
-    ([id]): { id: WarehouseMovementId; href: string } => ({
+  return MOVEMENT_FORM_KINDS.filter((id) => permissions.has(MOVEMENT_PERMISSIONS[id])).map(
+    (id): { id: MovementFormKind; href: string } => ({
       id,
       href: buildListHref('/warehouse', {
         view: view === 'lots' ? null : view,
@@ -71,6 +76,10 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
   const canLots = ctx.permissions.has(PERMISSIONS.warehouse.lots.access);
   const canMap = ctx.permissions.has(PERMISSIONS.warehouse.map.access);
   const canCreateLot = ctx.permissions.has(PERMISSIONS.warehouse.lots.create) && canLots;
+  const movementKind = params.movement;
+  const canMovement = movementKind
+    ? ctx.permissions.has(MOVEMENT_PERMISSIONS[movementKind])
+    : false;
   const view = resolveWarehouseView(params.view, canLots, canMap);
 
   if (!view) {
@@ -130,6 +139,16 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
           <WarehouseMap highlight={params.highlight} q={params.q} />
         </Suspense>
       )}
+
+      {canMovement && movementKind ? (
+        <Suspense fallback={<WarehouseMovementDialogSkeleton />}>
+          <WarehouseMovementDialogLoader
+            initialCellId={params.cell}
+            initialKind={movementKind}
+            initialLotId={params.lot}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

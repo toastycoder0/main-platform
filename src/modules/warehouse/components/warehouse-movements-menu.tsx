@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  ArrowRightLeftIcon,
-  LogOutIcon,
-  type LucideIcon,
-  PackagePlusIcon,
-  TruckIcon,
-} from 'lucide-react';
+import { ArrowRightLeftIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/shared/components/button';
 import {
@@ -15,42 +9,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/dropdown-menu';
+import { MOVEMENT_FORM_KINDS, type MovementFormKind } from '../application/warehouse.movement';
+import { MOVEMENT_FORM_KIND_CONFIG } from './warehouse-movement-config';
 
-export type WarehouseMovementId = 'reception' | 'transfer' | 'materialOut' | 'delivery';
+export type WarehouseMovementId = MovementFormKind;
 
-interface MovementMenuItem {
-  id: WarehouseMovementId;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-}
-
-const MENU_ITEMS: MovementMenuItem[] = [
-  {
-    id: 'reception',
-    label: 'Recepción',
-    description: 'Asignar stock a una celda',
-    icon: PackagePlusIcon,
-  },
-  {
-    id: 'transfer',
-    label: 'Transferencia',
-    description: 'Mover stock entre celdas',
-    icon: ArrowRightLeftIcon,
-  },
-  {
-    id: 'materialOut',
-    label: 'Salida de material',
-    description: 'Registrar salida del almacén',
-    icon: LogOutIcon,
-  },
-  {
-    id: 'delivery',
-    label: 'Entrega',
-    description: 'Registrar entrega de material',
-    icon: TruckIcon,
-  },
-];
+const MENU_ITEMS = MOVEMENT_FORM_KINDS.map((id) => ({
+  id,
+  ...MOVEMENT_FORM_KIND_CONFIG[id],
+}));
 
 interface WarehouseMovementsMenuProps {
   items: Array<{ id: WarehouseMovementId; href: string }>;
