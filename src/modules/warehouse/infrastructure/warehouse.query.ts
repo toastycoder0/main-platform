@@ -16,11 +16,7 @@ import {
 } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
-import {
-  buildWarehouseTree,
-  type MapCellRow,
-  type MapNodeRow,
-} from '../application/warehouse.tree';
+import { buildWarehouseTree, type MapCellRow } from '../application/warehouse.tree';
 import type {
   CellStockDTO,
   LotFormDTO,
@@ -29,6 +25,7 @@ import type {
   LotSiblingDTO,
   LotSummaryDTO,
   MapStockRowDTO,
+  MapViewData,
   MovementDTO,
   MovementEntryDTO,
   MovementEntryRowDTO,
@@ -257,7 +254,7 @@ export async function getMap(ctx: RequestContext, warehouseId: string): Promise<
     isActive: row.isActive,
   }));
 
-  return { nodes: buildWarehouseTree(nodeRows as MapNodeRow[], cells) };
+  return { nodes: buildWarehouseTree(nodeRows, cells) };
 }
 
 export async function listMapStock(
@@ -283,12 +280,6 @@ export async function listMapStock(
     .orderBy(asc(warehouseCell.code), asc(lot.code), asc(lot.id));
 
   return rows.map((row) => ({ ...row, quantity: toNumber(row.quantity) }));
-}
-
-export interface MapViewData {
-  warehouse: WarehouseDTO;
-  map: WarehouseMapDTO;
-  stock: MapStockRowDTO[];
 }
 
 export async function getMapViewData(ctx: RequestContext): Promise<MapViewData | undefined> {

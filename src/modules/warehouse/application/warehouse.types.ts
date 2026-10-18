@@ -82,6 +82,12 @@ export interface WarehouseMapDTO {
   nodes: NodeDTO[];
 }
 
+export interface MapViewData {
+  warehouse: WarehouseDTO;
+  map: WarehouseMapDTO;
+  stock: MapStockRowDTO[];
+}
+
 export type MovementKind =
   | { type: 'assign'; reason: 'reception' }
   | { type: 'out'; reason: 'material_out' | 'delivery' }

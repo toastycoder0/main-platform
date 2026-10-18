@@ -3,12 +3,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
-import type { MovementFormKind } from '@/modules/warehouse/application/warehouse.movement';
 import { permittedMovementKinds } from '@/modules/warehouse/application/warehouse.permissions';
 import type { MovementReturnContextSchema } from '@/modules/warehouse/application/warehouse.validation';
 import {
+  buildMovementLinks,
   resolveWarehouseView,
-  type WarehouseView,
 } from '@/modules/warehouse/application/warehouse.view';
 import { LotsTable } from '@/modules/warehouse/components/lots-table';
 import { WarehouseMap } from '@/modules/warehouse/components/warehouse-map';
@@ -26,7 +25,6 @@ import {
 } from '@/shared/components/empty';
 import { ListSkeleton } from '@/shared/components/list-skeleton';
 import { PERMISSIONS } from '@/shared/constants/permissions';
-import { buildListHref } from '@/shared/list/list-params';
 
 interface WarehousePageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -35,25 +33,6 @@ interface WarehousePageProps {
 export const metadata: Metadata = {
   title: 'Almacén',
 };
-
-function buildMovementLinks(
-  allowedKinds: readonly MovementFormKind[],
-  view: WarehouseView,
-  q: string | null,
-  page: number,
-  pageSize: number,
-) {
-  return allowedKinds.map((id): { id: MovementFormKind; href: string } => ({
-    id,
-    href: buildListHref('/warehouse', {
-      view: view === 'lots' ? null : view,
-      q,
-      page,
-      pageSize,
-      movement: id,
-    }),
-  }));
-}
 
 export default async function WarehousePage({ searchParams }: WarehousePageProps) {
   const ctx = await createRequestContext();
@@ -123,13 +102,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
 
       {view === 'lots' ? (
         <Suspense fallback={<ListSkeleton rows={8} />}>
-          <LotsTable
-            params={Promise.resolve({
-              q: params.q,
-              page: params.page,
-              pageSize: params.pageSize,
-            })}
-          />
+          <LotsTable params={Promise.resolve(params)} />
         </Suspense>
       ) : (
         <Suspense fallback={<WarehouseMapSkeleton />}>
