@@ -17,6 +17,8 @@ export const warehouseManifest: ModuleManifest = {
       ],
       routeLabels: {
         '/warehouse': 'Almacén',
+        '/warehouse/lots/new': 'Crear lote',
+        '/warehouse/lots/form/[id]': 'Editar lote',
         '/warehouse/movements': 'Movimientos',
         '/warehouse/entries': 'Entradas',
         '/warehouse/movements/[id]': 'Detalle de movimiento',
