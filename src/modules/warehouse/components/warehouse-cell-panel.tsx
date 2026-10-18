@@ -1,8 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightLeftIcon, XIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Badge } from '@/shared/components/badge';
 import { Button } from '@/shared/components/button';
@@ -19,6 +21,10 @@ import {
 import { ok } from '@/shared/result';
 import type { CellStockDetail } from '../application/warehouse.map';
 import type { CellOccupancy } from '../application/warehouse.occupancy';
+import {
+  type CellCapacityFormSchema,
+  cellCapacityFormSchema,
+} from '../application/warehouse.validation';
 import { updateCellCapacity } from '../infrastructure/warehouse.action';
 import { OccupancyBar } from './occupancy-bar';
 
@@ -38,101 +44,79 @@ interface CapacityEditorProps {
   capacity: number | null;
 }
 
-interface ParsedCapacity {
-  capacity: number | null;
-  error: string | null;
-}
-
-function parseCapacity(value: string): ParsedCapacity {
-  const trimmed = value.trim();
-
-  if (trimmed === '') {
-    return { capacity: null, error: null };
-  }
-
-  const capacity = Number(trimmed);
-
-  if (!Number.isFinite(capacity) || capacity < 0) {
-    return { capacity: null, error: 'Ingresa un número mayor o igual a 0' };
-  }
-
-  return { capacity, error: null };
-}
-
 function CapacityEditor({ cellId, capacity }: CapacityEditorProps) {
-  const [capacityValue, setCapacityValue] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [capacityMessage, setCapacityMessage] = useState('');
-  const [capacityError, setCapacityError] = useState('');
+  const [message, setMessage] = useState('');
+  const [isPending, startTransition] = useTransition();
 
+  const {
+    control,
+    formState: { errors },
+    handleSubmit,
+    reset,
+  } = useForm({
+    resolver: zodResolver(cellCapacityFormSchema),
+    defaultValues: { capacity: capacity != null ? String(capacity) : '' },
+  });
+
+  // Revalidation after a save updates the `capacity` prop; keep the form in
+  // sync with server truth instead of writing values locally.
   useEffect(() => {
-    setCapacityValue(capacity != null ? String(capacity) : '');
-    setCapacityMessage('');
-    setCapacityError('');
-  }, [capacity]);
+    reset({ capacity: capacity != null ? String(capacity) : '' });
+  }, [capacity, reset]);
 
-  async function handleSaveCapacity() {
-    const parsed = parseCapacity(capacityValue);
+  function onSubmit(values: CellCapacityFormSchema) {
+    startTransition(async () => {
+      setMessage('');
 
-    if (parsed.error) {
-      setCapacityError(parsed.error);
-      return;
-    }
+      const result = await submitAction(async () => {
+        const response = await updateCellCapacity({ id: cellId, capacity: values.capacity });
+        return response.success ? ok(undefined) : response;
+      });
 
-    setSaving(true);
-    setCapacityMessage('');
-    setCapacityError('');
-
-    const result = await submitAction(async () => {
-      const response = await updateCellCapacity({ id: cellId, capacity: parsed.capacity });
-      return response.success ? ok(undefined) : response;
+      if (result.success) {
+        setMessage('Capacidad actualizada');
+      }
     });
-
-    setSaving(false);
-
-    if (result.success) {
-      setCapacityValue(parsed.capacity === null ? '' : String(parsed.capacity));
-      setCapacityMessage('Capacidad actualizada');
-    } else {
-      setCapacityError(result.error);
-    }
   }
 
   return (
-    <Field data-invalid={Boolean(capacityError)}>
+    <Field data-invalid={Boolean(errors.capacity)}>
       <FieldLabel htmlFor='cell-capacity'>Capacidad (uds)</FieldLabel>
 
-      <div className='flex gap-2'>
-        <Input
-          className='w-full text-sm tabular-nums'
-          id='cell-capacity'
-          min={0}
-          onChange={(event) => {
-            setCapacityValue(event.target.value);
-            setCapacityMessage('');
-            setCapacityError('');
-          }}
-          placeholder='Sin límite'
-          step={1}
-          type='number'
-          value={capacityValue}
+      <form className='flex gap-2' noValidate onSubmit={handleSubmit(onSubmit)}>
+        <Controller
+          control={control}
+          name='capacity'
+          render={({ field, fieldState }) => (
+            <Input
+              {...field}
+              aria-invalid={fieldState.invalid}
+              className='w-full text-sm tabular-nums'
+              id='cell-capacity'
+              min={0.0001}
+              onChange={(event) => {
+                setMessage('');
+                field.onChange(event);
+              }}
+              placeholder='Sin límite'
+              step='any'
+              type='number'
+            />
+          )}
         />
         <Button
           className='shrink-0 h-9'
-          disabled={saving}
-          onClick={handleSaveCapacity}
+          disabled={isPending}
           size='sm'
-          type='button'
+          type='submit'
           variant='outline'
         >
-          {saving ? 'Guardando...' : 'Guardar'}
+          {isPending ? 'Guardando…' : 'Guardar'}
         </Button>
-      </div>
+      </form>
 
-      {capacityError ? <FieldError>{capacityError}</FieldError> : null}
-      {capacityMessage ? (
-        <FieldDescription className='text-green-600'>{capacityMessage}</FieldDescription>
-      ) : null}
+      {errors.capacity ? <FieldError errors={[errors.capacity]} /> : null}
+      {message ? <FieldDescription className='text-green-600'>{message}</FieldDescription> : null}
       <FieldDescription>Dejar vacío quita la capacidad definida.</FieldDescription>
     </Field>
   );
