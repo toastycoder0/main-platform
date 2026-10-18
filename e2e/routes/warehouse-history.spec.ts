@@ -77,35 +77,72 @@ describe('Warehouse history E2E', () => {
     }
   });
 
-  it('applies and removes a type filter', async () => {
+  it('selects a two-date range', async () => {
     await openMovements(page);
 
-    await page.locator('#history-sidebar-type').click();
-    await page.getByRole('option', { name: 'Recepción' }).click();
-    await page.waitForFunction(() => window.location.search.includes('type=assign'));
+    await page.getByRole('button', { name: 'Cualquier fecha' }).click();
+    const days = page.locator('.rdp-root button[data-day]');
+    await days.nth(10).click();
+    await days.nth(15).click();
+
+    await page.waitForFunction(() => {
+      const params = new URLSearchParams(window.location.search);
+      const from = params.get('from');
+      const to = params.get('to');
+      return Boolean(from && to && from !== to);
+    });
+  });
+
+  it('selects multiple movements', async () => {
+    await openMovements(page);
+
+    await page.getByRole('checkbox', { name: 'Recepción' }).check();
+    await page.getByRole('checkbox', { name: 'Transferencia' }).check();
+    await page.waitForFunction(
+      () => new URLSearchParams(window.location.search).get('movements') === 'reception,transfer',
+    );
+
+    await page.getByRole('button', { name: 'Quitar filtro Recepción' }).click();
+    await page.waitForFunction(
+      () => new URLSearchParams(window.location.search).get('movements') === 'transfer',
+    );
+
+    await page.getByRole('button', { name: 'Quitar filtro Transferencia' }).click();
+    await page.waitForFunction(() => !new URLSearchParams(window.location.search).has('movements'));
+  });
+
+  it('applies and removes a movement filter', async () => {
+    await openMovements(page);
+
+    await page.getByRole('checkbox', { name: 'Recepción' }).check();
+    await page.waitForFunction(
+      () => new URLSearchParams(window.location.search).get('movements') === 'reception',
+    );
 
     const chip = page.getByRole('button', { name: 'Quitar filtro Recepción' });
     await chip.waitFor();
     await chip.click();
-    await page.waitForFunction(() => !window.location.search.includes('type='));
+    await page.waitForFunction(() => !new URLSearchParams(window.location.search).has('movements'));
   });
 
   it('keeps the filters when switching tabs', async () => {
     await openMovements(page);
 
-    await page.locator('#history-sidebar-type').click();
-    await page.getByRole('option', { name: 'Transferencia' }).click();
-    await page.waitForFunction(() => window.location.search.includes('type=move'));
+    await page.getByRole('checkbox', { name: 'Transferencia' }).check();
+    await page.waitForFunction(
+      () => new URLSearchParams(window.location.search).get('movements') === 'transfer',
+    );
 
     await page.waitForFunction(() => {
       const link = document.querySelector<HTMLAnchorElement>(
         'a[role="tab"][href*="/warehouse/entries"]',
       );
-      return link?.getAttribute('href')?.includes('type=move') ?? false;
+      const href = link?.getAttribute('href');
+      return href ? decodeURIComponent(href).includes('movements=transfer') : false;
     });
 
     await page.getByRole('tab', { name: 'Por elemento' }).click();
-    await page.waitForURL(/\/warehouse\/entries\?.*type=move/);
+    await page.waitForURL(/\/warehouse\/entries\?.*movements=transfer/);
     await page.getByRole('heading', { name: 'Elementos' }).waitFor();
   });
 
@@ -133,6 +170,6 @@ describe('Warehouse history E2E', () => {
     await page.getByRole('button', { name: 'Filtros', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('heading', { name: 'Filtros' }).waitFor();
-    await dialog.locator('#history-drawer-type').waitFor();
+    await dialog.getByRole('checkbox', { name: 'Recepción' }).waitFor();
   });
 });
