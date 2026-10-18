@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ListCreateButton } from '@/shared/components/list-create-button';
 import { ListToolbar } from '@/shared/components/list-toolbar';
 import { buildListHref } from '@/shared/list/list-params';
 import { cn } from '@/shared/utils/cn';
@@ -13,6 +14,7 @@ interface WarehouseToolbarProps {
   view: WarehouseView;
   canLots: boolean;
   canMap: boolean;
+  canCreateLot: boolean;
   q: string | null;
   page: number;
   pageSize: number;
@@ -37,6 +39,7 @@ export function WarehouseToolbar({
   view,
   canLots,
   canMap,
+  canCreateLot,
   q,
   page,
   pageSize,
@@ -75,9 +78,15 @@ export function WarehouseToolbar({
         </div>
       ) : null}
 
-      {movementLinks.length > 0 ? (
-        <div className='order-2 ml-auto md:order-3 md:ml-0'>
+      {movementLinks.length > 0 || (view === 'lots' && canCreateLot) ? (
+        <div className='order-2 ml-auto flex items-center gap-2 md:order-3 md:ml-0'>
           <WarehouseMovementsMenu items={movementLinks} />
+          {view === 'lots' && canCreateLot ? (
+            <ListCreateButton href='/warehouse/lots/new'>
+              <span className='hidden md:inline'>Crear lote</span>
+              <span className='sr-only md:hidden'>Crear lote</span>
+            </ListCreateButton>
+          ) : null}
         </div>
       ) : null}
 

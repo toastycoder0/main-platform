@@ -1,8 +1,11 @@
+import { PencilIcon } from 'lucide-react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { ListEmptyState } from '@/shared/components/list-empty';
 import { ListPagination } from '@/shared/components/list-pagination';
+import { ListRowActions } from '@/shared/components/list-row-actions';
 import { ListCell, ListTable } from '@/shared/components/list-table';
 import { TableRow } from '@/shared/components/table';
+import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { ListParams } from '@/shared/list/list-params';
 import { listLots } from '../infrastructure/warehouse.query';
 
@@ -26,6 +29,7 @@ interface LotsTableProps {
 
 export async function LotsTable({ params }: LotsTableProps) {
   const [ctx, parsed] = await Promise.all([createRequestContext(), params]);
+  const canEdit = ctx.permissions.has(PERMISSIONS.warehouse.lots.edit);
   const { items, total } = await listLots(ctx, parsed);
 
   if (items.length === 0) {
@@ -50,6 +54,7 @@ export async function LotsTable({ params }: LotsTableProps) {
           { key: 'stock', label: 'Stock' },
           { key: 'createdAt', label: 'Creado' },
         ]}
+        actions={canEdit}
       >
         {items.map((item) => (
           <TableRow key={item.id}>
@@ -61,6 +66,20 @@ export async function LotsTable({ params }: LotsTableProps) {
             </ListCell>
             <ListCell className='font-mono tabular-nums'>{formatQuantity(item.stock)}</ListCell>
             <ListCell className='text-muted-foreground'>{formatCreatedAt(item.createdAt)}</ListCell>
+            {canEdit ? (
+              <ListCell>
+                <ListRowActions
+                  actions={[
+                    {
+                      label: 'Editar',
+                      href: `${BASE_PATH}/lots/form/${item.id}`,
+                      icon: PencilIcon,
+                    },
+                  ]}
+                  label={`Acciones del lote ${item.code}`}
+                />
+              </ListCell>
+            ) : null}
           </TableRow>
         ))}
       </ListTable>

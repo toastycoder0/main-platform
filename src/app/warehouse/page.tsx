@@ -70,6 +70,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
   const params = await loadWarehouseParams(searchParams);
   const canLots = ctx.permissions.has(PERMISSIONS.warehouse.lots.access);
   const canMap = ctx.permissions.has(PERMISSIONS.warehouse.map.access);
+  const canCreateLot = ctx.permissions.has(PERMISSIONS.warehouse.lots.create) && canLots;
   const view = resolveWarehouseView(params.view, canLots, canMap);
 
   if (!view) {
@@ -104,6 +105,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
       <h1 className='sr-only'>Almacén</h1>
 
       <WarehouseToolbar
+        canCreateLot={canCreateLot}
         canLots={canLots}
         canMap={canMap}
         movementLinks={movementLinks}

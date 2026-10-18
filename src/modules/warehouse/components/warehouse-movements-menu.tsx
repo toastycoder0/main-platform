@@ -71,7 +71,7 @@ export function WarehouseMovementsMenu({ items }: WarehouseMovementsMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button aria-label='Movimientos'>
+        <Button aria-label='Movimientos' variant='outline'>
           <ArrowRightLeftIcon aria-hidden />
           <span className='hidden md:inline'>Movimientos</span>
         </Button>
