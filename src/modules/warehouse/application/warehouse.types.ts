@@ -122,6 +122,23 @@ export interface LotItemOptionDTO {
   label: string;
 }
 
+export interface MovementLotOptionDTO {
+  id: string;
+  code: string;
+  productTitle: string;
+  itemTitle: string;
+}
+
+export interface MovementCellOptionDTO {
+  id: string;
+  code: string;
+}
+
+export interface MovementFormOptionsDTO {
+  lots: MovementLotOptionDTO[];
+  cells: MovementCellOptionDTO[];
+}
+
 export interface LotFormDTO {
   id: string;
   itemId: string;

@@ -26,6 +26,7 @@ import {
   getLotSummary,
   getMap,
   getMovement,
+  getMovementFormOptions,
   getPrimaryWarehouse,
   listLotItemOptions,
   listLotSiblings,
@@ -270,6 +271,40 @@ describe('listLotItemOptions', () => {
       value: itemId,
       label: `Test Product — Variante (${scope}_VAR)`,
     });
+  });
+});
+
+describe('getMovementFormOptions', () => {
+  it('returns active lots with product data', async () => {
+    const options = await getMovementFormOptions(testContext(), whId);
+    const lots = options.lots.filter((item) => item.id === lot1 || item.id === lot2);
+
+    expect(lots).toEqual([
+      {
+        id: lot1,
+        code: `${scope}_L1`,
+        productTitle: 'Test Product',
+        itemTitle: 'Variante',
+      },
+      {
+        id: lot2,
+        code: `${scope}_L2`,
+        productTitle: 'Test Product',
+        itemTitle: 'Variante',
+      },
+    ]);
+  });
+
+  it('returns active cells of the primary warehouse ordered by code', async () => {
+    const options = await getMovementFormOptions(testContext(), whId);
+    const cells = options.cells.filter((item) => allCellIds.includes(item.id));
+
+    expect(cells).toEqual([
+      { id: cellA1, code: 'A1' },
+      { id: cellA2, code: 'A2' },
+      { id: cellB1, code: 'B1' },
+      { id: cellEmpty, code: 'B2' },
+    ]);
   });
 });
 

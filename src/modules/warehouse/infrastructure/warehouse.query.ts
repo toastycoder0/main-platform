@@ -28,10 +28,13 @@ import type {
   LotSiblingDTO,
   LotSummaryDTO,
   MapStockRowDTO,
+  MovementCellOptionDTO,
   MovementDTO,
   MovementEntryDTO,
   MovementEntryRowDTO,
+  MovementFormOptionsDTO,
   MovementListItemDTO,
+  MovementLotOptionDTO,
   ReconcileDifferenceDTO,
   ReconcileReportDTO,
   WarehouseDTO,
@@ -317,6 +320,44 @@ export async function listLotItemOptions(ctx: RequestContext): Promise<LotItemOp
     value: row.value,
     label: `${row.productTitle} — ${row.itemTitle} (${row.itemCode})`,
   }));
+}
+
+export async function getMovementFormOptions(
+  ctx: RequestContext,
+  warehouseId?: string,
+): Promise<MovementFormOptionsDTO> {
+  const targetWarehouseId = warehouseId ?? (await getPrimaryWarehouse(ctx))?.id;
+
+  if (!targetWarehouseId) {
+    return { lots: [], cells: [] };
+  }
+
+  const [lotRows, cellRows] = await Promise.all([
+    ctx.db
+      .select({
+        id: lot.id,
+        code: lot.code,
+        productTitle: product.title,
+        itemTitle: productItem.title,
+      })
+      .from(lot)
+      .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .where(eq(lot.isActive, true))
+      .orderBy(asc(lot.code), asc(lot.id)),
+    ctx.db
+      .select({ id: warehouseCell.id, code: warehouseCell.code })
+      .from(warehouseCell)
+      .where(
+        and(eq(warehouseCell.warehouseId, targetWarehouseId), eq(warehouseCell.isActive, true)),
+      )
+      .orderBy(asc(warehouseCell.code), asc(warehouseCell.id)),
+  ]);
+
+  const lots: MovementLotOptionDTO[] = lotRows;
+  const cells: MovementCellOptionDTO[] = cellRows;
+
+  return { lots, cells };
 }
 
 export async function getLotById(ctx: RequestContext, id: string): Promise<LotFormDTO | undefined> {

@@ -6,6 +6,7 @@ import {
   createCellSchema,
   createLotSchema,
   createNodeSchema,
+  movementFormSchema,
   moveSchema,
   outSchema,
   revertSchema,
@@ -256,5 +257,95 @@ describe('text normalization', () => {
 
   it('rejects a blank lot code', () => {
     expect(createLotSchema.safeParse({ itemId: 'pitem_1', code: '   ' }).success).toBe(false);
+  });
+});
+
+const validFormRow = () => ({
+  lotId: 'lot_1',
+  originCellId: 'wcel_1',
+  destinationCellId: 'wcel_2',
+  quantity: '1',
+});
+
+describe('movementFormSchema', () => {
+  it('accepts a valid reception row', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), originCellId: '' }],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('requires the session title', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'transfer',
+      title: '   ',
+      rows: [validFormRow()],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('requires an origin for out movements', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'materialOut',
+      title: 'Salida',
+      rows: [{ ...validFormRow(), originCellId: '', destinationCellId: '' }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(['rows', 0, 'originCellId']);
+    }
+  });
+
+  it('requires a destination for reception', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), destinationCellId: '' }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(['rows', 0, 'destinationCellId']);
+    }
+  });
+
+  it('rejects a transfer with the same origin and destination', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'transfer',
+      title: 'Transferencia',
+      rows: [{ ...validFormRow(), destinationCellId: 'wcel_1' }],
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(FIELD_ERRORS.sameCell);
+    }
+  });
+
+  it('accepts multiple out rows', () => {
+    const result = movementFormSchema.safeParse({
+      kind: 'delivery',
+      title: 'Entrega',
+      rows: [validFormRow(), validFormRow()],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid quantities', () => {
+    for (const quantity of ['', '0', '-1', '0.00001', '1e12']) {
+      const result = movementFormSchema.safeParse({
+        kind: 'transfer',
+        title: 'Transferencia',
+        rows: [{ ...validFormRow(), quantity }],
+      });
+
+      expect(result.success).toBe(false);
+    }
   });
 });
