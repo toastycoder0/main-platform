@@ -17,7 +17,8 @@ export const MOVEMENT_ERRORS = {
 
 export interface CellState {
   code: string;
-  capacity: number;
+  // `null` means the cell has no capacity limit (matches the nullable DB column).
+  capacity: number | null;
   isActive: boolean;
 }
 
@@ -108,7 +109,8 @@ function capacityExceeded(
     netGain += delta;
   }
 
-  if (!cell || netGain <= 0) {
+  // A cell without a capacity limit never rejects inbound stock.
+  if (!cell || cell.capacity === null || netGain <= 0) {
     return [];
   }
 

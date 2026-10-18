@@ -75,7 +75,11 @@ async function lockCells(tx: DbLike, cellIds: string[]): Promise<Map<string, Cel
   return new Map(
     rows.map((row): [string, CellState] => [
       row.id,
-      { code: row.code, capacity: Number(row.capacity), isActive: row.isActive },
+      {
+        code: row.code,
+        capacity: row.capacity === null ? null : Number(row.capacity),
+        isActive: row.isActive,
+      },
     ]),
   );
 }

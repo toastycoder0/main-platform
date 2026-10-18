@@ -9,7 +9,7 @@ import {
   type StockContext,
 } from './warehouse.rules';
 
-const cell = (code: string, capacity: number, isActive = true): CellState => ({
+const cell = (code: string, capacity: number | null, isActive = true): CellState => ({
   code,
   capacity,
   isActive,
@@ -107,6 +107,20 @@ describe('checkStock', () => {
 
     expect(errors).toHaveLength(1);
     expect(errors[0]?.details).toEqual({ capacity: 100, occupied: 50, toAdd: 60 });
+  });
+
+  it('never enforces capacity on a cell without a limit', () => {
+    const context: StockContext = {
+      cells: new Map([['A', cell('A1', null)]]),
+      lots: new Map([
+        ['lot1', lot('L1')],
+        ['lot2', lot('L2')],
+      ]),
+      stock: stockOf({ A: { lot2: 50 } }),
+    };
+    const deltas = computeNetDeltas([transfer('lot1', null, 'A', 5000)]);
+
+    expect(checkStock(deltas, context)).toEqual([]);
   });
 
   it('counts a lot that already sits in the destination cell', () => {
