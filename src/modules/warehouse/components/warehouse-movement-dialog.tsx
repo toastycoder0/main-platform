@@ -64,9 +64,9 @@ import type {
 import {
   MAX_MOVEMENT_ENTRIES,
   type MovementFormSchema,
+  type MovementReturnContextSchema,
   movementFormSchema,
 } from '../application/warehouse.validation';
-import type { WarehouseView } from '../application/warehouse.view';
 import { registerMovement } from '../infrastructure/warehouse.action';
 import { movementParams } from '../infrastructure/warehouse.params';
 import { MOVEMENT_COLUMN_LABELS, MOVEMENT_FORM_KIND_CONFIG } from './warehouse-movement-config';
@@ -74,7 +74,7 @@ import { MOVEMENT_COLUMN_LABELS, MOVEMENT_FORM_KIND_CONFIG } from './warehouse-m
 interface WarehouseMovementDialogProps {
   allowedKinds: readonly MovementFormKind[];
   initialKind: MovementFormKind;
-  initialView: WarehouseView;
+  returnContext: MovementReturnContextSchema;
   initialLotId: string | null;
   initialCellId: string | null;
   options: MovementFormOptionsDTO;
@@ -159,7 +159,7 @@ function cellLabel(cell: MovementCellOptionDTO): string {
 export function WarehouseMovementDialog({
   allowedKinds,
   initialKind,
-  initialView,
+  returnContext,
   initialLotId,
   initialCellId,
   options,
@@ -267,7 +267,7 @@ export function WarehouseMovementDialog({
           kind: values.kind,
           title: values.title,
           rows: values.rows,
-          view: initialView,
+          returnContext,
         }),
       'Movimiento registrado',
     );

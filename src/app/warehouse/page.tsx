@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import type { MovementFormKind } from '@/modules/warehouse/application/warehouse.movement';
 import { permittedMovementKinds } from '@/modules/warehouse/application/warehouse.permissions';
+import type { MovementReturnContextSchema } from '@/modules/warehouse/application/warehouse.validation';
 import {
   resolveWarehouseView,
   type WarehouseView,
@@ -97,6 +98,14 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
     params.pageSize,
   );
 
+  const returnContext: MovementReturnContextSchema = {
+    view,
+    q: params.q,
+    page: params.page,
+    pageSize: params.pageSize,
+    highlight: view === 'map' ? (params.highlight ?? params.cell) : null,
+  };
+
   return (
     <div className='flex min-h-0 flex-1 flex-col gap-4'>
       <h1 className='sr-only'>Almacén</h1>
@@ -135,7 +144,7 @@ export default async function WarehousePage({ searchParams }: WarehousePageProps
             initialCellId={params.cell}
             initialKind={movementKind}
             initialLotId={params.lot}
-            initialView={view}
+            returnContext={returnContext}
           />
         </Suspense>
       ) : null}

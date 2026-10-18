@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { Q_MAX_LENGTH } from '@/shared/list/list-params';
 import {
   bulkCreateCellSchema,
   createCellSchema,
@@ -259,13 +260,21 @@ describe('movementFormSchema', () => {
   });
 });
 
+const validReturnContext = {
+  view: 'map',
+  q: null,
+  page: 1,
+  pageSize: 10,
+  highlight: null,
+} as const;
+
 describe('registerMovementSchema', () => {
-  it('accepts a valid view', () => {
+  it('accepts a valid return context', () => {
     const result = registerMovementSchema.safeParse({
       kind: 'reception',
       title: 'Recepción',
       rows: [{ ...validFormRow(), originCellId: '' }],
-      view: 'map',
+      returnContext: validReturnContext,
     });
 
     expect(result.success).toBe(true);
@@ -276,7 +285,40 @@ describe('registerMovementSchema', () => {
       kind: 'reception',
       title: 'Recepción',
       rows: [{ ...validFormRow(), originCellId: '' }],
-      view: 'dashboard',
+      returnContext: { ...validReturnContext, view: 'dashboard' },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a search term that is too long', () => {
+    const result = registerMovementSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), originCellId: '' }],
+      returnContext: { ...validReturnContext, q: 'a'.repeat(Q_MAX_LENGTH + 1) },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an invalid page', () => {
+    const result = registerMovementSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), originCellId: '' }],
+      returnContext: { ...validReturnContext, page: 0 },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a page size outside PAGE_SIZES', () => {
+    const result = registerMovementSchema.safeParse({
+      kind: 'reception',
+      title: 'Recepción',
+      rows: [{ ...validFormRow(), originCellId: '' }],
+      returnContext: { ...validReturnContext, pageSize: 15 },
     });
 
     expect(result.success).toBe(false);
@@ -287,7 +329,7 @@ describe('registerMovementSchema', () => {
       kind: 'transfer',
       title: 'Transferencia',
       rows: [{ ...validFormRow(), destinationCellId: 'wcel_1' }],
-      view: 'lots',
+      returnContext: validReturnContext,
     });
 
     expect(result.success).toBe(false);

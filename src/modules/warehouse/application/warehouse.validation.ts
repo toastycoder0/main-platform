@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { PAGE_SIZES, Q_MAX_LENGTH } from '@/shared/list/list-params';
 import { MOVEMENT_FORM_KINDS, usesDestination, usesOrigin } from './warehouse.movement';
 import { WAREHOUSE_VIEWS } from './warehouse.view';
 
@@ -114,8 +115,22 @@ export const movementFormSchema = z
     });
   });
 
-export const registerMovementSchema = movementFormSchema.extend({
+export const movementReturnContextSchema = z.object({
   view: z.enum(WAREHOUSE_VIEWS),
+  q: z.string().trim().max(Q_MAX_LENGTH, FIELD_ERRORS.tooLong).nullable(),
+  page: z.number().int().min(1, 'La página no es válida'),
+  pageSize: z
+    .number()
+    .int()
+    .refine(
+      (value) => PAGE_SIZES.includes(value as (typeof PAGE_SIZES)[number]),
+      'El tamaño de página no es válido',
+    ),
+  highlight: z.string().trim().max(200, FIELD_ERRORS.tooLong).nullable(),
+});
+
+export const registerMovementSchema = movementFormSchema.extend({
+  returnContext: movementReturnContextSchema,
 });
 
 export const revertSchema = z.object({
@@ -195,6 +210,7 @@ export const lotParamsSchema = z.object({ id: idSchema });
 export type MovementFormKindSchema = z.infer<typeof movementFormKindSchema>;
 export type MovementFormRowSchema = z.infer<typeof movementFormRowSchema>;
 export type MovementFormSchema = z.infer<typeof movementFormSchema>;
+export type MovementReturnContextSchema = z.infer<typeof movementReturnContextSchema>;
 export type RegisterMovementSchema = z.infer<typeof registerMovementSchema>;
 export type RevertSchema = z.infer<typeof revertSchema>;
 export type CreateLotSchema = z.infer<typeof createLotSchema>;

@@ -19,7 +19,7 @@ import {
 } from '@/infrastructure/db/schema';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { MovementFormKind } from '../application/warehouse.movement';
-import type { WarehouseView } from '../application/warehouse.view';
+import type { MovementReturnContextSchema } from '../application/warehouse.validation';
 import {
   createLot,
   registerMovement,
@@ -127,8 +127,20 @@ interface MovementRow {
   quantity: string;
 }
 
-function submitMovement(kind: MovementFormKind, rows: MovementRow[], view: WarehouseView = 'lots') {
-  return registerMovement({ kind, title: 'Integration movement', rows, view });
+const DEFAULT_RETURN_CONTEXT: MovementReturnContextSchema = {
+  view: 'lots',
+  q: null,
+  page: 1,
+  pageSize: 10,
+  highlight: null,
+};
+
+function submitMovement(
+  kind: MovementFormKind,
+  rows: MovementRow[],
+  returnContext: MovementReturnContextSchema = DEFAULT_RETURN_CONTEXT,
+) {
+  return registerMovement({ kind, title: 'Integration movement', rows, returnContext });
 }
 
 async function latestMovementId(): Promise<string> {
@@ -260,15 +272,17 @@ describe('registerMovement', () => {
     });
   });
 
-  it('redirects back to the map view', async () => {
+  it('redirects back to the origin context', async () => {
     const result = await submitMovement(
       'reception',
       [{ lotId: lot2, originCellId: '', destinationCellId: cellC1, quantity: '1' }],
-      'map',
+      { view: 'map', q: 'A29', page: 2, pageSize: 25, highlight: cellA1 },
     );
 
     expect(result.success).toBe(true);
-    expect(vi.mocked(redirect)).toHaveBeenCalledWith('/warehouse?view=map');
+    expect(vi.mocked(redirect)).toHaveBeenCalledWith(
+      `/warehouse?view=map&q=A29&page=2&pageSize=25&highlight=${cellA1}`,
+    );
   });
 
   it('rejects the movement when it exceeds capacity, returning structured details', async () => {

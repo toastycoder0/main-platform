@@ -2,7 +2,7 @@ import { createLoader, createParser, parseAsNumberLiteral } from 'nuqs/server';
 
 export const PAGE_SIZES = [10, 25, 50] as const;
 
-const Q_MAX_LENGTH = 100;
+export const Q_MAX_LENGTH = 100;
 
 export const parseAsPage = createParser({
   parse: (value) => {

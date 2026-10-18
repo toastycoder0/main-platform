@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
+import { buildListHref } from '@/shared/list/list-params';
 import { MOVEMENT_KIND_MAP, toMovementEntries } from '../application/warehouse.movement';
 import { MOVEMENT_FORM_PERMISSIONS } from '../application/warehouse.permissions';
 import {
@@ -42,7 +43,15 @@ export const registerMovement = run({ input: registerMovementSchema }, async (ct
 
   ctx.logger.info({ kind: data.kind, entries: data.rows.length }, 'Movement registered');
   revalidatePath(WAREHOUSE_PATH);
-  redirect(data.view === 'map' ? `${WAREHOUSE_PATH}?view=map` : WAREHOUSE_PATH);
+  redirect(
+    buildListHref(WAREHOUSE_PATH, {
+      view: data.returnContext.view === 'lots' ? null : data.returnContext.view,
+      q: data.returnContext.q,
+      page: data.returnContext.page,
+      pageSize: data.returnContext.pageSize,
+      highlight: data.returnContext.highlight,
+    }),
+  );
 });
 
 export const revertMovementAction = run(
