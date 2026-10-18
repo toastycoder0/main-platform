@@ -25,6 +25,8 @@ import type {
   LotFormDTO,
   LotItemOptionDTO,
   LotListItemDTO,
+  LotSiblingDTO,
+  LotSummaryDTO,
   MapStockRowDTO,
   MovementDTO,
   MovementEntryDTO,
@@ -334,6 +336,84 @@ export async function getLotById(ctx: RequestContext, id: string): Promise<LotFo
     .limit(1);
 
   return rows[0];
+}
+
+export async function listLotSiblings(ctx: RequestContext): Promise<LotSiblingDTO[]> {
+  const stock = ctx.db
+    .select({
+      lotId: cellLot.lotId,
+      quantity: sql<string>`SUM(${cellLot.quantity})`.as('quantity'),
+    })
+    .from(cellLot)
+    .groupBy(cellLot.lotId)
+    .as('lot_stock');
+
+  const rows = await ctx.db
+    .select({
+      id: lot.id,
+      itemId: lot.itemId,
+      code: lot.code,
+      isActive: lot.isActive,
+      stock: sql<string>`COALESCE(${stock.quantity}, 0)`,
+    })
+    .from(lot)
+    .leftJoin(stock, eq(stock.lotId, lot.id))
+    .orderBy(asc(lot.code), asc(lot.id));
+
+  return rows.map((row) => ({
+    id: row.id,
+    itemId: row.itemId,
+    code: row.code,
+    isActive: row.isActive,
+    stock: toNumber(row.stock),
+  }));
+}
+
+export async function getLotSummary(
+  ctx: RequestContext,
+  lotId: string,
+): Promise<LotSummaryDTO | undefined> {
+  const [header] = await ctx.db
+    .select({ isActive: lot.isActive, createdAt: lot.createdAt, updatedAt: lot.updatedAt })
+    .from(lot)
+    .where(eq(lot.id, lotId))
+    .limit(1);
+
+  if (!header) {
+    return undefined;
+  }
+
+  const [cellRows, movementRows] = await Promise.all([
+    ctx.db
+      .select({
+        cellId: warehouseCell.id,
+        cellCode: warehouseCell.code,
+        quantity: cellLot.quantity,
+      })
+      .from(cellLot)
+      .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+      .where(and(eq(cellLot.lotId, lotId), sql`${cellLot.quantity} > 0`))
+      .orderBy(asc(warehouseCell.code), asc(warehouseCell.id)),
+    ctx.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(movementEntry)
+      .where(eq(movementEntry.lotId, lotId)),
+  ]);
+
+  const cells = cellRows.map((row) => ({
+    cellId: row.cellId,
+    cellCode: row.cellCode,
+    quantity: toNumber(row.quantity),
+  }));
+
+  return {
+    isActive: header.isActive,
+    stock: cells.reduce((total, cell) => total + cell.quantity, 0),
+    cells,
+    movementCount: movementRows[0]?.total ?? 0,
+    createdAt: header.createdAt,
+    updatedAt: header.updatedAt,
+  };
 }
 
 export async function listMovements(

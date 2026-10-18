@@ -116,6 +116,22 @@ describe('createLotSchema', () => {
   it('rejects empty code', () => {
     expect(createLotSchema.safeParse({ itemId: 'pitem_1', code: '' }).success).toBe(false);
   });
+
+  it('accepts an explicit inactive lot', () => {
+    const result = createLotSchema.safeParse({
+      itemId: 'pitem_1',
+      code: 'LOTE-001',
+      isActive: false,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a non-boolean isActive', () => {
+    expect(
+      createLotSchema.safeParse({ itemId: 'pitem_1', code: 'LOTE-001', isActive: 'no' }).success,
+    ).toBe(false);
+  });
 });
 
 describe('createNodeSchema', () => {

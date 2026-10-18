@@ -23,10 +23,12 @@ import { executeMovement } from './warehouse.engine';
 import {
   getCellStock,
   getLotById,
+  getLotSummary,
   getMap,
   getMovement,
   getPrimaryWarehouse,
   listLotItemOptions,
+  listLotSiblings,
   listLots,
   listMapStock,
   listMovementEntries,
@@ -290,6 +292,28 @@ describe('getLotById', () => {
   });
 });
 
+describe('getLotSummary', () => {
+  it('aggregates stock, locations and movement count', async () => {
+    const summary = await getLotSummary(testContext(), lot1);
+
+    expect(summary).toMatchObject({
+      isActive: true,
+      stock: 90,
+      movementCount: 3,
+    });
+    expect(summary?.cells).toEqual([
+      { cellId: cellA1, cellCode: 'A1', quantity: 60 },
+      { cellId: cellA2, cellCode: 'A2', quantity: 30 },
+    ]);
+    expect(summary?.createdAt).toBeInstanceOf(Date);
+    expect(summary?.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('returns undefined for a missing lot', async () => {
+    expect(await getLotSummary(testContext(), 'lot_missing')).toBeUndefined();
+  });
+});
+
 describe('listMapStock', () => {
   it('returns one row per cell and lot with product data', async () => {
     const rows = await listMapStock(testContext(), whId);
@@ -341,6 +365,20 @@ describe('listLots', () => {
     expect(first.items[0]?.code).toBe(`${scope}_L1`);
     expect(second.items).toHaveLength(0);
     expect(second.total).toBe(2);
+  });
+});
+
+describe('listLotSiblings', () => {
+  it('returns the lots of an item with aggregated stock ordered by code', async () => {
+    const rows = await listLotSiblings(testContext());
+    const siblings = rows.filter((row) => row.itemId === itemId);
+
+    expect(
+      siblings.map((row) => ({ code: row.code, stock: row.stock, isActive: row.isActive })),
+    ).toEqual([
+      { code: `${scope}_L1`, stock: 90, isActive: true },
+      { code: `${scope}_L2`, stock: 5, isActive: true },
+    ]);
   });
 });
 

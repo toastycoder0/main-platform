@@ -1,7 +1,13 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { lotParamsSchema } from '@/modules/warehouse/application/warehouse.validation';
 import { LotForm } from '@/modules/warehouse/components/lot-form';
+import { LotPageLayout } from '@/modules/warehouse/components/lot-page-layout';
+import {
+  LotSummaryAside,
+  LotSummarySkeleton,
+} from '@/modules/warehouse/components/lot-summary-aside';
 import { getLotById } from '@/modules/warehouse/infrastructure/warehouse.query';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
@@ -31,9 +37,16 @@ export default async function EditLotPage({ params }: EditLotPageProps) {
   }
 
   return (
-    <div className='flex flex-col gap-4'>
-      <h1 className='text-2xl font-semibold'>Editar lote</h1>
+    <LotPageLayout
+      aside={
+        <Suspense fallback={<LotSummarySkeleton />}>
+          <LotSummaryAside lotId={lot.id} />
+        </Suspense>
+      }
+      subtitle='Actualiza la identificación y el estado del lote.'
+      title='Editar lote'
+    >
       <LotForm lot={lot} />
-    </div>
+    </LotPageLayout>
   );
 }

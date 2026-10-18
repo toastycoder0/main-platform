@@ -366,6 +366,19 @@ describe('createLot', () => {
       expect(result.error).toBe('El producto seleccionado no existe');
     }
   });
+
+  it('stores an inactive lot when isActive is false', async () => {
+    const result = await createLot({ itemId, code: 'INACTIVO', isActive: false });
+
+    expect(result.success).toBe(true);
+
+    const [row] = await db
+      .select({ isActive: lot.isActive })
+      .from(lot)
+      .where(eq(lot.normalizedCode, 'inactivo'));
+
+    expect(row?.isActive).toBe(false);
+  });
 });
 
 describe('updateLot', () => {

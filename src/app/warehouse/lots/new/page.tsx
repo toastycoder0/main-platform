@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
-import { LotForm } from '@/modules/warehouse/components/lot-form';
-import { listLotItemOptions } from '@/modules/warehouse/infrastructure/warehouse.query';
+import { LotCreateShell } from '@/modules/warehouse/components/lot-create-shell';
+import {
+  listLotItemOptions,
+  listLotSiblings,
+} from '@/modules/warehouse/infrastructure/warehouse.query';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 
 export default async function NewLotPage() {
@@ -14,12 +17,7 @@ export default async function NewLotPage() {
     notFound();
   }
 
-  const itemOptions = await listLotItemOptions(ctx);
+  const [itemOptions, lots] = await Promise.all([listLotItemOptions(ctx), listLotSiblings(ctx)]);
 
-  return (
-    <div className='flex flex-col gap-4'>
-      <h1 className='text-2xl font-semibold'>Crear lote</h1>
-      <LotForm itemOptions={itemOptions} />
-    </div>
-  );
+  return <LotCreateShell itemOptions={itemOptions} lots={lots} />;
 }

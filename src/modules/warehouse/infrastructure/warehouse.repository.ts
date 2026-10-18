@@ -57,6 +57,7 @@ export async function createLot(ctx: RequestContext, data: CreateLotSchema): Pro
     itemId: data.itemId,
     code: data.code,
     normalizedCode,
+    isActive: data.isActive ?? true,
   });
 
   ctx.logger.info({ itemId: data.itemId, code: data.code }, 'Lot created');

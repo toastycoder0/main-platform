@@ -131,6 +131,29 @@ export interface LotFormDTO {
   isActive: boolean;
 }
 
+export interface LotSiblingDTO {
+  id: string;
+  itemId: string;
+  code: string;
+  isActive: boolean;
+  stock: number;
+}
+
+export interface LotSummaryCellDTO {
+  cellId: string;
+  cellCode: string;
+  quantity: number;
+}
+
+export interface LotSummaryDTO {
+  isActive: boolean;
+  stock: number;
+  cells: LotSummaryCellDTO[];
+  movementCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface MovementListItemDTO {
   id: string;
   sequentialNumber: number;
