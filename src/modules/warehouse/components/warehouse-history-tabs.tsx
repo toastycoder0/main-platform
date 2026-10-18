@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { useQueryStates } from 'nuqs';
 import { buildListHref, type ListHrefParams } from '@/shared/list/list-params';
-import { cn } from '@/shared/utils/cn';
 import {
   type MovementHistoryParams,
   movementHistoryParams,
 } from '../infrastructure/warehouse.params';
+import { TAB_LIST_CLASS, tabLinkClass } from './warehouse.styles';
 
 type MovementHistoryView = 'movements' | 'entries';
 
@@ -41,23 +41,14 @@ export function MovementHistoryTabs({ view }: MovementHistoryTabsProps) {
   const [params] = useQueryStates(movementHistoryParams);
 
   return (
-    <div
-      aria-label='Vistas del historial'
-      className='inline-flex h-9 items-center rounded-lg bg-muted p-0.75'
-      role='tablist'
-    >
+    <div aria-label='Vistas del historial' className={TAB_LIST_CLASS} role='tablist'>
       {TABS.map((tab) => {
         const active = tab.id === view;
 
         return (
           <Link
             aria-selected={active}
-            className={cn(
-              'inline-flex h-full items-center rounded-md px-3 text-sm font-medium transition-colors',
-              active
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
+            className={tabLinkClass(active)}
             href={tabHref(tab, params)}
             key={tab.id}
             role='tab'

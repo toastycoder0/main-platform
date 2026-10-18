@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { ListCreateButton } from '@/shared/components/list-create-button';
 import { ListToolbar } from '@/shared/components/list-toolbar';
 import { buildListHref } from '@/shared/list/list-params';
-import { cn } from '@/shared/utils/cn';
 import {
   WAREHOUSE_VIEW_LABELS,
   WAREHOUSE_VIEWS,
   type WarehouseView,
 } from '../application/warehouse.view';
+import { TAB_LIST_CLASS, tabLinkClass } from './warehouse.styles';
 import { type WarehouseMovementId, WarehouseMovementsMenu } from './warehouse-movements-menu';
 
 interface WarehouseToolbarProps {
@@ -50,23 +50,14 @@ export function WarehouseToolbar({
   return (
     <div className='flex flex-wrap items-center gap-3 md:flex-nowrap'>
       {views.length > 1 ? (
-        <div
-          aria-label='Vistas del almacén'
-          className='order-1 inline-flex h-9 items-center rounded-lg bg-muted p-[3px]'
-          role='tablist'
-        >
+        <div aria-label='Vistas del almacén' className={`order-1 ${TAB_LIST_CLASS}`} role='tablist'>
           {views.map((item) => {
             const active = item === view;
 
             return (
               <Link
                 aria-selected={active}
-                className={cn(
-                  'inline-flex h-full items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
+                className={tabLinkClass(active)}
                 href={buildViewHref(item, q, page, pageSize)}
                 key={item}
                 role='tab'

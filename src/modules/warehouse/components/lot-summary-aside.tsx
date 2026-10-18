@@ -7,6 +7,7 @@ import { Skeleton } from '@/shared/components/skeleton';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { buildListHref } from '@/shared/list/list-params';
 import { getLotSummary } from '../infrastructure/warehouse.query';
+import { NAV_LINK_CLASS } from './warehouse.styles';
 
 const MAX_VISIBLE_CELLS = 8;
 
@@ -105,7 +106,7 @@ export async function LotSummaryAside({ lotId }: LotSummaryAsideProps) {
               {visibleCells.map((cell) => (
                 <Link
                   key={cell.cellId}
-                  className='flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 outline-none'
+                  className={NAV_LINK_CLASS}
                   href={buildListHref('/warehouse', { view: 'map', highlight: cell.cellId })}
                 >
                   <span className='font-mono text-xs'>{cell.cellCode}</span>
