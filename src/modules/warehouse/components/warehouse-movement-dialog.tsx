@@ -272,7 +272,7 @@ export function WarehouseMovementDialog({
                   {...register('title')}
                   aria-invalid={Boolean(errors.title)}
                   id='movement-title'
-                  placeholder='Ej: Recepción camión 14/08'
+                  placeholder='Ej: Asignación de lote 14/08'
                 />
                 {errors.title ? <FieldError errors={[errors.title]} /> : null}
               </Field>

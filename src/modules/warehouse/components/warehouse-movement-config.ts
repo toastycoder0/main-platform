@@ -15,23 +15,23 @@ export interface MovementFormKindConfig {
 
 export const MOVEMENT_FORM_KIND_CONFIG: Record<MovementFormKind, MovementFormKindConfig> = {
   reception: {
-    label: 'Recepción',
+    label: 'Asignación de celda',
     description: 'Asignar stock a una celda',
     icon: PackagePlusIcon,
   },
   transfer: {
-    label: 'Transferencia',
+    label: 'Movimiento entre celdas',
     description: 'Mover stock entre celdas',
     icon: ArrowRightLeftIcon,
   },
   materialOut: {
-    label: 'Salida de material',
-    description: 'Registrar salida del almacén',
+    label: 'Salida de materiales',
+    description: 'Registrar salida de materiales',
     icon: LogOutIcon,
   },
   delivery: {
-    label: 'Entrega',
-    description: 'Registrar entrega de material',
+    label: 'Entrega por pedido',
+    description: 'Registrar entrega por pedido',
     icon: TruckIcon,
   },
 };

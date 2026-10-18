@@ -6,17 +6,17 @@ import {
 } from '../application/warehouse.validation';
 
 export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
-  assign: 'Recepción',
-  move: 'Transferencia',
+  assign: 'Asignación de celda',
+  move: 'Movimiento entre celdas',
   out: 'Salida',
   revert: 'Reversión',
 };
 
 export const MOVEMENT_REASON_LABELS: Record<MovementReason, string> = {
-  reception: 'Recepción',
-  transfer: 'Transferencia',
-  material_out: 'Salida de material',
-  delivery: 'Entrega',
+  reception: 'Asignación de celda',
+  transfer: 'Movimiento entre celdas',
+  material_out: 'Salida de materiales',
+  delivery: 'Entrega por pedido',
 };
 
 export const MOVEMENT_FILTER_OPTIONS: Array<{

@@ -19,7 +19,7 @@
 - Página principal **`/warehouse`** con tabs **Lotes | Mapa** y un **dropdown de acciones** filtrado por permiso.
 - Dos kardex en rutas aparte: **`/warehouse/movements`** (cabeceras) y **`/warehouse/entries`** (entradas planas).
 - **Detalle de movimiento** en `/warehouse/movements/[id]` con todas sus entradas y el botón **Revertir**.
-- **Entregas** = movimiento `out` con motivo `delivery` (sin entidad de pedidos).
+- **Entregas por pedido** = movimiento `out` con motivo `delivery` (sin entidad de pedidos).
 - Permisos por **rol conceptual** (motivo del movimiento), no por `type` del motor.
 - **Solo celdas** se editan (`updateCell`); no hay `createNode` ni creación masiva de celdas.
 - Todas las actions **redirigen a la página de origen** (`/warehouse` o el detalle).
