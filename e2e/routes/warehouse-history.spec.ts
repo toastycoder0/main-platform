@@ -96,30 +96,30 @@ describe('Warehouse history E2E', () => {
   it('selects multiple movements', async () => {
     await openMovements(page);
 
-    await page.getByRole('checkbox', { name: 'Recepción' }).check();
-    await page.getByRole('checkbox', { name: 'Transferencia' }).check();
+    await page.getByRole('checkbox', { name: 'Asignación de celda' }).check();
+    await page.getByRole('checkbox', { name: 'Movimiento entre celdas' }).check();
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'reception,transfer',
     );
 
-    await page.getByRole('button', { name: 'Quitar filtro Recepción' }).click();
+    await page.getByRole('button', { name: 'Quitar filtro Asignación de celda' }).click();
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'transfer',
     );
 
-    await page.getByRole('button', { name: 'Quitar filtro Transferencia' }).click();
+    await page.getByRole('button', { name: 'Quitar filtro Movimiento entre celdas' }).click();
     await page.waitForFunction(() => !new URLSearchParams(window.location.search).has('movements'));
   });
 
   it('applies and removes a movement filter', async () => {
     await openMovements(page);
 
-    await page.getByRole('checkbox', { name: 'Recepción' }).check();
+    await page.getByRole('checkbox', { name: 'Asignación de celda' }).check();
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'reception',
     );
 
-    const chip = page.getByRole('button', { name: 'Quitar filtro Recepción' });
+    const chip = page.getByRole('button', { name: 'Quitar filtro Asignación de celda' });
     await chip.waitFor();
     await chip.click();
     await page.waitForFunction(() => !new URLSearchParams(window.location.search).has('movements'));
@@ -128,7 +128,7 @@ describe('Warehouse history E2E', () => {
   it('keeps the filters when switching tabs', async () => {
     await openMovements(page);
 
-    await page.getByRole('checkbox', { name: 'Transferencia' }).check();
+    await page.getByRole('checkbox', { name: 'Movimiento entre celdas' }).check();
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'transfer',
     );
@@ -170,6 +170,6 @@ describe('Warehouse history E2E', () => {
     await page.getByRole('button', { name: 'Filtros', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('heading', { name: 'Filtros' }).waitFor();
-    await dialog.getByRole('checkbox', { name: 'Recepción' }).waitFor();
+    await dialog.getByRole('checkbox', { name: 'Asignación de celda' }).waitFor();
   });
 });

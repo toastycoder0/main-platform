@@ -96,7 +96,12 @@ describe('Warehouse E2E', () => {
 
     await page.getByRole('button', { name: 'Movimientos' }).click();
 
-    for (const label of ['Recepción', 'Transferencia', 'Salida de material', 'Entrega']) {
+    for (const label of [
+      'Asignación de celda',
+      'Movimiento entre celdas',
+      'Salida de materiales',
+      'Entrega por pedido',
+    ]) {
       expect(await page.getByRole('menuitem', { name: new RegExp(label) }).isVisible()).toBe(true);
     }
   });
@@ -106,11 +111,11 @@ describe('Warehouse E2E', () => {
     await page.goto(`${BASE}/warehouse`);
 
     await page.getByRole('button', { name: 'Movimientos' }).click();
-    await page.getByRole('menuitem', { name: /Recepción/ }).click();
+    await page.getByRole('menuitem', { name: /Asignación de celda/ }).click();
 
     await page.waitForURL('**/warehouse?movement=reception');
     await page.locator('#movement-kind').waitFor();
-    expect(await page.locator('#movement-kind').textContent()).toContain('Recepción');
+    expect(await page.locator('#movement-kind').textContent()).toContain('Asignación de celda');
     expect(await page.getByRole('columnheader', { name: 'Celda destino' }).isVisible()).toBe(true);
     expect(await page.getByRole('columnheader', { name: 'Celda origen' }).isVisible()).toBe(false);
   });
@@ -123,13 +128,13 @@ describe('Warehouse E2E', () => {
     await page.locator('#movement-row-0-quantity').fill('5');
 
     await page.locator('#movement-kind').click();
-    await page.getByRole('option', { name: 'Salida de material' }).click();
+    await page.getByRole('option', { name: 'Salida de materiales' }).click();
 
     await page.getByText('Al cambiar el tipo se limpiarán las filas actuales').waitFor();
     await page.getByRole('button', { name: 'Cambiar tipo' }).click();
 
     await page.locator('#movement-kind').waitFor();
-    expect(await page.locator('#movement-kind').textContent()).toContain('Salida de material');
+    expect(await page.locator('#movement-kind').textContent()).toContain('Salida de materiales');
     expect(await page.getByRole('columnheader', { name: 'Celda destino' }).isVisible()).toBe(false);
     expect(await page.locator('#movement-row-0-quantity').inputValue()).toBe('');
   });
