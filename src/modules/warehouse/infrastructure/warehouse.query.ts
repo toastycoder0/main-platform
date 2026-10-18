@@ -40,8 +40,9 @@ import type {
   WarehouseMapDTO,
 } from '../application/warehouse.types';
 import type {
-  MovementFiltersSchema,
+  MovementFilterValue,
   MovementHistoryFiltersSchema,
+  MovementReason,
 } from '../application/warehouse.validation';
 
 function toNumber(value: string | number): number {
@@ -51,9 +52,35 @@ function toNumber(value: string | number): number {
 const originCell = alias(warehouseCell, 'origin_cell');
 const destinationCell = alias(warehouseCell, 'destination_cell');
 
-function headerConditions(filters: MovementFiltersSchema): SQL[] {
-  const conditions: SQL[] = [];
+function movementFilterCondition(movements: MovementFilterValue[] | undefined): SQL | undefined {
+  if (!movements || movements.length === 0) {
+    return undefined;
+  }
 
+  const reasons = movements.filter((value): value is MovementReason => value !== 'revert');
+  const parts: SQL[] = [];
+
+  if (reasons.length > 0) {
+    parts.push(inArray(movement.reason, reasons));
+  }
+  if (movements.includes('revert')) {
+    parts.push(eq(movement.type, 'revert'));
+  }
+
+  if (parts.length === 0) {
+    return undefined;
+  }
+
+  return parts.length === 1 ? parts[0] : or(...parts);
+}
+
+function headerConditions(filters: MovementHistoryFiltersSchema): SQL[] {
+  const conditions: SQL[] = [];
+  const movementFilter = movementFilterCondition(filters.movements);
+
+  if (movementFilter) {
+    conditions.push(movementFilter);
+  }
   if (filters.type) {
     conditions.push(eq(movement.type, filters.type));
   }

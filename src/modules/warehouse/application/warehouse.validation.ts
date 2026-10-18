@@ -14,12 +14,21 @@ const MAX_CAPACITY = 99_999_999;
 
 export const MOVEMENT_TYPES = ['assign', 'move', 'out', 'revert'] as const;
 export const MOVEMENT_REASONS = ['reception', 'material_out', 'delivery', 'transfer'] as const;
+export const MOVEMENT_FILTER_VALUES = [
+  'reception',
+  'transfer',
+  'material_out',
+  'delivery',
+  'revert',
+] as const;
 
 export const movementTypeSchema = z.enum(MOVEMENT_TYPES);
 export const movementReasonSchema = z.enum(MOVEMENT_REASONS);
+export const movementFilterValueSchema = z.enum(MOVEMENT_FILTER_VALUES);
 
 export type MovementType = z.infer<typeof movementTypeSchema>;
 export type MovementReason = z.infer<typeof movementReasonSchema>;
+export type MovementFilterValue = z.infer<typeof movementFilterValueSchema>;
 
 const idSchema = z.string().min(1, FIELD_ERRORS.required);
 
@@ -202,6 +211,7 @@ export const movementFiltersSchema = z.object({
 });
 
 export const movementHistoryFiltersSchema = movementFiltersSchema.extend({
+  movements: z.array(movementFilterValueSchema).optional(),
   lotId: idSchema.optional(),
   cellId: idSchema.optional(),
 });

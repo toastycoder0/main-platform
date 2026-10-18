@@ -51,8 +51,7 @@ function MovementHistoryResults({ view, movements, entries, total }: MovementHis
 
 function toFilters(params: MovementHistoryParams): MovementHistoryFiltersSchema {
   return {
-    type: params.type ?? undefined,
-    reason: params.reason ?? undefined,
+    movements: params.movements,
     from: params.from ?? undefined,
     to: params.to ?? undefined,
     lotId: params.lot ?? undefined,
@@ -68,8 +67,7 @@ export async function WarehouseHistoryContent({ ctx, params, view }: WarehouseHi
   const total = movements?.total ?? entries?.total ?? 0;
   const basePath = view === 'movements' ? '/warehouse/movements' : '/warehouse/entries';
   const extraParams: ListHrefParams = {
-    type: params.type,
-    reason: params.reason,
+    movements: params.movements.length > 0 ? params.movements.join(',') : null,
     from: params.from,
     to: params.to,
     lot: params.lot,
@@ -77,7 +75,7 @@ export async function WarehouseHistoryContent({ ctx, params, view }: WarehouseHi
   };
 
   return (
-    <div className='lg:grid lg:grid-cols-[16rem_1fr] lg:gap-8'>
+    <div className='lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8'>
       <aside className='hidden lg:block'>
         <div className='lg:sticky lg:top-6'>
           <MovementHistoryFilters

@@ -58,6 +58,7 @@ const unitId = id('unit');
 const currencyCode = `Q${scope}`.toUpperCase().slice(0, 8);
 const productId = id('prd');
 const itemId = id('pitem');
+const productTitle = `${scope} Product`;
 
 const allCellIds = [cellA1, cellA2, cellB1, cellEmpty];
 const allLotIds = [lot1, lot2];
@@ -103,7 +104,7 @@ async function seedCatalog(): Promise<void> {
   await db.insert(product).values({
     id: productId,
     slug: `${scope}_test`,
-    title: 'Test Product',
+    title: productTitle,
     unitId,
     baseCurrency: currencyCode,
     sortOrder: 0,
@@ -270,7 +271,7 @@ describe('listLotItemOptions', () => {
 
     expect(option).toEqual({
       value: itemId,
-      label: `Test Product — Variante (${scope}_VAR)`,
+      label: `${productTitle} — Variante (${scope}_VAR)`,
     });
   });
 });
@@ -284,13 +285,13 @@ describe('getMovementFormOptions', () => {
       {
         id: lot1,
         code: `${scope}_L1`,
-        productTitle: 'Test Product',
+        productTitle,
         itemTitle: 'Variante',
       },
       {
         id: lot2,
         code: `${scope}_L2`,
-        productTitle: 'Test Product',
+        productTitle,
         itemTitle: 'Variante',
       },
     ]);
@@ -317,7 +318,7 @@ describe('getLotById', () => {
       id: lot1,
       itemId,
       itemTitle: 'Variante',
-      productTitle: 'Test Product',
+      productTitle,
       code: `${scope}_L1`,
       isActive: true,
     });
@@ -360,7 +361,7 @@ describe('listMapStock', () => {
       `A2:${scope}_L1:30`,
       `B1:${scope}_L2:5`,
     ]);
-    expect(rows[0]?.productTitle).toBe('Test Product');
+    expect(rows[0]?.productTitle).toBe(productTitle);
     expect(rows[0]?.itemTitle).toBe('Variante');
   });
 
@@ -378,7 +379,7 @@ describe('listLots', () => {
     expect(result.total).toBe(2);
     expect(result.items.map((item) => item.code).sort()).toEqual([`${scope}_L1`, `${scope}_L2`]);
     expect(result.items[0]?.itemTitle).toBe('Variante');
-    expect(result.items[0]?.productTitle).toBe('Test Product');
+    expect(result.items[0]?.productTitle).toBe(productTitle);
   });
 
   it('returns the aggregated stock and locations for each lot', async () => {
@@ -421,8 +422,7 @@ describe('listLotSiblings', () => {
 describe('listMovements', () => {
   it('reports entry counts for the newest movements', async () => {
     const result = await listMovements(testContext(), params(), {
-      type: 'assign',
-      reason: 'reception',
+      movements: ['reception'],
     });
     const ours = result.items.find((item) => item.id === receptionMovementId);
 
@@ -434,6 +434,14 @@ describe('listMovements', () => {
     );
   });
 
+  it('filters by multiple movements', async () => {
+    const result = await listMovements(testContext(), params({ q: scope }), {
+      movements: ['reception', 'transfer'],
+    });
+
+    expect(result.total).toBe(3);
+  });
+
   it('filters by lot, cell and search term', async () => {
     const byLot = await listMovements(testContext(), params(), { lotId: lot1 });
     expect(byLot.total).toBe(3);
@@ -441,7 +449,9 @@ describe('listMovements', () => {
     const byCell = await listMovements(testContext(), params(), { cellId: cellA2 });
     expect(byCell.total).toBe(2);
 
-    const bySearch = await listMovements(testContext(), params({ q: 'A1' }), {});
+    const bySearch = await listMovements(testContext(), params({ q: 'A1' }), {
+      lotId: lot1,
+    });
     expect(bySearch.total).toBe(2);
   });
 });
@@ -455,7 +465,7 @@ describe('listMovementEntries', () => {
     expect(result.items[0]?.originCellCode).toBe('A2');
     expect(result.items[0]?.destinationCellCode).toBeNull();
     expect(result.items[0]?.quantity).toBe(10);
-    expect(result.items[0]?.productTitle).toBe('Test Product');
+    expect(result.items[0]?.productTitle).toBe(productTitle);
     expect(result.items[0]?.itemTitle).toBe('Variante');
   });
 
@@ -466,10 +476,12 @@ describe('listMovementEntries', () => {
   });
 
   it('searches entries by cell, product and lot', async () => {
-    const byCell = await listMovementEntries(testContext(), params({ q: 'A2' }), {});
+    const byCell = await listMovementEntries(testContext(), params({ q: 'A2' }), {
+      lotId: lot1,
+    });
     expect(byCell.total).toBe(2);
 
-    const byProduct = await listMovementEntries(testContext(), params({ q: 'Test Product' }), {});
+    const byProduct = await listMovementEntries(testContext(), params({ q: productTitle }), {});
     expect(byProduct.total).toBe(4);
 
     const byLot = await listMovementEntries(testContext(), params({ q: `${scope}_L1` }), {});

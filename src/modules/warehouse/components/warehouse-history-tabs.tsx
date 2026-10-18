@@ -22,8 +22,7 @@ const TABS: Array<{ id: MovementHistoryView; label: string; href: string }> = [
 
 function tabHref(tab: (typeof TABS)[number], params: MovementHistoryParams): string {
   const extraParams: ListHrefParams = {
-    type: params.type,
-    reason: params.reason,
+    movements: params.movements.length > 0 ? params.movements.join(',') : null,
     from: params.from,
     to: params.to,
     lot: params.lot,

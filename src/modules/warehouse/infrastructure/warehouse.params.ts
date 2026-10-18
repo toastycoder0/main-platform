@@ -1,8 +1,14 @@
-import { createLoader, createParser, parseAsString, parseAsStringLiteral } from 'nuqs/server';
+import {
+  createLoader,
+  createParser,
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+} from 'nuqs/server';
 import { z } from 'zod';
 import { listParams } from '@/shared/list/list-params';
 import { MOVEMENT_FORM_KINDS } from '../application/warehouse.movement';
-import { MOVEMENT_REASONS, MOVEMENT_TYPES } from '../application/warehouse.validation';
+import { MOVEMENT_FILTER_VALUES } from '../application/warehouse.validation';
 import { WAREHOUSE_VIEWS } from '../application/warehouse.view';
 
 export const movementParams = {
@@ -29,8 +35,7 @@ const parseAsIsoDate = createParser({
 
 export const movementHistoryParams = {
   ...listParams,
-  type: parseAsStringLiteral(MOVEMENT_TYPES),
-  reason: parseAsStringLiteral(MOVEMENT_REASONS),
+  movements: parseAsArrayOf(parseAsStringLiteral(MOVEMENT_FILTER_VALUES)).withDefault([]),
   from: parseAsIsoDate,
   to: parseAsIsoDate,
   lot: parseAsString,

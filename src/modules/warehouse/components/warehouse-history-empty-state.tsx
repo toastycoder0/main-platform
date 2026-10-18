@@ -31,8 +31,7 @@ export function MovementHistoryEmptyState({ entity, outOfRange }: MovementHistor
 
       setParams({
         q: null,
-        type: null,
-        reason: null,
+        movements: [],
         from: null,
         to: null,
         lot: null,

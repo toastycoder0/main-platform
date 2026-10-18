@@ -7,6 +7,7 @@ import {
   createLotSchema,
   createNodeSchema,
   movementFormSchema,
+  movementHistoryFiltersSchema,
   registerMovementSchema,
   revertSchema,
 } from './warehouse.validation';
@@ -330,6 +331,24 @@ describe('registerMovementSchema', () => {
       title: 'Transferencia',
       rows: [{ ...validFormRow(), destinationCellId: 'wcel_1' }],
       returnContext: validReturnContext,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('movementHistoryFiltersSchema', () => {
+  it('accepts multiple movement filters', () => {
+    const result = movementHistoryFiltersSchema.safeParse({
+      movements: ['reception', 'transfer', 'revert'],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects unknown movement values', () => {
+    const result = movementHistoryFiltersSchema.safeParse({
+      movements: ['unknown'],
     });
 
     expect(result.success).toBe(false);

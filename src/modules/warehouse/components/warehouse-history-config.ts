@@ -1,6 +1,6 @@
 import {
-  MOVEMENT_REASONS,
-  MOVEMENT_TYPES,
+  MOVEMENT_FILTER_VALUES,
+  type MovementFilterValue,
   type MovementReason,
   type MovementType,
 } from '../application/warehouse.validation';
@@ -19,14 +19,12 @@ export const MOVEMENT_REASON_LABELS: Record<MovementReason, string> = {
   delivery: 'Entrega',
 };
 
-export const MOVEMENT_TYPE_OPTIONS = MOVEMENT_TYPES.map((value) => ({
+export const MOVEMENT_FILTER_OPTIONS: Array<{
+  value: MovementFilterValue;
+  label: string;
+}> = MOVEMENT_FILTER_VALUES.map((value) => ({
   value,
-  label: MOVEMENT_TYPE_LABELS[value],
-}));
-
-export const MOVEMENT_REASON_OPTIONS = MOVEMENT_REASONS.map((value) => ({
-  value,
-  label: MOVEMENT_REASON_LABELS[value],
+  label: value === 'revert' ? MOVEMENT_TYPE_LABELS.revert : MOVEMENT_REASON_LABELS[value],
 }));
 
 export function formatMovementDate(value: Date): string {
