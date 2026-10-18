@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import { Q_MAX_LENGTH } from '@/shared/list/list-params';
 import {
-  bulkCreateCellSchema,
-  createCellSchema,
+  cellCapacityFormSchema,
   createLotSchema,
-  createNodeSchema,
+  lotFormSchema,
   movementFormSchema,
   movementHistoryFiltersSchema,
   registerMovementSchema,
@@ -52,82 +51,54 @@ describe('createLotSchema', () => {
   });
 });
 
-describe('createNodeSchema', () => {
-  it('accepts valid node', () => {
-    expect(
-      createNodeSchema.safeParse({
-        warehouseId: 'wh_1',
-        name: 'Rack A',
-        kind: 'rack',
-      }).success,
-    ).toBe(true);
+describe('lotFormSchema', () => {
+  it('accepts a valid form payload', () => {
+    const result = lotFormSchema.safeParse({
+      itemId: 'pitem_1',
+      code: 'LOTE-001',
+      isActive: true,
+    });
+
+    expect(result.success).toBe(true);
   });
 
-  it('rejects missing warehouseId', () => {
-    expect(createNodeSchema.safeParse({ name: 'Rack A', kind: 'rack' }).success).toBe(false);
+  it('requires isActive', () => {
+    expect(lotFormSchema.safeParse({ itemId: 'pitem_1', code: 'LOTE-001' }).success).toBe(false);
   });
 
-  it('rejects empty name', () => {
+  it('rejects an empty code', () => {
     expect(
-      createNodeSchema.safeParse({ warehouseId: 'wh_1', name: '   ', kind: 'rack' }).success,
+      lotFormSchema.safeParse({ itemId: 'pitem_1', code: '   ', isActive: false }).success,
     ).toBe(false);
   });
 });
 
-describe('createCellSchema', () => {
-  it('accepts valid cell', () => {
-    expect(
-      createCellSchema.safeParse({ nodeId: 'wn_1', code: 'A1', position: 1, capacity: 100 })
-        .success,
-    ).toBe(true);
+describe('cellCapacityFormSchema', () => {
+  it('maps an empty input to no limit', () => {
+    const result = cellCapacityFormSchema.safeParse({ capacity: '   ' });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.capacity).toBeNull();
+    }
   });
 
-  it('rejects negative capacity', () => {
-    expect(
-      createCellSchema.safeParse({ nodeId: 'wn_1', code: 'A1', position: 1, capacity: -1 }).success,
-    ).toBe(false);
+  it('accepts a valid capacity', () => {
+    const result = cellCapacityFormSchema.safeParse({ capacity: '100' });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.capacity).toBe(100);
+    }
   });
 
-  it('rejects non-integer position', () => {
-    expect(
-      createCellSchema.safeParse({ nodeId: 'wn_1', code: 'A1', position: 1.5, capacity: 100 })
-        .success,
-    ).toBe(false);
-  });
-});
-
-describe('bulkCreateCellSchema', () => {
-  it('accepts valid bulk range', () => {
-    expect(
-      bulkCreateCellSchema.safeParse({
-        nodeId: 'wn_1',
-        prefix: 'A',
-        range: { start: 1, end: 10 },
-        capacity: 100,
-      }).success,
-    ).toBe(true);
+  it('matches the server rule rejecting zero', () => {
+    expect(cellCapacityFormSchema.safeParse({ capacity: '0' }).success).toBe(false);
   });
 
-  it('rejects range where start > end', () => {
-    expect(
-      bulkCreateCellSchema.safeParse({
-        nodeId: 'wn_1',
-        prefix: 'A',
-        range: { start: 10, end: 1 },
-        capacity: 100,
-      }).success,
-    ).toBe(false);
-  });
-
-  it('rejects non-integer position in range', () => {
-    expect(
-      bulkCreateCellSchema.safeParse({
-        nodeId: 'wn_1',
-        prefix: 'A',
-        range: { start: 1.5, end: 10 },
-        capacity: 100,
-      }).success,
-    ).toBe(false);
+  it('rejects negative and non-numeric values', () => {
+    expect(cellCapacityFormSchema.safeParse({ capacity: '-5' }).success).toBe(false);
+    expect(cellCapacityFormSchema.safeParse({ capacity: 'abc' }).success).toBe(false);
   });
 });
 

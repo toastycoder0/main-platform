@@ -3,7 +3,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import {
@@ -27,14 +26,8 @@ import {
 import { Input } from '@/shared/components/input';
 import { Switch } from '@/shared/components/switch';
 import type { LotFormDTO, LotItemOptionDTO } from '../application/warehouse.types';
-import { createLotSchema } from '../application/warehouse.validation';
+import { type LotFormSchema, lotFormSchema } from '../application/warehouse.validation';
 import { createLot, updateLot } from '../infrastructure/warehouse.action';
-
-const lotFormSchema = createLotSchema.extend({
-  isActive: z.boolean(),
-});
-
-type LotFormSchema = z.infer<typeof lotFormSchema>;
 
 interface LotFormProps {
   itemOptions?: LotItemOptionDTO[];

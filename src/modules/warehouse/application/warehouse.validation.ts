@@ -32,7 +32,7 @@ export type MovementFilterValue = z.infer<typeof movementFilterValueSchema>;
 
 const idSchema = z.string().min(1, FIELD_ERRORS.required);
 
-const capacitySchema = z
+export const capacitySchema = z
   .number()
   .positive(FIELD_ERRORS.quantity)
   .max(MAX_CAPACITY, FIELD_ERRORS.quantity)
@@ -161,34 +161,11 @@ export const updateLotSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export const createNodeSchema = z.object({
-  warehouseId: idSchema,
-  parentId: z.string().optional(),
-  name: z.string().trim().min(1, FIELD_ERRORS.name).max(100, FIELD_ERRORS.tooLong),
-  kind: z.string().trim().min(1, FIELD_ERRORS.required).max(50, FIELD_ERRORS.tooLong),
+export const lotFormSchema = z.object({
+  itemId: idSchema,
+  code: z.string().trim().min(1, FIELD_ERRORS.required).max(100, FIELD_ERRORS.tooLong),
+  isActive: z.boolean(),
 });
-
-export const createCellSchema = z.object({
-  nodeId: idSchema,
-  code: z.string().trim().min(1, FIELD_ERRORS.required).max(20, FIELD_ERRORS.tooLong),
-  position: z.number().int(),
-  capacity: capacitySchema,
-});
-
-export const bulkCreateCellSchema = z
-  .object({
-    nodeId: idSchema,
-    prefix: z.string().trim().min(1, FIELD_ERRORS.required).max(10, FIELD_ERRORS.tooLong),
-    range: z.object({
-      start: z.number().int().min(1),
-      end: z.number().int().min(1),
-    }),
-    capacity: capacitySchema,
-  })
-  .refine((data) => data.range.start <= data.range.end, {
-    message: FIELD_ERRORS.rangeOrder,
-    path: ['range'],
-  });
 
 export const updateCellSchema = z.object({
   id: idSchema,
@@ -201,6 +178,30 @@ export const updateCellSchema = z.object({
 export const updateCellCapacitySchema = z.object({
   id: idSchema,
   capacity: capacitySchema.nullable(),
+});
+
+/*
+ * Client-side counterpart of `updateCellCapacitySchema` for the inline editor:
+ * mirrors the exact server rules (positive, max, step) so an empty input maps
+ * to "no limit" (null) while any typed value must satisfy `capacitySchema`.
+ */
+export const cellCapacityFormSchema = z.object({
+  capacity: z.string().transform((value, ctx) => {
+    const trimmed = value.trim();
+
+    if (trimmed === '') {
+      return null;
+    }
+
+    const parsed = capacitySchema.safeParse(Number(trimmed));
+
+    if (!parsed.success) {
+      ctx.addIssue({ code: 'custom', message: FIELD_ERRORS.quantity });
+      return z.NEVER;
+    }
+
+    return parsed.data;
+  }),
 });
 
 export const movementFiltersSchema = z.object({
@@ -216,8 +217,6 @@ export const movementHistoryFiltersSchema = movementFiltersSchema.extend({
   cellId: idSchema.optional(),
 });
 
-export const cellParamsSchema = z.object({ id: idSchema });
-
 export const lotParamsSchema = z.object({ id: idSchema });
 
 export type MovementFormKindSchema = z.infer<typeof movementFormKindSchema>;
@@ -228,12 +227,11 @@ export type RegisterMovementSchema = z.infer<typeof registerMovementSchema>;
 export type RevertSchema = z.infer<typeof revertSchema>;
 export type CreateLotSchema = z.infer<typeof createLotSchema>;
 export type UpdateLotSchema = z.infer<typeof updateLotSchema>;
-export type CreateNodeSchema = z.infer<typeof createNodeSchema>;
-export type CreateCellSchema = z.infer<typeof createCellSchema>;
-export type BulkCreateCellSchema = z.infer<typeof bulkCreateCellSchema>;
+export type LotFormSchema = z.infer<typeof lotFormSchema>;
 export type UpdateCellSchema = z.infer<typeof updateCellSchema>;
 export type UpdateCellCapacitySchema = z.infer<typeof updateCellCapacitySchema>;
+export type CellCapacityFormInput = z.input<typeof cellCapacityFormSchema>;
+export type CellCapacityFormSchema = z.infer<typeof cellCapacityFormSchema>;
 export type MovementFiltersSchema = z.infer<typeof movementFiltersSchema>;
 export type MovementHistoryFiltersSchema = z.infer<typeof movementHistoryFiltersSchema>;
-export type CellParamsSchema = z.infer<typeof cellParamsSchema>;
 export type LotParamsSchema = z.infer<typeof lotParamsSchema>;
