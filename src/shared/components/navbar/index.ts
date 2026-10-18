@@ -1,8 +1,10 @@
 export type { NavLink } from './nav-link';
-export { Navbar } from './navbar';
-export { NavbarBrand } from './navbar-brand';
+export { NavbarBar } from './navbar-bar';
 export { NavbarCart } from './navbar-cart';
 export { NavbarLinks } from './navbar-links';
+export { NavbarLinksRow } from './navbar-links-row';
+export { NavbarLogo } from './navbar-logo';
+export { NavbarMobileMenu } from './navbar-mobile-menu';
 export { NavbarSearch } from './navbar-search';
 export { NavbarShell } from './navbar-shell';
 export { NavbarUser } from './navbar-user';

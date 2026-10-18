@@ -9,10 +9,12 @@ import { buildCategoryTree } from '@/modules/categories/application/categories.t
 import { getCategoryTree } from '@/modules/categories/infrastructure/categories.query';
 import { Footer } from '@/shared/components/footer';
 import {
-  Navbar,
-  NavbarBrand,
+  NavbarBar,
   NavbarCart,
   NavbarLinks,
+  NavbarLinksRow,
+  NavbarLogo,
+  NavbarMobileMenu,
   NavbarSearch,
   NavbarShell,
   NavbarUser,
@@ -26,7 +28,7 @@ interface PublicLayoutProps {
 
 const staticLinks = [
   { label: 'Recursos', href: '/technical-library' },
-  { label: 'Asesor\u00edas', href: '/technical-advice' },
+  { label: 'Asesorías', href: '/technical-advice' },
 ];
 
 async function PublicNavbar() {
@@ -42,7 +44,7 @@ async function PublicNavbar() {
 
   const categoryParentLink =
     categoryLinks.length > 0
-      ? [{ label: 'Categor\u00edas', href: '/products', children: categoryLinks }]
+      ? [{ label: 'Categorías', href: '/products', children: categoryLinks }]
       : [];
 
   const brandParentLink =
@@ -59,17 +61,38 @@ async function PublicNavbar() {
   ];
 
   return (
-    <Navbar>
-      <NavbarBrand />
-      <NavbarSearch />
-      <NavbarLinks links={links} />
-      <NavbarUser
-        isAuthenticated={!!session}
-        userName={session?.user.name}
-        userEmail={session?.user.email}
-      />
-      {session && <NavbarCart />}
-    </Navbar>
+    <>
+      <NavbarBar>
+        <NavbarLogo className='flex-1' />
+        <NavbarSearch className='w-72 shrink-0 lg:w-xl' />
+        <NavbarUser
+          isAuthenticated={!!session}
+          userName={session?.user.name}
+          userEmail={session?.user.email}
+          className='flex-1 justify-end'
+        />
+        {session ? <NavbarCart /> : null}
+      </NavbarBar>
+
+      <NavbarLinksRow>
+        <NavbarLinks links={links} />
+      </NavbarLinksRow>
+
+      <NavbarMobileMenu
+        actions={session ? <NavbarCart /> : null}
+        footer={
+          <NavbarUser
+            isAuthenticated={!!session}
+            userName={session?.user.name}
+            userEmail={session?.user.email}
+            variant='panel'
+          />
+        }
+      >
+        <NavbarSearch />
+        <NavbarLinks links={links} variant='panel' />
+      </NavbarMobileMenu>
+    </>
   );
 }
 
