@@ -4,10 +4,7 @@ const SKELETON_CELLS = Array.from({ length: 24 }, (_, index) => `cell-${index}`)
 
 export function WarehouseMapSkeleton() {
   return (
-    <div
-      aria-busy='true'
-      className='flex h-[calc(100dvh-14rem)] min-h-[30rem] flex-col md:h-[calc(100dvh-11rem)]'
-    >
+    <div aria-busy='true' className='flex min-h-0 flex-1 flex-col'>
       <span className='sr-only'>Cargando mapa…</span>
       <div
         aria-hidden='true'

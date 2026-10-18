@@ -17,7 +17,7 @@ interface WarehouseMapProps {
   highlight: string | null;
 }
 
-const MAP_HEIGHT = 'flex h-[calc(100dvh-14rem)] min-h-[30rem] flex-col md:h-[calc(100dvh-11rem)]';
+const MAP_HEIGHT = 'flex min-h-0 flex-1 flex-col';
 
 export async function WarehouseMap({ q, highlight }: WarehouseMapProps) {
   const ctx = await createRequestContext();
