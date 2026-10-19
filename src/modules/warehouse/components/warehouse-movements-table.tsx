@@ -1,3 +1,4 @@
+import { EyeIcon } from 'lucide-react';
 import Link from 'next/link';
 import { ListCell, ListTable } from '@/shared/components/list-table';
 import { TableRow } from '@/shared/components/table';
@@ -22,6 +23,7 @@ export function WarehouseMovementsTable({ items }: WarehouseMovementsTableProps)
         { key: 'reason', label: 'Motivo', className: 'w-40' },
         { key: 'title', label: 'Título' },
         { key: 'entries', label: 'Elementos', className: 'w-24 text-right' },
+        { key: 'detail', label: 'Detalle', className: 'w-28' },
       ]}
     >
       {items.map((item) => (
@@ -45,6 +47,15 @@ export function WarehouseMovementsTable({ items }: WarehouseMovementsTableProps)
             {item.note ?? '—'}
           </ListCell>
           <ListCell className='text-right font-mono tabular-nums'>{item.entryCount}</ListCell>
+          <ListCell>
+            <Link
+              aria-label={`Ver detalle del movimiento #${item.sequentialNumber}`}
+              className='text-xs text-primary underline-offset-4 hover:underline'
+              href={`/warehouse/movements/${item.id}`}
+            >
+              <EyeIcon className='size-3.5 mx-auto' />
+            </Link>
+          </ListCell>
         </TableRow>
       ))}
     </ListTable>

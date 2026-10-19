@@ -329,7 +329,12 @@ describe('Warehouse history E2E', () => {
       const { movementId, sequentialNumber, note, lotCode, productTitle } = requireFixture();
       await openMovements(page);
 
-      await page.getByRole('link', { name: `#${sequentialNumber}` }).click();
+      const numberLink = page.getByRole('link', { name: `#${sequentialNumber}`, exact: true });
+      expect(await numberLink.getAttribute('href')).toBe(`/warehouse/movements/${movementId}`);
+
+      await page
+        .getByRole('link', { name: `Ver detalle del movimiento #${sequentialNumber}` })
+        .click();
       await page.waitForURL(`${BASE}/warehouse/movements/${movementId}`);
 
       await page.getByRole('heading', { name: `Movimiento #${sequentialNumber}` }).waitFor();
@@ -342,6 +347,20 @@ describe('Warehouse history E2E', () => {
       expect(await page.getByRole('link', { name: 'Volver a movimientos' }).isVisible()).toBe(true);
       expect(await page.getByRole('button', { name: 'Revertir' }).count()).toBe(1);
       expect(await page.getByText('Revertido', { exact: true }).count()).toBe(0);
+    });
+
+    it('opens the detail from the entries list row', async () => {
+      const { movementId, sequentialNumber } = requireFixture();
+      await openMovements(page);
+
+      await page.getByRole('tab', { name: 'Por elemento' }).click();
+      await page.waitForURL(`${BASE}/warehouse/entries`);
+
+      await page
+        .getByRole('link', { name: `Ver detalle del movimiento #${sequentialNumber}` })
+        .click();
+      await page.waitForURL(`${BASE}/warehouse/movements/${movementId}`);
+      await page.getByRole('heading', { name: `Movimiento #${sequentialNumber}` }).waitFor();
     });
 
     it('reverts from the detail and links both movements', async () => {
