@@ -1,5 +1,5 @@
 import { HistoryIcon, WarehouseIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const warehouseManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const warehouseManifest: ModuleManifest = {
       nav: [
         {
           id: 'warehouse',
-          label: 'Almacén',
+          label: PERMISSION_GROUP_LABELS.warehouse,
           href: '/warehouse',
           icon: WarehouseIcon,
           permission: PERMISSIONS.warehouse.access,

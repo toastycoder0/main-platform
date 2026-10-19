@@ -1,5 +1,5 @@
 import { FolderTreeIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const categoriesManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const categoriesManifest: ModuleManifest = {
       nav: [
         {
           id: 'categories',
-          label: 'Categorías',
+          label: PERMISSION_GROUP_LABELS['admin.categories'],
           href: '/dashboard/categories',
           icon: FolderTreeIcon,
           permission: PERMISSIONS.admin.categories.access,

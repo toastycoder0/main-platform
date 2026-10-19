@@ -1,5 +1,5 @@
 import { ShieldIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const rolesManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const rolesManifest: ModuleManifest = {
       nav: [
         {
           id: 'roles',
-          label: 'Roles',
+          label: PERMISSION_GROUP_LABELS['admin.roles'],
           href: '/dashboard/roles',
           icon: ShieldIcon,
           permission: PERMISSIONS.admin.roles.access,

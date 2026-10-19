@@ -1,5 +1,5 @@
 import { BadgeDollarSignIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const currenciesManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const currenciesManifest: ModuleManifest = {
       nav: [
         {
           id: 'currencies',
-          label: 'Monedas',
+          label: PERMISSION_GROUP_LABELS['admin.currencies'],
           href: '/dashboard/currencies',
           icon: BadgeDollarSignIcon,
           permission: PERMISSIONS.admin.currencies.access,

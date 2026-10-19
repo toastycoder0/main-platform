@@ -1,3 +1,35 @@
+export const PERMISSION_GROUP_LABELS = {
+  warehouse: 'Almacén',
+  'warehouse.lots': 'Lotes',
+  'warehouse.map': 'Mapa del almacén',
+  'warehouse.stock': 'Stock',
+  admin: 'Panel de administración',
+  'admin.users': 'Usuarios',
+  'admin.roles': 'Roles',
+  'admin.files': 'Archivos',
+  'admin.categories': 'Categorías',
+  'admin.brands': 'Marcas',
+  'admin.tags': 'Etiquetas',
+  'admin.productUnits': 'Unidades de medida',
+  'admin.documentTypes': 'Tipos de documento',
+  'admin.currencies': 'Monedas',
+  'admin.exchangeRates': 'Tipos de cambio',
+  'admin.priceLists': 'Listas de precios',
+  'admin.products': 'Productos',
+} as const;
+
+export type PermissionGroupKey = keyof typeof PERMISSION_GROUP_LABELS;
+
+export function getPermissionGroupKey(slug: string): string {
+  const [root = '', branch, ...rest] = slug.split('.');
+  return rest.length > 0 ? `${root}.${branch}` : root;
+}
+
+export function getPermissionGroupLabel(slug: string): string {
+  const key = getPermissionGroupKey(slug);
+  return PERMISSION_GROUP_LABELS[key as PermissionGroupKey] ?? key;
+}
+
 export const PERMISSIONS = {
   public: {
     access: 'public.access',

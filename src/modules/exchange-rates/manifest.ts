@@ -1,5 +1,5 @@
 import { ArrowLeftRightIcon } from 'lucide-react';
-import { PERMISSIONS } from '@/shared/constants/permissions';
+import { PERMISSION_GROUP_LABELS, PERMISSIONS } from '@/shared/constants/permissions';
 import type { ModuleManifest } from '../manifest';
 
 export const exchangeRatesManifest: ModuleManifest = {
@@ -9,7 +9,7 @@ export const exchangeRatesManifest: ModuleManifest = {
       nav: [
         {
           id: 'exchange-rates',
-          label: 'Tipos de cambio',
+          label: PERMISSION_GROUP_LABELS['admin.exchangeRates'],
           href: '/dashboard/exchange-rates',
           icon: ArrowLeftRightIcon,
           permission: PERMISSIONS.admin.exchangeRates.access,
