@@ -14,6 +14,8 @@ export interface MovementEntryDTO {
   id: string;
   lotId: string;
   lotCode: string | null;
+  productTitle: string | null;
+  itemTitle: string | null;
   originCellId: string | null;
   originCellCode: string | null;
   destinationCellId: string | null;
@@ -30,7 +32,10 @@ export interface MovementDTO {
   userName: string | null;
   note: string | null;
   reference: string | null;
-  isReverted: boolean;
+  revertsId: string | null;
+  revertsSequentialNumber: number | null;
+  revertedById: string | null;
+  revertedBySequentialNumber: number | null;
   entries: MovementEntryDTO[];
   createdAt: Date;
 }

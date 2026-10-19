@@ -183,7 +183,19 @@ const userNameSql = sql<string>`CONCAT_WS(' ', ${user.firstName}, ${user.lastNam
 
 const entryCountSql = sql<number>`(SELECT COUNT(*) FROM "movement_entry" WHERE "movement_entry"."movement_id" = "movement"."id")::int`;
 
-const isRevertedSql = sql<boolean>`EXISTS (SELECT 1 FROM "movement" AS reverting WHERE "reverting"."reverts_id" = "movement"."id")`;
+// The unique index on `reverts_id` guarantees at most one row per side, so both
+// correlated subqueries return a single value.
+const revertsSequentialNumberSql = sql<
+  number | null
+>`(SELECT reverting."sequential_number" FROM "movement" AS reverting WHERE reverting."id" = "movement"."reverts_id")`;
+
+const revertedByIdSql = sql<
+  string | null
+>`(SELECT reverting."id" FROM "movement" AS reverting WHERE reverting."reverts_id" = "movement"."id")`;
+
+const revertedBySequentialNumberSql = sql<
+  number | null
+>`(SELECT reverting."sequential_number" FROM "movement" AS reverting WHERE reverting."reverts_id" = "movement"."id")`;
 
 async function readCellCodes(
   ctx: RequestContext,
@@ -677,9 +689,12 @@ export async function getMovement(
       userId: movement.userId,
       note: movement.note,
       reference: movement.reference,
+      revertsId: movement.revertsId,
+      revertsSequentialNumber: revertsSequentialNumberSql,
+      revertedById: revertedByIdSql,
+      revertedBySequentialNumber: revertedBySequentialNumberSql,
       createdAt: movement.createdAt,
       userName: userNameSql,
-      isReverted: isRevertedSql,
     })
     .from(movement)
     .innerJoin(user, eq(user.id, movement.userId))
@@ -697,12 +712,16 @@ export async function getMovement(
       id: movementEntry.id,
       lotId: movementEntry.lotId,
       lotCode: lot.code,
+      productTitle: product.title,
+      itemTitle: productItem.title,
       originCellId: movementEntry.originCellId,
       destinationCellId: movementEntry.destinationCellId,
       quantity: movementEntry.quantity,
     })
     .from(movementEntry)
     .innerJoin(lot, eq(lot.id, movementEntry.lotId))
+    .innerJoin(productItem, eq(productItem.id, lot.itemId))
+    .innerJoin(product, eq(product.id, productItem.productId))
     .where(eq(movementEntry.movementId, id))
     .orderBy(asc(movementEntry.id));
 
@@ -716,6 +735,8 @@ export async function getMovement(
       id: row.id,
       lotId: row.lotId,
       lotCode: row.lotCode,
+      productTitle: row.productTitle,
+      itemTitle: row.itemTitle,
       originCellId: row.originCellId,
       originCellCode: row.originCellId ? (cellCodes.get(row.originCellId) ?? null) : null,
       destinationCellId: row.destinationCellId,

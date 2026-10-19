@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ListCell, ListTable } from '@/shared/components/list-table';
 import { TableRow } from '@/shared/components/table';
 import type { MovementEntryRowDTO } from '../application/warehouse.types';
@@ -32,7 +33,14 @@ export function WarehouseMovementEntriesTable({ items }: WarehouseMovementEntrie
           <ListCell className='whitespace-nowrap text-muted-foreground'>
             {formatMovementDate(item.createdAt)}
           </ListCell>
-          <ListCell className='font-mono text-xs tabular-nums'>#{item.sequentialNumber}</ListCell>
+          <ListCell>
+            <Link
+              className='font-mono text-xs tabular-nums text-primary underline-offset-4 hover:underline'
+              href={`/warehouse/movements/${item.movementId}`}
+            >
+              #{item.sequentialNumber}
+            </Link>
+          </ListCell>
           <ListCell>{MOVEMENT_TYPE_LABELS[item.type]}</ListCell>
           <ListCell className='text-muted-foreground'>
             {item.reason ? MOVEMENT_REASON_LABELS[item.reason] : '—'}

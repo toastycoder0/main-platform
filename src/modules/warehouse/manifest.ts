@@ -27,6 +27,7 @@ export const warehouseManifest: ModuleManifest = {
         '/warehouse/lots/new': 'Crear lote',
         '/warehouse/lots/form/[id]': 'Editar lote',
         '/warehouse/movements': 'Movimientos',
+        '/warehouse/movements/[id]': 'Detalle de movimiento',
         '/warehouse/entries': 'Elementos',
       },
     },

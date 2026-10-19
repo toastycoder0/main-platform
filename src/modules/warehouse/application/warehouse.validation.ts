@@ -219,6 +219,8 @@ export const movementHistoryFiltersSchema = movementFiltersSchema.extend({
 
 export const lotParamsSchema = z.object({ id: idSchema });
 
+export const movementParamsSchema = z.object({ id: idSchema });
+
 export type MovementFormKindSchema = z.infer<typeof movementFormKindSchema>;
 export type MovementFormRowSchema = z.infer<typeof movementFormRowSchema>;
 export type MovementFormSchema = z.infer<typeof movementFormSchema>;
@@ -235,3 +237,4 @@ export type CellCapacityFormSchema = z.infer<typeof cellCapacityFormSchema>;
 export type MovementFiltersSchema = z.infer<typeof movementFiltersSchema>;
 export type MovementHistoryFiltersSchema = z.infer<typeof movementHistoryFiltersSchema>;
 export type LotParamsSchema = z.infer<typeof lotParamsSchema>;
+export type MovementParamsSchema = z.infer<typeof movementParamsSchema>;

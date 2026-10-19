@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@/shared/constants/permissions';
 import { buildListHref } from '@/shared/list/list-params';
 import { getLotSummary } from '../infrastructure/warehouse.query';
 import { NAV_LINK_CLASS } from './warehouse.styles';
+import { DetailRow } from './warehouse-detail-row';
 
 const MAX_VISIBLE_CELLS = 8;
 
@@ -23,27 +24,6 @@ function formatDateTime(value: Date): string {
 
 function formatQuantity(value: number): string {
   return value.toLocaleString('es-MX', { maximumFractionDigits: 4 });
-}
-
-function DetailRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className='flex items-baseline justify-between gap-3'>
-      <dt className='shrink-0 text-xs text-muted-foreground'>{label}</dt>
-      <dd
-        className={`text-right text-xs ${mono ? 'font-mono break-all' : 'tabular-nums text-foreground'}`}
-      >
-        {value}
-      </dd>
-    </div>
-  );
 }
 
 export function LotSummarySkeleton() {

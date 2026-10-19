@@ -11,6 +11,7 @@
 - [x] Fase 4 — Queries: mapa, stock por celda, lotes, movimientos y entradas (kardex), detalle y reconciliación
 - [x] Fase 5 — Server Actions: assign, move, materialOut, delivery, revert, lotes y edición de celdas
 - [x] Errores estructurados (`Result.details`) para rechazos del motor
+- [x] Detalle de movimiento en `/warehouse/movements/[id]`: entradas con producto/variante, relación de reversión en ambos sentidos y botón **Revertir** con confirmación
 - [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ✅
 
 ## Diseño consolidado

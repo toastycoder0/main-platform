@@ -25,6 +25,7 @@ import {
 
 const WAREHOUSE_PATH = '/warehouse';
 const MOVEMENTS_PATH = '/warehouse/movements';
+const ENTRIES_PATH = '/warehouse/entries';
 
 export const registerMovement = run({ input: registerMovementSchema }, async (ctx, data) => {
   // The required permission depends on the kind, so it cannot be declared in `run`.
@@ -61,6 +62,10 @@ export const revertMovementAction = run(
 
     ctx.logger.info({ movementId: data.movementId }, 'Movement reverted');
     revalidatePath(WAREHOUSE_PATH);
+    // The revert is a new movement with its own entries, so both kardex lists
+    // and the detail being redirect-target must refresh.
+    revalidatePath(MOVEMENTS_PATH);
+    revalidatePath(ENTRIES_PATH);
     revalidatePath(`${MOVEMENTS_PATH}/${data.movementId}`);
     redirect(`${MOVEMENTS_PATH}/${data.movementId}`);
   },

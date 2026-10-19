@@ -19,7 +19,7 @@ import {
 import type { ListParams } from '@/shared/list/list-params';
 import type { Transfer } from '../application/warehouse.deltas';
 import type { MovementKind } from '../application/warehouse.types';
-import { executeMovement } from './warehouse.engine';
+import { executeMovement, revertMovement } from './warehouse.engine';
 import {
   getCellStock,
   getLotById,
@@ -68,6 +68,7 @@ const TRANSFER: MovementKind = { type: 'move', reason: 'transfer' };
 const MATERIAL_OUT: MovementKind = { type: 'out', reason: 'material_out' };
 
 let receptionMovementId = '';
+let materialOutMovementId = '';
 
 function testContext(): RequestContext {
   const logger: RequestContext['logger'] = {
@@ -169,9 +170,10 @@ async function seedMovements(): Promise<void> {
   await submit(TRANSFER, [
     { lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: 40 },
   ]);
-  await submit(MATERIAL_OUT, [
+  const materialOut = await submit(MATERIAL_OUT, [
     { lotId: lot1, originCellId: cellA2, destinationCellId: null, quantity: 10 },
   ]);
+  materialOutMovementId = materialOut.movementId;
   await submit(RECEPTION, [
     { lotId: lot2, originCellId: null, destinationCellId: cellB1, quantity: 5 },
   ]);
@@ -513,6 +515,35 @@ describe('getMovement', () => {
     expect(movement?.entries).toHaveLength(1);
     expect(movement?.entries[0]?.destinationCellCode).toBe('A1');
     expect(movement?.entries[0]?.quantity).toBe(100);
+    expect(movement?.revertsId).toBeNull();
+    expect(movement?.revertedById).toBeNull();
+  });
+
+  it('returns the product and variant titles of every entry', async () => {
+    const detail = await getMovement(testContext(), receptionMovementId);
+
+    expect(detail?.entries[0]?.productTitle).toBe(productTitle);
+    expect(detail?.entries[0]?.itemTitle).toBe('Variante');
+  });
+
+  it('links the original and the reversal in both directions', async () => {
+    const reversal = await db.transaction((tx) =>
+      revertMovement(tx, userId, materialOutMovementId),
+    );
+
+    const original = await getMovement(testContext(), materialOutMovementId);
+
+    expect(original?.revertedById).toBe(reversal.movementId);
+    expect(original?.revertedBySequentialNumber).toBeGreaterThan(0);
+
+    const detail = await getMovement(testContext(), reversal.movementId);
+
+    expect(detail?.type).toBe('revert');
+    expect(detail?.revertsId).toBe(materialOutMovementId);
+    expect(detail?.revertsSequentialNumber).toBe(original?.sequentialNumber);
+    expect(detail?.revertedById).toBeNull();
+    expect(detail?.entries).toHaveLength(1);
+    expect(detail?.entries[0]?.productTitle).toBe(productTitle);
   });
 });
 
