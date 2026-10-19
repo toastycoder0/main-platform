@@ -58,7 +58,7 @@ const unitId = id('unit');
 const currencyCode = `Q${scope}`.toUpperCase().slice(0, 8);
 const productId = id('prd');
 const itemId = id('pitem');
-const productTitle = `${scope} Product`;
+const productTitle = `${scope} Producto Café`;
 
 const allCellIds = [cellA1, cellA2, cellB1, cellEmpty];
 const allLotIds = [lot1, lot2];
@@ -375,13 +375,27 @@ describe('listMapStock', () => {
 });
 
 describe('listLots', () => {
-  it('matches the search against lot code and item title', async () => {
+  it('matches the search against the scoped lots', async () => {
     const result = await listLots(testContext(), params({ q: scope }));
 
     expect(result.total).toBe(2);
     expect(result.items.map((item) => item.code).sort()).toEqual([`${scope}_L1`, `${scope}_L2`]);
     expect(result.items[0]?.itemTitle).toBe('Variante');
     expect(result.items[0]?.productTitle).toBe(productTitle);
+  });
+
+  it('matches by lot code, product, variant and cell, ignoring accents', async () => {
+    const byLot = await listLots(testContext(), params({ q: `${scope}_L1` }));
+    expect(byLot.items.map((item) => item.id)).toEqual([lot1]);
+
+    const byProduct = await listLots(testContext(), params({ q: `${scope} producto cafe` }));
+    expect(byProduct.items.map((item) => item.id).sort()).toEqual([lot1, lot2].sort());
+
+    const byVariant = await listLots(testContext(), params({ q: 'variante' }));
+    expect(byVariant.items.map((item) => item.id)).toEqual(expect.arrayContaining([lot1, lot2]));
+
+    const byCell = await listLots(testContext(), params({ q: 'A1' }));
+    expect(byCell.items.map((item) => item.id)).toContain(lot1);
   });
 
   it('returns the aggregated stock and locations for each lot', async () => {

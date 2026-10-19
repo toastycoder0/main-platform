@@ -84,9 +84,7 @@ export function WarehouseToolbar({
       <div className='order-3 w-full min-w-0 md:order-2 md:ml-auto md:w-80'>
         <ListToolbar
           searchLabel={view === 'map' ? 'Buscar en el almacén' : 'Buscar lotes'}
-          searchPlaceholder={
-            view === 'map' ? 'Buscar por código de lote o celda…' : 'Buscar por código de lote…'
-          }
+          searchPlaceholder='Buscar por lote, celda, variante o producto…'
         />
       </div>
     </div>

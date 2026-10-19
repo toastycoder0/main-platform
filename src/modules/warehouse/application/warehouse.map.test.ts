@@ -57,8 +57,8 @@ const stock: MapStockRowDTO[] = [
     cellCode: 'A1',
     lotId: 'lot-1',
     lotCode: 'LOTE-001',
-    productTitle: 'Pintura blanca',
-    itemTitle: 'Blanco mate',
+    productTitle: 'Pintura café',
+    itemTitle: 'Blanco maté',
     quantity: 50,
   },
 ];
@@ -67,6 +67,7 @@ describe('normalizeMapSearch', () => {
   it('lowercases and removes diacritics', () => {
     expect(normalizeMapSearch('Almacén')).toBe('almacen');
     expect(normalizeMapSearch('LOTE-001')).toBe('lote-001');
+    expect(normalizeMapSearch('Peña')).toBe('pena');
   });
 });
 
@@ -96,9 +97,13 @@ describe('findMatchingCellIds', () => {
     expect(findMatchingCellIds(index, 'lote-001')).toEqual(new Set(['cell-a1']));
   });
 
-  it('ignores product and variant text', () => {
-    expect(findMatchingCellIds(index, 'pintura')).toEqual(new Set());
-    expect(findMatchingCellIds(index, 'blanco mate')).toEqual(new Set());
+  it('matches by product title, ignoring accents', () => {
+    expect(findMatchingCellIds(index, 'pintura')).toEqual(new Set(['cell-a1']));
+    expect(findMatchingCellIds(index, 'cafe')).toEqual(new Set(['cell-a1']));
+  });
+
+  it('matches by variant title, ignoring accents', () => {
+    expect(findMatchingCellIds(index, 'blanco mate')).toEqual(new Set(['cell-a1']));
   });
 
   it('returns an empty set for an empty or missing query', () => {

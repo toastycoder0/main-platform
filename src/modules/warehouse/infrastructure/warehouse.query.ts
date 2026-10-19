@@ -1,7 +1,20 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or, type SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  or,
+  type SQL,
+  type SQLWrapper,
+  sql,
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { ilikePattern, searchILike } from '@/infrastructure/db/list-query';
+import { ilikePattern } from '@/infrastructure/db/list-query';
 import {
   cellLot,
   lot,
@@ -16,6 +29,7 @@ import {
 } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
+import { SEARCH_ACCENTED, SEARCH_PLAIN } from '../application/warehouse.search';
 import { buildWarehouseTree, type MapCellRow } from '../application/warehouse.tree';
 import type {
   CellStockDTO,
@@ -329,11 +343,32 @@ export async function getCellStock(ctx: RequestContext, cellId: string): Promise
   return rows.map((row) => ({ ...row, quantity: toNumber(row.quantity) }));
 }
 
+function unaccentedILike(column: SQLWrapper, pattern: string): SQL {
+  return sql`translate(lower(${column}), ${SEARCH_ACCENTED}, ${SEARCH_PLAIN}) ILIKE translate(lower(${pattern}), ${SEARCH_ACCENTED}, ${SEARCH_PLAIN})`;
+}
+
+function lotSearchCondition(term: string): SQL {
+  const pattern = ilikePattern(term);
+
+  return sql`(
+    ${unaccentedILike(lot.code, pattern)}
+    OR ${unaccentedILike(product.title, pattern)}
+    OR ${unaccentedILike(productItem.title, pattern)}
+    OR EXISTS (
+      SELECT 1
+      FROM "cell_lot" AS cl
+      INNER JOIN "warehouse_cell" AS wc ON wc."id" = cl."cell_id"
+      WHERE cl."lot_id" = "lot"."id"
+        AND ${unaccentedILike(sql`wc."code"`, pattern)}
+    )
+  )`;
+}
+
 export async function listLots(
   ctx: RequestContext,
   params: ListParams,
 ): Promise<Paginated<LotListItemDTO>> {
-  const where = params.q ? searchILike([lot.code], params.q) : undefined;
+  const where = params.q ? lotSearchCondition(params.q) : undefined;
 
   const stock = ctx.db
     .select({

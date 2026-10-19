@@ -1,4 +1,5 @@
 import { type CellOccupancy, computeCellOccupancy } from './warehouse.occupancy';
+import { normalizeWarehouseSearch } from './warehouse.search';
 import type { CellDTO, MapStockRowDTO, NodeDTO } from './warehouse.types';
 
 export interface CellStockDetail {
@@ -20,10 +21,7 @@ export interface MapCellIndexEntry {
 export type MapIndex = Map<string, MapCellIndexEntry>;
 
 export function normalizeMapSearch(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  return normalizeWarehouseSearch(value);
 }
 
 function toStockDetail(row: MapStockRowDTO): CellStockDetail {
@@ -53,7 +51,10 @@ export function buildMapIndex(nodes: NodeDTO[], stock: MapStockRowDTO[]): MapInd
     for (const cell of node.cells) {
       const details = stockByCell.get(cell.id) ?? [];
       const searchText = normalizeMapSearch(
-        [cell.code, ...details.map((detail) => detail.lotCode)].join(' '),
+        [
+          cell.code,
+          ...details.flatMap((detail) => [detail.lotCode, detail.productTitle, detail.itemTitle]),
+        ].join(' '),
       );
 
       index.set(cell.id, {
