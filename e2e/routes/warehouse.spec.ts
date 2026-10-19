@@ -120,6 +120,97 @@ describe('Warehouse E2E', () => {
     expect(selectedColor).not.toBe(matchColor);
   });
 
+  it('centers the selected cell at max zoom', async () => {
+    await openMap(page);
+
+    const zoomIn = page.getByRole('button', { name: 'Acercar' });
+    for (let step = 0; step < 10; step += 1) {
+      await zoomIn.click();
+      await page.waitForTimeout(350);
+    }
+
+    const cellCenter = await page.evaluate(() => {
+      const map = document.querySelector<HTMLElement>('[data-slot="warehouse-map"]');
+
+      if (!map) {
+        return null;
+      }
+
+      const mapRect = map.getBoundingClientRect();
+      const targetX = mapRect.left + mapRect.width / 2;
+      const targetY = mapRect.top + mapRect.height / 2;
+      const cells = Array.from(
+        map.querySelectorAll<HTMLButtonElement>('button[aria-label^="Celda"]'),
+      )
+        .map((cell) => {
+          const rect = cell.getBoundingClientRect();
+          return {
+            centerX: rect.left + rect.width / 2,
+            centerY: rect.top + rect.height / 2,
+            width: rect.width,
+            height: rect.height,
+          };
+        })
+        .filter(
+          (cell) =>
+            cell.width > 0 &&
+            cell.height > 0 &&
+            cell.centerX >= mapRect.left &&
+            cell.centerX <= mapRect.right &&
+            cell.centerY >= mapRect.top &&
+            cell.centerY <= mapRect.bottom,
+        )
+        .sort(
+          (a, b) =>
+            Math.hypot(a.centerX - targetX, a.centerY - targetY) -
+            Math.hypot(b.centerX - targetX, b.centerY - targetY),
+        );
+      const best = cells[0];
+
+      return best ? { x: best.centerX, y: best.centerY } : null;
+    });
+
+    expect(cellCenter).not.toBeNull();
+
+    if (!cellCenter) {
+      return;
+    }
+
+    await page.mouse.click(cellCenter.x, cellCenter.y);
+    await page.waitForFunction(
+      () => document.querySelector('[data-slot="warehouse-map"] [data-selected="true"]') !== null,
+    );
+    await page.waitForTimeout(600);
+
+    const offset = await page.evaluate(() => {
+      const map = document.querySelector<HTMLElement>('[data-slot="warehouse-map"]');
+      const selected = document.querySelector<HTMLElement>(
+        '[data-slot="warehouse-map"] [data-selected="true"]',
+      );
+
+      if (!map || !selected) {
+        return null;
+      }
+
+      const mapRect = map.getBoundingClientRect();
+      const cellRect = selected.getBoundingClientRect();
+
+      return {
+        x: cellRect.left + cellRect.width / 2 - (mapRect.left + mapRect.width / 2),
+        y: cellRect.top + cellRect.height / 2 - (mapRect.top + mapRect.height / 2),
+      };
+    });
+
+    expect(offset).not.toBeNull();
+
+    if (!offset) {
+      return;
+    }
+
+    expect(Math.abs(offset.x)).toBeLessThan(8);
+    expect(Math.abs(offset.y)).toBeLessThan(8);
+  });
+
   it('shows the movement links for an admin', async () => {
     await loginAsAdmin(page);
     await page.goto(`${BASE}/warehouse`);

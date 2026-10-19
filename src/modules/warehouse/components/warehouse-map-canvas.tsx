@@ -11,10 +11,14 @@ import {
 import { buildListHref } from '@/shared/list/list-params';
 import { buildMapIndex, findMatchingCellIds } from '../application/warehouse.map';
 import type { MapStockRowDTO, NodeDTO } from '../application/warehouse.types';
+import { centeredTransform } from '../application/warehouse.zoom';
 import { warehouseParams } from '../infrastructure/warehouse.params';
 import { WarehouseCellPanel } from './warehouse-cell-panel';
 import { WarehouseMapBody } from './warehouse-map-body';
 import { WarehouseMapControls } from './warehouse-map-controls';
+
+const ZOOM_SCALE = 1.5;
+const ZOOM_ANIMATION_MS = 400;
 
 interface WarehouseMapCanvasProps {
   nodes: NodeDTO[];
@@ -49,12 +53,26 @@ export function WarehouseMapCanvas({
   const selectedCellId = highlight !== '' ? highlight : null;
   const selectedEntry = selectedCellId ? index.get(selectedCellId) : undefined;
 
-  const zoomToCell = useCallback((cellId: string) => {
+  const centerCell = useCallback((cellId: string) => {
+    const transform = transformRef.current;
     const element = document.getElementById(`map-cell-${cellId}`);
+    const wrapper = transform?.instance.wrapperComponent;
 
-    if (element) {
-      transformRef.current?.zoomToElement(element, 1.5, 400);
+    if (!transform || !element || !wrapper) {
+      return false;
     }
+
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+    const center = transform.clientToContent(
+      elementRect.left + elementRect.width / 2,
+      elementRect.top + elementRect.height / 2,
+    );
+    const target = centeredTransform(center, wrapperRect, ZOOM_SCALE);
+
+    transform.setTransform(target.positionX, target.positionY, target.scale, ZOOM_ANIMATION_MS);
+
+    return true;
   }, []);
 
   const handleCellClick = useCallback(
@@ -63,12 +81,12 @@ export function WarehouseMapCanvas({
         return;
       }
 
-      zoomToCell(cellId);
+      centerCell(cellId);
       startTransition(() => {
         setParams({ highlight: cellId });
       });
     },
-    [isPending, setParams, zoomToCell],
+    [centerCell, isPending, setParams],
   );
 
   const handlePanelClose = useCallback(() => {
@@ -83,19 +101,18 @@ export function WarehouseMapCanvas({
 
   // Center a deep-linked highlight once per selection session.
   useEffect(() => {
-    if (!highlight || hasCentered || !transformRef.current) {
+    if (!highlight || hasCentered) {
       return;
     }
 
-    const element = document.getElementById(`map-cell-${highlight}`);
+    const frame = requestAnimationFrame(() => {
+      if (centerCell(highlight)) {
+        setHasCentered(true);
+      }
+    });
 
-    if (!element) {
-      return;
-    }
-
-    transformRef.current.zoomToElement(element, 1.5, 400);
-    setHasCentered(true);
-  }, [highlight, hasCentered]);
+    return () => cancelAnimationFrame(frame);
+  }, [highlight, hasCentered, centerCell]);
 
   useEffect(() => {
     if (!highlight) {
