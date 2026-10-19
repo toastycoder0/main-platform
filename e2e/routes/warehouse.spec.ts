@@ -226,6 +226,19 @@ describe('Warehouse E2E', () => {
     await page.locator('[data-slot=list-empty]').waitFor();
   });
 
+  it('clears the search from the input', async () => {
+    await loginAsAdmin(page);
+    await page.goto(`${BASE}/warehouse`);
+
+    const search = page.getByLabel('Buscar lotes');
+    await search.fill('A1');
+    await page.waitForURL('**/warehouse?q=A1');
+
+    await page.getByRole('button', { name: 'Limpiar búsqueda' }).click();
+    await page.waitForFunction(() => !window.location.search.includes('q='));
+    expect(await search.inputValue()).toBe('');
+  });
+
   it('stacks the search below the tabs and movements on mobile', async () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loginAsAdmin(page);
