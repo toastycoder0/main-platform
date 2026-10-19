@@ -1,4 +1,5 @@
 import { PencilIcon } from 'lucide-react';
+import type { ComponentProps } from 'react';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { Badge } from '@/shared/components/badge';
 import { ListEmptyState } from '@/shared/components/list-empty';
@@ -8,6 +9,8 @@ import { ListCell, ListTable } from '@/shared/components/list-table';
 import { TableRow } from '@/shared/components/table';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { ListParams } from '@/shared/list/list-params';
+import type { ProductStatus } from '../application/products.status';
+import { PRODUCT_STATUS_LABELS } from '../application/products.status';
 import { listProducts } from '../infrastructure/products.query';
 
 const BASE_PATH = '/dashboard/products';
@@ -20,15 +23,15 @@ function formatCreatedAt(value: Date): string {
   });
 }
 
-function getStatusBadge(status: 'active' | 'inactive' | 'warehouse_only') {
-  switch (status) {
-    case 'active':
-      return <Badge variant='secondary'>Activo</Badge>;
-    case 'inactive':
-      return <Badge variant='outline'>Inactivo</Badge>;
-    case 'warehouse_only':
-      return <Badge variant='default'>Solo almacén</Badge>;
-  }
+const STATUS_BADGE_VARIANTS: Record<ProductStatus, ComponentProps<typeof Badge>['variant']> = {
+  active: 'secondary',
+  inactive: 'outline',
+  warehouse_only: 'default',
+  unlisted: 'ghost',
+};
+
+function getStatusBadge(status: ProductStatus) {
+  return <Badge variant={STATUS_BADGE_VARIANTS[status]}>{PRODUCT_STATUS_LABELS[status]}</Badge>;
 }
 
 interface ProductsTableProps {

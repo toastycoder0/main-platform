@@ -1,3 +1,4 @@
+import type { ProductStatus } from './products.status';
 import type { ProductFormSchema } from './products.validation';
 
 export interface ProductListItemDTO {
@@ -5,7 +6,7 @@ export interface ProductListItemDTO {
   slug: string;
   title: string;
   code: string | null;
-  status: 'active' | 'inactive' | 'warehouse_only';
+  status: ProductStatus;
   brandName: string | null;
   unitName: string;
   createdAt: Date;

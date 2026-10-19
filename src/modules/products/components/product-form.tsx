@@ -33,6 +33,7 @@ import {
 import { Switch } from '@/shared/components/switch';
 import { Textarea } from '@/shared/components/textarea';
 import { buildPriceEntries } from '../application/products.prices';
+import { PRODUCT_STATUS_LABELS, PRODUCT_STATUSES } from '../application/products.status';
 import type { ProductFormDTO, ProductVariantOption } from '../application/products.types';
 import type { ProductFormSchema } from '../application/products.validation';
 import { MAX_DETAILS, MAX_DOCUMENTS, productFormSchema } from '../application/products.validation';
@@ -248,9 +249,11 @@ export function ProductForm({
                     <SelectValue placeholder='Seleccionar estado' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='active'>Activo</SelectItem>
-                    <SelectItem value='inactive'>Inactivo</SelectItem>
-                    <SelectItem value='warehouse_only'>Solo almacén</SelectItem>
+                    {PRODUCT_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {PRODUCT_STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}

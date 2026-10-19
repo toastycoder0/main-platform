@@ -260,6 +260,21 @@ describe('createProduct', () => {
     expect(items[0]?.priceFormula).toBeNull();
   });
 
+  it('persists the unlisted status and exposes it in the edit form', async () => {
+    const id = await createAndFind(
+      basePayload({ title: `${scope} No listado`, status: 'unlisted' }),
+    );
+
+    const [row] = await db
+      .select({ status: product.status })
+      .from(product)
+      .where(eq(product.id, id));
+    expect(row?.status).toBe('unlisted');
+
+    const form = await findProductForm(state.ctx as RequestContext, id);
+    expect(form.status).toBe('unlisted');
+  });
+
   it('suffixes the slug when another product already uses it', async () => {
     const title = `${scope} Duplicado`;
     await createAndFind(basePayload({ title }));

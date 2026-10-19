@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { PRODUCT_STATUSES } from './products.status';
 import {
   createProductSchema,
   MAX_DETAILS,
@@ -78,7 +79,7 @@ describe('createProductSchema', () => {
     expect(createProductSchema.safeParse(validProduct({ status: 'draft' })).success).toBe(false);
   });
 
-  it.each(['active', 'inactive', 'warehouse_only'])('accepts the %s status', (status) => {
+  it.each(PRODUCT_STATUSES)('accepts the %s status', (status) => {
     expect(createProductSchema.safeParse(validProduct({ status })).success).toBe(true);
   });
 

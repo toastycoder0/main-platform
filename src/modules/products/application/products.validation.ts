@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { PRODUCT_STATUSES } from './products.status';
 import {
   MAX_SELECT_CHOICES,
   MAX_VARIANT_OPTIONS,
@@ -251,7 +252,7 @@ const productFieldsSchema = {
     .max(MAX_MONEY, 'El costo es demasiado grande')
     .nullable()
     .optional(),
-  status: z.enum(['active', 'inactive', 'warehouse_only']),
+  status: z.enum(PRODUCT_STATUSES),
   tagIds: z.array(z.string()).default([]),
   categoryIds: z.array(z.string()).default([]),
   details: z.array(productDetailSchema).max(MAX_DETAILS).default([]),

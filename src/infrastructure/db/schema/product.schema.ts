@@ -26,7 +26,12 @@ import { productUnit } from './product-unit.schema';
 import { tag } from './tag.schema';
 import { user } from './user.schema';
 
-export const productStatusEnum = pgEnum('product_status', ['active', 'inactive', 'warehouse_only']);
+export const productStatusEnum = pgEnum('product_status', [
+  'active',
+  'inactive',
+  'warehouse_only',
+  'unlisted',
+]);
 
 export const product = snakeCase.table(
   'product',
