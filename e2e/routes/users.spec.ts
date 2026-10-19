@@ -8,7 +8,8 @@ const ADMIN_PASS = 'Pass1234';
 
 const searchBox = (page: Page) => page.getByLabel('Buscar usuarios');
 const emptyState = (page: Page) => page.locator('[data-slot=list-empty]');
-const pageSummary = (page: Page) => page.locator('text=/^Página \\d+ de \\d+/');
+const pageSummary = (page: Page) =>
+  page.locator('text=/^(\\d+–\\d+ de \\d+|Página \\d+ de \\d+)$/');
 
 async function waitForTable(page: Page) {
   await page.waitForSelector('[data-slot=table-body]');
@@ -127,7 +128,7 @@ describe('Users list E2E', () => {
 
     expect(await page.getByRole('cell', { name: 'John Doe', exact: true }).isVisible()).toBe(true);
     expect(await page.getByRole('cell', { name: ADMIN_EMAIL, exact: true }).isVisible()).toBe(true);
-    expect(await pageSummary(page).textContent()).toBe('Página 1 de 1 · 1 resultado');
+    expect(await pageSummary(page).textContent()).toBe('1–1 de 1');
     expect(consoleErrors).toEqual([]);
   });
 
