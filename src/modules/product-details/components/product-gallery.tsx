@@ -137,15 +137,14 @@ export function ProductGallery({ images, selectedVariantId, title }: ProductGall
         />
       ) : null}
 
-      <ProductGalleryLightbox
-        open={lightboxOpen}
-        onOpenChange={setLightboxOpen}
-        slides={slides}
-        index={index}
-        title={title}
-        onPrevious={() => api?.scrollPrev()}
-        onNext={() => api?.scrollNext()}
-      />
+      {lightboxOpen ? (
+        <ProductGalleryLightbox
+          slides={slides}
+          initialIndex={index}
+          title={title}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
