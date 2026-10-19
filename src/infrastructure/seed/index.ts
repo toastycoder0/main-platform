@@ -22,7 +22,6 @@ import {
 } from '@/shared/constants/permissions';
 import { seedWarehouse } from './warehouse.seed';
 
-
 const { admin, warehouse } = PERMISSIONS;
 
 function accessPermission(slug: string, group: PermissionGroupKey) {
