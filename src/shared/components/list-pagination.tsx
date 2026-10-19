@@ -67,8 +67,18 @@ export function ListPagination({ basePath, params, total, extraParams }: ListPag
   const [isPending, startTransition] = useTransition();
 
   const totalPages = Math.max(1, Math.ceil(total / params.pageSize));
+  const outOfRange = params.page > totalPages;
+  const currentPage = Math.min(params.page, totalPages);
+  const firstRow = total === 0 ? 0 : (currentPage - 1) * params.pageSize + 1;
+  const lastRow = Math.min(currentPage * params.pageSize, total);
   const hasPrevious = params.page > 1;
   const hasNext = params.page < totalPages;
+  const summary =
+    total === 0
+      ? 'Sin resultados'
+      : outOfRange
+        ? `Página ${params.page} de ${totalPages}`
+        : `${firstRow}–${lastRow} de ${total}`;
 
   function pageHref(page: number): string {
     return buildListHref(basePath, {
@@ -81,9 +91,7 @@ export function ListPagination({ basePath, params, total, extraParams }: ListPag
 
   return (
     <div className='flex flex-wrap items-center justify-between gap-3'>
-      <p className='text-sm text-muted-foreground'>
-        Página {params.page} de {totalPages} · {total} {total === 1 ? 'resultado' : 'resultados'}
-      </p>
+      <p className='text-sm text-muted-foreground'>{summary}</p>
 
       <div className='ml-auto flex items-center gap-4 md:gap-6'>
         <div className='hidden items-center gap-2 md:flex'>

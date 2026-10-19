@@ -4,12 +4,16 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, '\\$&');
 }
 
+export function ilikePattern(term: string): string {
+  return `%${escapeLike(term)}%`;
+}
+
 export function searchILike(columns: (Column | SQLWrapper)[], term: string): SQL | undefined {
   if (columns.length === 0) {
     return undefined;
   }
 
-  const pattern = `%${escapeLike(term)}%`;
+  const pattern = ilikePattern(term);
 
   return or(...columns.map((column) => ilike(column, pattern)));
 }

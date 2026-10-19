@@ -1,3 +1,4 @@
+import { PERMISSIONS } from '@/shared/constants/permissions';
 import { authManifest } from './auth/manifest';
 import { brandsManifest } from './brands/manifest';
 import { categoriesManifest } from './categories/manifest';
@@ -12,6 +13,7 @@ import { productsManifest } from './products/manifest';
 import { rolesManifest } from './roles/manifest';
 import { tagsManifest } from './tags/manifest';
 import { usersManifest } from './users/manifest';
+import { warehouseManifest } from './warehouse/manifest';
 
 // Composition root: modules register here manually via their manifests.
 // Decentralizing this list (auto-discovery of `modules/*/manifest.ts` via
@@ -32,6 +34,7 @@ const manifests: ModuleManifest[] = [
   rolesManifest,
   tagsManifest,
   usersManifest,
+  warehouseManifest,
 ];
 
 interface SectionMeta {
@@ -145,6 +148,19 @@ export function selectBreadcrumbs(
 
 export function getNav(section: SectionId, permissions: string[]): NavItem[] {
   return selectNav(manifests, section, permissions);
+}
+
+/**
+ * Profiles scoped to an operational section (e.g. warehouse staff without
+ * storefront access) keep the logo pointing at their section root instead of
+ * the public site, so the section remains self-contained.
+ */
+export function resolveLogoHref(section: SectionId, permissions: string[]): string {
+  if (section === 'public' || permissions.includes(PERMISSIONS.public.access)) {
+    return SECTIONS.public.rootPath;
+  }
+
+  return SECTIONS[section].rootPath;
 }
 
 export function resolveLabel(section: SectionId, pathname: string): string | undefined {

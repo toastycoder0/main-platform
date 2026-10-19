@@ -10,3 +10,4 @@ export * from './product.schema';
 export * from './product-unit.schema';
 export * from './tag.schema';
 export * from './user.schema';
+export * from './warehouse.schema';

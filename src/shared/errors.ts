@@ -8,12 +8,20 @@ const ERROR_MAP = {
 
 export type ErrorCode = keyof typeof ERROR_MAP;
 
+export interface AppErrorIssue {
+  message: string;
+  objectType?: string;
+  objectId?: string;
+  details?: Record<string, number>;
+}
+
 export class AppError extends Error {
   public readonly status: number;
 
   constructor(
     public readonly code: ErrorCode,
     message?: string,
+    public readonly details?: readonly AppErrorIssue[],
   ) {
     super(message ?? ERROR_MAP[code].defaultMessage);
     this.name = 'AppError';

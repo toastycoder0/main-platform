@@ -33,8 +33,9 @@ describe('Auth route restrictions E2E', () => {
 
   it('shows login link for guest on home page', async () => {
     await page.goto(`${BASE}/`);
-    const count = await page.getByText('Iniciar sesión').count();
-    expect(count).toBeGreaterThanOrEqual(1);
+    const loginLink = page.locator('a[href="/auth/login"]').first();
+    await loginLink.waitFor();
+    expect(await loginLink.isVisible()).toBe(true);
   });
 
   it('redirects guest away from /dashboard to login', async () => {

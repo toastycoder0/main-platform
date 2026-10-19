@@ -1,4 +1,26 @@
 export const PERMISSIONS = {
+  public: {
+    access: 'public.access',
+  },
+  warehouse: {
+    access: 'warehouse.access',
+    lots: {
+      access: 'warehouse.lots.access',
+      create: 'warehouse.lots.create',
+      edit: 'warehouse.lots.edit',
+    },
+    map: {
+      access: 'warehouse.map.access',
+      edit: 'warehouse.map.edit',
+    },
+    stock: {
+      reception: 'warehouse.stock.reception',
+      transfer: 'warehouse.stock.transfer',
+      materialOut: 'warehouse.stock.materialOut',
+      delivery: 'warehouse.stock.delivery',
+      revert: 'warehouse.stock.revert',
+    },
+  },
   admin: {
     access: 'admin.access',
     users: {

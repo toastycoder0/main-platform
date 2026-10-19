@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash2Icon } from 'lucide-react';
+import { type LucideIcon, Trash2Icon } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +20,7 @@ interface DestructiveConfirmProps {
   description: string;
   confirmLabel: string;
   busy?: boolean;
+  icon?: LucideIcon;
   onConfirm: () => void;
 }
 
@@ -29,13 +30,14 @@ export function DestructiveConfirm({
   description,
   confirmLabel,
   busy = false,
+  icon: Icon = Trash2Icon,
   onConfirm,
 }: DestructiveConfirmProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button type='button' variant='destructive' disabled={busy}>
-          <Trash2Icon />
+          <Icon />
           {label}
         </Button>
       </AlertDialogTrigger>

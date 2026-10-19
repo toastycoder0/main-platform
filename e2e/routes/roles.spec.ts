@@ -10,7 +10,8 @@ const SEEDED_ROLE = 'Super Administrador';
 const searchBox = (page: Page) => page.getByLabel('Buscar roles');
 const roleCell = (page: Page) => page.getByRole('cell', { name: SEEDED_ROLE, exact: true });
 const emptyState = (page: Page) => page.locator('[data-slot=list-empty]');
-const pageSummary = (page: Page) => page.locator('text=/^Página \\d+ de \\d+/');
+const pageSummary = (page: Page) =>
+  page.locator('text=/^(\\d+–\\d+ de \\d+|Página \\d+ de \\d+)$/');
 
 async function waitForTable(page: Page) {
   await page.waitForSelector('[data-slot=table-body]');
@@ -65,7 +66,7 @@ describe('Roles list E2E', () => {
     await waitForTable(page);
 
     expect(await roleCell(page).isVisible()).toBe(true);
-    expect(await pageSummary(page).textContent()).toBe('Página 1 de 1 · 1 resultado');
+    expect(await pageSummary(page).textContent()).toBe('1–1 de 1');
     expect(consoleErrors).toEqual([]);
   });
 
@@ -84,8 +85,8 @@ describe('Roles list E2E', () => {
     await loginAsAdmin(page);
     await page.goto(`${BASE}/dashboard/roles?page=999`);
 
-    await page.waitForSelector('text=/^Página 999 de 1/');
-    expect(await pageSummary(page).textContent()).toBe('Página 999 de 1 · 1 resultado');
+    await page.waitForSelector('text=/^Página 999 de 1$/');
+    expect(await pageSummary(page).textContent()).toBe('Página 999 de 1');
   });
 
   it('writes the search term to the URL and lets the server resolve it', async () => {

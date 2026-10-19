@@ -8,8 +8,19 @@ import { categoriesToNavLinks } from '@/modules/categories/application/categorie
 import { buildCategoryTree } from '@/modules/categories/application/categories.tree';
 import { getCategoryTree } from '@/modules/categories/infrastructure/categories.query';
 import { Footer } from '@/shared/components/footer';
-import { Navbar, NavbarShell } from '@/shared/components/navbar';
+import {
+  NavbarBar,
+  NavbarCart,
+  NavbarLinks,
+  NavbarLinksRow,
+  NavbarLogo,
+  NavbarMobileMenu,
+  NavbarSearch,
+  NavbarShell,
+  NavbarUser,
+} from '@/shared/components/navbar';
 import { NavbarSkeleton } from '@/shared/components/navbar/navbar-skeleton';
+import { PERMISSIONS } from '@/shared/constants/permissions';
 
 interface PublicLayoutProps {
   children?: ReactNode;
@@ -17,7 +28,7 @@ interface PublicLayoutProps {
 
 const staticLinks = [
   { label: 'Recursos', href: '/technical-library' },
-  { label: 'Asesor\u00edas', href: '/technical-advice' },
+  { label: 'Asesorías', href: '/technical-advice' },
 ];
 
 async function PublicNavbar() {
@@ -33,7 +44,7 @@ async function PublicNavbar() {
 
   const categoryParentLink =
     categoryLinks.length > 0
-      ? [{ label: 'Categor\u00edas', href: '/products', children: categoryLinks }]
+      ? [{ label: 'Categorías', href: '/products', children: categoryLinks }]
       : [];
 
   const brandParentLink =
@@ -43,17 +54,47 @@ async function PublicNavbar() {
     ...categoryParentLink,
     ...brandParentLink,
     ...staticLinks,
-    ...(session ? [{ label: 'Panel de control', href: '/dashboard' }] : []),
+    ...(session && ctx.permissions.has(PERMISSIONS.admin.access)
+      ? [{ label: 'Panel de control', href: '/dashboard' }]
+      : []),
+    ...(ctx.permissions.has(PERMISSIONS.warehouse.access)
+      ? [{ label: 'Almacén', href: '/warehouse' }]
+      : []),
   ];
 
   return (
-    <Navbar
-      isAuthenticated={!!session}
-      userName={session?.user.name}
-      userEmail={session?.user.email}
-      userLinks={undefined}
-      navLinks={links}
-    />
+    <>
+      <NavbarBar>
+        <NavbarLogo className='flex-1' />
+        <NavbarSearch className='w-72 shrink-0 lg:w-xl' />
+        <NavbarUser
+          isAuthenticated={!!session}
+          userName={session?.user.name}
+          userEmail={session?.user.email}
+          className='flex-1 justify-end'
+        />
+        {session ? <NavbarCart /> : null}
+      </NavbarBar>
+
+      <NavbarLinksRow>
+        <NavbarLinks links={links} />
+      </NavbarLinksRow>
+
+      <NavbarMobileMenu
+        actions={session ? <NavbarCart /> : null}
+        footer={
+          <NavbarUser
+            isAuthenticated={!!session}
+            userName={session?.user.name}
+            userEmail={session?.user.email}
+            variant='panel'
+          />
+        }
+      >
+        <NavbarSearch />
+        <NavbarLinks links={links} variant='panel' />
+      </NavbarMobileMenu>
+    </>
   );
 }
 
