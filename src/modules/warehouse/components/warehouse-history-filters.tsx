@@ -1,14 +1,11 @@
 'use client';
 
 import { RotateCcwIcon } from 'lucide-react';
-import { useQueryStates } from 'nuqs';
-import { useTransition } from 'react';
 import { Button } from '@/shared/components/button';
 import { Checkbox } from '@/shared/components/checkbox';
 import { cn } from '@/shared/utils/cn';
 import type { MovementCellOptionDTO, MovementLotOptionDTO } from '../application/warehouse.types';
-import type { MovementFilterValue } from '../application/warehouse.validation';
-import { movementHistoryParams } from '../infrastructure/warehouse.params';
+import { useMovementHistoryFilters } from './use-movement-history-filters';
 import { MOVEMENT_FILTER_OPTIONS } from './warehouse-history-config';
 import { WarehouseHistoryDateRange } from './warehouse-history-date-range';
 import { type WarehouseOption, WarehouseOptionCombobox } from './warehouse-option-combobox';
@@ -17,14 +14,6 @@ interface MovementHistoryFiltersProps {
   idPrefix: string;
   lots: MovementLotOptionDTO[];
   cells: MovementCellOptionDTO[];
-}
-
-interface FilterPatch {
-  movements?: MovementFilterValue[];
-  from?: string | null;
-  to?: string | null;
-  lot?: string | null;
-  cell?: string | null;
 }
 
 function lotOption(lot: MovementLotOptionDTO): WarehouseOption {
@@ -39,38 +28,11 @@ function cellOption(cell: MovementCellOptionDTO): WarehouseOption {
 }
 
 export function MovementHistoryFilters({ idPrefix, lots, cells }: MovementHistoryFiltersProps) {
-  const [params, setParams] = useQueryStates(movementHistoryParams);
-  const [isPending, startTransition] = useTransition();
-  const hasFilters = Boolean(
-    params.movements.length > 0 || params.from || params.to || params.lot || params.cell,
-  );
+  const { params, isPending, hasFilters, update, toggleMovement, clearFilters } =
+    useMovementHistoryFilters();
 
   function fieldId(name: string): string {
     return `${idPrefix}-${name}`;
-  }
-
-  function update(patch: FilterPatch) {
-    startTransition(() => {
-      setParams({ ...params, ...patch, page: 1 });
-    });
-  }
-
-  function toggleMovement(value: MovementFilterValue) {
-    const next = params.movements.includes(value)
-      ? params.movements.filter((item) => item !== value)
-      : [...params.movements, value];
-
-    update({ movements: next });
-  }
-
-  function clearFilters() {
-    update({
-      movements: [],
-      from: null,
-      to: null,
-      lot: null,
-      cell: null,
-    });
   }
 
   return (

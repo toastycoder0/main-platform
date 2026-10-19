@@ -3,12 +3,13 @@
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { XIcon } from 'lucide-react';
-import { useQueryStates } from 'nuqs';
-import { useTransition } from 'react';
 import { Button } from '@/shared/components/button';
 import type { MovementCellOptionDTO, MovementLotOptionDTO } from '../application/warehouse.types';
 import type { MovementFilterValue } from '../application/warehouse.validation';
-import { movementHistoryParams } from '../infrastructure/warehouse.params';
+import {
+  type MovementHistoryFilterPatch,
+  useMovementHistoryFilters,
+} from './use-movement-history-filters';
 import { MOVEMENT_REASON_LABELS, MOVEMENT_TYPE_LABELS } from './warehouse-history-config';
 
 interface MovementHistoryActiveFiltersProps {
@@ -22,15 +23,7 @@ interface ActiveFilterChip {
   remove: () => void;
 }
 
-interface ActiveFilterPatch {
-  movements?: MovementFilterValue[];
-  from?: null;
-  to?: null;
-  lot?: null;
-  cell?: null;
-}
-
-type ClearFilter = (patch: ActiveFilterPatch) => void;
+type ClearFilter = (patch: MovementHistoryFilterPatch) => void;
 
 function formatFilterDate(value: string): string {
   return format(parseISO(value), 'dd MMM yyyy', { locale: es });
@@ -100,24 +93,17 @@ function locationChips(
 }
 
 export function MovementHistoryActiveFilters({ lots, cells }: MovementHistoryActiveFiltersProps) {
-  const [params, setParams] = useQueryStates(movementHistoryParams);
-  const [isPending, startTransition] = useTransition();
+  const { params, isPending, update, clearFilters } = useMovementHistoryFilters();
 
   const lotLabels = new Map(
     lots.map((lot) => [lot.id, `${lot.code} — ${lot.productTitle} / ${lot.itemTitle}`]),
   );
   const cellLabels = new Map(cells.map((cell) => [cell.id, cell.code]));
 
-  function clearFilter(patch: ActiveFilterPatch) {
-    startTransition(() => {
-      setParams({ ...params, ...patch, page: 1 });
-    });
-  }
-
   const chips = [
-    ...movementChips(params.movements, clearFilter),
-    ...dateChips(params.from, params.to, clearFilter),
-    ...locationChips(params.lot, params.cell, lotLabels, cellLabels, clearFilter),
+    ...movementChips(params.movements, update),
+    ...dateChips(params.from, params.to, update),
+    ...locationChips(params.lot, params.cell, lotLabels, cellLabels, update),
   ];
 
   if (chips.length === 0) {
@@ -144,15 +130,7 @@ export function MovementHistoryActiveFilters({ lots, cells }: MovementHistoryAct
       ))}
       <Button
         className='h-6 px-2 text-xs font-medium'
-        onClick={() =>
-          clearFilter({
-            movements: [],
-            from: null,
-            to: null,
-            lot: null,
-            cell: null,
-          })
-        }
+        onClick={clearFilters}
         size='sm'
         type='button'
         variant='ghost'

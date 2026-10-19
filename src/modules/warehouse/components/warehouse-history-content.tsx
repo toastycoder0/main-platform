@@ -14,14 +14,11 @@ import {
   listMovements,
 } from '../infrastructure/warehouse.query';
 import { MovementHistoryActiveFilters } from './warehouse-history-active-filters';
+import type { MovementHistoryView } from './warehouse-history-config';
 import { MovementHistoryEmptyState } from './warehouse-history-empty-state';
-import { MovementHistoryFilterDrawer } from './warehouse-history-filter-drawer';
-import { MovementHistoryFilters } from './warehouse-history-filters';
-import { MovementHistoryTabs } from './warehouse-history-tabs';
+import { MovementHistoryFilterBar } from './warehouse-history-filter-bar';
 import { WarehouseMovementEntriesTable } from './warehouse-movement-entries-table';
 import { WarehouseMovementsTable } from './warehouse-movements-table';
-
-type MovementHistoryView = 'movements' | 'entries';
 
 interface WarehouseHistoryContentProps {
   ctx: RequestContext;
@@ -78,43 +75,14 @@ export async function WarehouseHistoryContent({ ctx, params, view }: WarehouseHi
   };
 
   return (
-    <div className='lg:grid lg:grid-cols-[18rem_1fr] lg:gap-8'>
-      <aside className='hidden lg:block'>
-        <div className='lg:sticky lg:top-6'>
-          <MovementHistoryFilters
-            cells={options.cells}
-            idPrefix='history-sidebar'
-            lots={options.lots}
-          />
-        </div>
-      </aside>
+    <div className='flex min-w-0 flex-col gap-4'>
+      <MovementHistoryFilterBar cells={options.cells} lots={options.lots} view={view} />
 
-      <div className='flex min-w-0 flex-col gap-5'>
-        <div
-          className='flex flex-wrap items-center justify-between gap-3'
-          data-slot='warehouse-history-summary'
-        >
-          <div className='flex items-center gap-3'>
-            <MovementHistoryFilterDrawer cells={options.cells} lots={options.lots} />
-            <p className='text-sm text-muted-foreground' data-slot='warehouse-history-count'>
-              {total} {total === 1 ? 'resultado' : 'resultados'}
-            </p>
-          </div>
+      <MovementHistoryActiveFilters cells={options.cells} lots={options.lots} />
 
-          <MovementHistoryTabs view={view} />
-        </div>
+      <MovementHistoryResults entries={entries} movements={movements} total={total} view={view} />
 
-        <MovementHistoryActiveFilters cells={options.cells} lots={options.lots} />
-
-        <MovementHistoryResults entries={entries} movements={movements} total={total} view={view} />
-
-        <ListPagination
-          basePath={basePath}
-          extraParams={extraParams}
-          params={params}
-          total={total}
-        />
-      </div>
+      <ListPagination basePath={basePath} extraParams={extraParams} params={params} total={total} />
     </div>
   );
 }

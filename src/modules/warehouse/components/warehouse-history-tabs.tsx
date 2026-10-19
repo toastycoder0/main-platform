@@ -8,8 +8,7 @@ import {
   movementHistoryParams,
 } from '../infrastructure/warehouse.params';
 import { TAB_LIST_CLASS, tabLinkClass } from './warehouse.styles';
-
-type MovementHistoryView = 'movements' | 'entries';
+import type { MovementHistoryView } from './warehouse-history-config';
 
 interface MovementHistoryTabsProps {
   view: MovementHistoryView;

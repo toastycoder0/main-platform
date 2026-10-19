@@ -23,6 +23,7 @@ interface WarehouseOptionComboboxProps {
   placeholder: string;
   invalid?: boolean;
   className?: string;
+  contentClassName?: string;
   onValueChange: (value: string) => void;
 }
 
@@ -34,6 +35,7 @@ export function WarehouseOptionCombobox({
   placeholder,
   invalid = false,
   className = 'w-full min-w-40',
+  contentClassName,
   onValueChange,
 }: WarehouseOptionComboboxProps) {
   const selected = items.find((item) => item.value === value) ?? null;
@@ -53,7 +55,7 @@ export function WarehouseOptionCombobox({
         placeholder={placeholder}
         showClear={selected !== null}
       />
-      <ComboboxContent>
+      <ComboboxContent className={contentClassName}>
         <ComboboxList>
           <ComboboxCollection>
             {(item: WarehouseOption) => (

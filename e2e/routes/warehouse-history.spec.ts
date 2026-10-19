@@ -193,18 +193,18 @@ describe('Warehouse history E2E', () => {
     await page.getByRole('heading', { name: 'Movimientos' }).waitFor();
   });
 
-  it('aligns the tabs with the results count', async () => {
+  it('renders the view tabs in the compact header', async () => {
     await openMovements(page);
 
-    const count = await page.locator('[data-slot=warehouse-history-count]').boundingBox();
+    const heading = await page.getByRole('heading', { name: 'Movimientos' }).boundingBox();
     const tabs = await page.getByRole('tablist', { name: 'Vistas del historial' }).boundingBox();
 
-    expect(count).not.toBeNull();
+    expect(heading).not.toBeNull();
     expect(tabs).not.toBeNull();
 
-    if (count && tabs) {
-      expect(Math.abs(count.y - tabs.y)).toBeLessThan(20);
-      expect(tabs.x).toBeGreaterThan(count.x);
+    if (heading && tabs) {
+      expect(Math.abs(heading.y - tabs.y)).toBeLessThan(20);
+      expect(tabs.x).toBeGreaterThan(heading.x);
     }
   });
 
@@ -227,8 +227,10 @@ describe('Warehouse history E2E', () => {
   it('selects multiple movements', async () => {
     await openMovements(page);
 
-    await page.getByRole('checkbox', { name: 'Asignación de celda' }).check();
-    await page.getByRole('checkbox', { name: 'Movimiento entre celdas' }).check();
+    await page.getByRole('button', { name: 'Filtrar por tipo de movimiento' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Asignación de celda' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Movimiento entre celdas' }).click();
+    await page.keyboard.press('Escape');
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'reception,transfer',
     );
@@ -245,7 +247,9 @@ describe('Warehouse history E2E', () => {
   it('applies and removes a movement filter', async () => {
     await openMovements(page);
 
-    await page.getByRole('checkbox', { name: 'Asignación de celda' }).check();
+    await page.getByRole('button', { name: 'Filtrar por tipo de movimiento' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Asignación de celda' }).click();
+    await page.keyboard.press('Escape');
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'reception',
     );
@@ -259,7 +263,9 @@ describe('Warehouse history E2E', () => {
   it('keeps the filters when switching tabs', async () => {
     await openMovements(page);
 
-    await page.getByRole('checkbox', { name: 'Movimiento entre celdas' }).check();
+    await page.getByRole('button', { name: 'Filtrar por tipo de movimiento' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Movimiento entre celdas' }).click();
+    await page.keyboard.press('Escape');
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get('movements') === 'transfer',
     );
@@ -329,12 +335,12 @@ describe('Warehouse history E2E', () => {
       const { movementId, sequentialNumber, note, lotCode, productTitle } = requireFixture();
       await openMovements(page);
 
-      const numberLink = page.getByRole('link', { name: `#${sequentialNumber}`, exact: true });
+      const numberLink = page.getByRole('link', {
+        name: `Ver detalle del movimiento #${sequentialNumber}`,
+      });
       expect(await numberLink.getAttribute('href')).toBe(`/warehouse/movements/${movementId}`);
 
-      await page
-        .getByRole('link', { name: `Ver detalle del movimiento #${sequentialNumber}` })
-        .click();
+      await numberLink.click();
       await page.waitForURL(`${BASE}/warehouse/movements/${movementId}`);
 
       await page.getByRole('heading', { name: `Movimiento #${sequentialNumber}` }).waitFor();
