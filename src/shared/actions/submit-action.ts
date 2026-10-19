@@ -9,10 +9,10 @@ import { fail, ok, type Result } from '@/shared/result';
  * themselves. Redirect rejections count as success; other rejections surface as
  * a generic error.
  */
-export async function submitAction(
-  action: () => Promise<Result>,
+export async function submitAction<T = void>(
+  action: () => Promise<Result<T>>,
   successMessage?: string,
-): Promise<Result> {
+): Promise<Result<T | undefined>> {
   try {
     const result = await action();
 
@@ -28,10 +28,10 @@ export async function submitAction(
       if (successMessage) {
         toast.success(successMessage);
       }
-      return ok(undefined);
+      return ok<T | undefined>(undefined);
     }
 
     toast.error(UNEXPECTED_ERROR);
-    return fail(UNEXPECTED_ERROR);
+    return fail<T | undefined>(UNEXPECTED_ERROR);
   }
 }
