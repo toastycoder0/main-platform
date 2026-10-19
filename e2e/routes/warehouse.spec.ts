@@ -90,6 +90,36 @@ describe('Warehouse E2E', () => {
       .waitFor();
   });
 
+  it('uses a different color for search matches and the selected cell', async () => {
+    await openMap(page);
+
+    await page.getByLabel('Buscar en el almacén').fill('A2');
+    await page.waitForFunction(() => window.location.search.includes('q=A2'));
+    await page.waitForFunction(
+      () =>
+        document.querySelector(
+          '[data-slot="warehouse-map"] [aria-label^="Celda A20"][data-search-match="true"]',
+        ) !== null,
+    );
+
+    await page.getByRole('button', { name: /^Celda A29/ }).click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector(
+          '[data-slot="warehouse-map"] [aria-label^="Celda A29"][data-selected="true"]',
+        ) !== null,
+    );
+
+    const selectedColor = await page
+      .locator('[data-slot="warehouse-map"] [aria-label^="Celda A29"]')
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    const matchColor = await page
+      .locator('[data-slot="warehouse-map"] [aria-label^="Celda A20"]')
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+
+    expect(selectedColor).not.toBe(matchColor);
+  });
+
   it('shows the movement links for an admin', async () => {
     await loginAsAdmin(page);
     await page.goto(`${BASE}/warehouse`);

@@ -33,7 +33,6 @@ export const WarehouseMapCell = memo(function WarehouseMapCell({
   onSelect,
 }: WarehouseMapCellProps) {
   const pointerRef = useRef<PointerState | null>(null);
-  const isFocused = searchMatch || selected;
 
   return (
     <button
@@ -46,10 +45,12 @@ export const WarehouseMapCell = memo(function WarehouseMapCell({
       className={cn(
         'flex flex-col items-stretch justify-between rounded-sm border p-1.5 text-xs',
         'transition-colors duration-150 select-none cursor-pointer shrink-0',
-        isFocused
-          ? 'border-blue-400 bg-blue-50 text-blue-800 ring-2 ring-blue-500 ring-offset-2 hover:bg-blue-100'
-          : 'border-neutral-300 bg-neutral-50 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-100',
-        searchDimmed ? 'opacity-30' : '',
+        selected
+          ? 'border-blue-500 bg-blue-50 text-blue-900 ring-2 ring-blue-500 ring-offset-2 hover:bg-blue-100'
+          : searchMatch
+            ? 'border-emerald-400 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-400 ring-offset-2 hover:bg-emerald-100'
+            : 'border-neutral-300 bg-neutral-50 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-100',
+        searchDimmed && !selected ? 'opacity-30' : '',
       )}
       data-search-match={searchMatch || undefined}
       data-selected={selected || undefined}
