@@ -19,13 +19,20 @@ import {
 import type { ListParams } from '@/shared/list/list-params';
 import type { Transfer } from '../application/warehouse.deltas';
 import type { MovementKind } from '../application/warehouse.types';
-import { executeMovement } from './warehouse.engine';
+import { executeMovement, revertMovement } from './warehouse.engine';
 import {
   getCellStock,
+  getLotById,
+  getLotSummary,
   getMap,
   getMovement,
+  getMovementFormOptions,
+  getMovementHistoryOptions,
   getPrimaryWarehouse,
+  listLotItemOptions,
+  listLotSiblings,
   listLots,
+  listMapStock,
   listMovementEntries,
   listMovements,
   reconcile,
@@ -51,6 +58,7 @@ const unitId = id('unit');
 const currencyCode = `Q${scope}`.toUpperCase().slice(0, 8);
 const productId = id('prd');
 const itemId = id('pitem');
+const productTitle = `${scope} Producto Café`;
 
 const allCellIds = [cellA1, cellA2, cellB1, cellEmpty];
 const allLotIds = [lot1, lot2];
@@ -60,6 +68,7 @@ const TRANSFER: MovementKind = { type: 'move', reason: 'transfer' };
 const MATERIAL_OUT: MovementKind = { type: 'out', reason: 'material_out' };
 
 let receptionMovementId = '';
+let materialOutMovementId = '';
 
 function testContext(): RequestContext {
   const logger: RequestContext['logger'] = {
@@ -96,7 +105,7 @@ async function seedCatalog(): Promise<void> {
   await db.insert(product).values({
     id: productId,
     slug: `${scope}_test`,
-    title: 'Test Product',
+    title: productTitle,
     unitId,
     baseCurrency: currencyCode,
     sortOrder: 0,
@@ -141,17 +150,13 @@ async function seedWarehouse(): Promise<void> {
       id: lot1,
       itemId,
       code: `${scope}_L1`,
-      name: 'Lote 1',
       normalizedCode: `${scope}_l1`,
-      normalizedName: `lote 1`,
     },
     {
       id: lot2,
       itemId,
       code: `${scope}_L2`,
-      name: 'Lote 2',
       normalizedCode: `${scope}_l2`,
-      normalizedName: `lote 2`,
     },
   ]);
 }
@@ -165,9 +170,10 @@ async function seedMovements(): Promise<void> {
   await submit(TRANSFER, [
     { lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: 40 },
   ]);
-  await submit(MATERIAL_OUT, [
+  const materialOut = await submit(MATERIAL_OUT, [
     { lotId: lot1, originCellId: cellA2, destinationCellId: null, quantity: 10 },
   ]);
+  materialOutMovementId = materialOut.movementId;
   await submit(RECEPTION, [
     { lotId: lot2, originCellId: null, destinationCellId: cellB1, quantity: 5 },
   ]);
@@ -231,6 +237,17 @@ describe('getMap', () => {
     expect(rack?.cells[0]?.capacity).toBe(100);
     expect(rack?.children[0]?.occupancy).toBe(5);
   });
+
+  it('returns a null capacity when the cell has none', async () => {
+    await db.update(warehouseCell).set({ capacity: null }).where(eq(warehouseCell.id, cellEmpty));
+
+    const { nodes } = await getMap(testContext(), whId);
+    const cell = nodes[0]?.children[0]?.cells.find((item) => item.id === cellEmpty);
+
+    expect(cell?.capacity).toBeNull();
+
+    await db.update(warehouseCell).set({ capacity: '10' }).where(eq(warehouseCell.id, cellEmpty));
+  });
 });
 
 describe('getCellStock', () => {
@@ -249,13 +266,148 @@ describe('getCellStock', () => {
   });
 });
 
+describe('listLotItemOptions', () => {
+  it('lists inventory items with their product title', async () => {
+    const options = await listLotItemOptions(testContext());
+    const option = options.find((item) => item.value === itemId);
+
+    expect(option).toEqual({
+      value: itemId,
+      label: `${productTitle} — Variante (${scope}_VAR)`,
+    });
+  });
+});
+
+describe('getMovementFormOptions', () => {
+  it('returns active lots with product data', async () => {
+    const options = await getMovementFormOptions(testContext(), whId);
+    const lots = options.lots.filter((item) => item.id === lot1 || item.id === lot2);
+
+    expect(lots).toEqual([
+      {
+        id: lot1,
+        code: `${scope}_L1`,
+        productTitle,
+        itemTitle: 'Variante',
+      },
+      {
+        id: lot2,
+        code: `${scope}_L2`,
+        productTitle,
+        itemTitle: 'Variante',
+      },
+    ]);
+  });
+
+  it('returns active cells of the primary warehouse ordered by code', async () => {
+    const options = await getMovementFormOptions(testContext(), whId);
+    const cells = options.cells.filter((item) => allCellIds.includes(item.id));
+
+    expect(cells).toEqual([
+      { id: cellA1, code: 'A1' },
+      { id: cellA2, code: 'A2' },
+      { id: cellB1, code: 'B1' },
+      { id: cellEmpty, code: 'B2' },
+    ]);
+  });
+});
+
+describe('getLotById', () => {
+  it('returns the stored lot with product data', async () => {
+    const stored = await getLotById(testContext(), lot1);
+
+    expect(stored).toMatchObject({
+      id: lot1,
+      itemId,
+      itemTitle: 'Variante',
+      productTitle,
+      code: `${scope}_L1`,
+      isActive: true,
+    });
+  });
+
+  it('returns undefined for a missing lot', async () => {
+    expect(await getLotById(testContext(), 'lot_missing')).toBeUndefined();
+  });
+});
+
+describe('getLotSummary', () => {
+  it('aggregates stock, locations and movement count', async () => {
+    const summary = await getLotSummary(testContext(), lot1);
+
+    expect(summary).toMatchObject({
+      isActive: true,
+      stock: 90,
+      movementCount: 3,
+    });
+    expect(summary?.cells).toEqual([
+      { cellId: cellA1, cellCode: 'A1', quantity: 60 },
+      { cellId: cellA2, cellCode: 'A2', quantity: 30 },
+    ]);
+    expect(summary?.createdAt).toBeInstanceOf(Date);
+    expect(summary?.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('returns undefined for a missing lot', async () => {
+    expect(await getLotSummary(testContext(), 'lot_missing')).toBeUndefined();
+  });
+});
+
+describe('listMapStock', () => {
+  it('returns one row per cell and lot with product data', async () => {
+    const rows = await listMapStock(testContext(), whId);
+
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => `${row.cellCode}:${row.lotCode}:${row.quantity}`).sort()).toEqual([
+      `A1:${scope}_L1:60`,
+      `A2:${scope}_L1:30`,
+      `B1:${scope}_L2:5`,
+    ]);
+    expect(rows[0]?.productTitle).toBe(productTitle);
+    expect(rows[0]?.itemTitle).toBe('Variante');
+  });
+
+  it('excludes cells without stock', async () => {
+    const rows = await listMapStock(testContext(), whId);
+
+    expect(rows.some((row) => row.cellId === cellEmpty)).toBe(false);
+  });
+});
+
 describe('listLots', () => {
-  it('matches the search against lot code and item title', async () => {
+  it('matches the search against the scoped lots', async () => {
     const result = await listLots(testContext(), params({ q: scope }));
 
     expect(result.total).toBe(2);
     expect(result.items.map((item) => item.code).sort()).toEqual([`${scope}_L1`, `${scope}_L2`]);
     expect(result.items[0]?.itemTitle).toBe('Variante');
+    expect(result.items[0]?.productTitle).toBe(productTitle);
+  });
+
+  it('matches by lot code, product, variant and cell, ignoring accents', async () => {
+    const byLot = await listLots(testContext(), params({ q: `${scope}_L1` }));
+    expect(byLot.items.map((item) => item.id)).toEqual([lot1]);
+
+    const byProduct = await listLots(testContext(), params({ q: `${scope} producto cafe` }));
+    expect(byProduct.items.map((item) => item.id).sort()).toEqual([lot1, lot2].sort());
+
+    const byVariant = await listLots(testContext(), params({ q: 'variante' }));
+    expect(byVariant.items.map((item) => item.id)).toEqual(expect.arrayContaining([lot1, lot2]));
+
+    const byCell = await listLots(testContext(), params({ q: 'A1' }));
+    expect(byCell.items.map((item) => item.id)).toContain(lot1);
+  });
+
+  it('returns the aggregated stock and locations for each lot', async () => {
+    const result = await listLots(testContext(), params({ q: scope }));
+    const first = result.items.find((item) => item.code === `${scope}_L1`);
+    const second = result.items.find((item) => item.code === `${scope}_L2`);
+
+    expect(first?.stock).toBe(90);
+    expect(first?.locations).toEqual(['A1', 'A2']);
+    expect(second?.stock).toBe(5);
+    expect(second?.locations).toEqual(['B1']);
+    expect(first?.createdAt).toBeInstanceOf(Date);
   });
 
   it('applies pagination offsets', async () => {
@@ -269,18 +421,54 @@ describe('listLots', () => {
   });
 });
 
+describe('listLotSiblings', () => {
+  it('returns the lots of an item with aggregated stock ordered by code', async () => {
+    const rows = await listLotSiblings(testContext());
+    const siblings = rows.filter((row) => row.itemId === itemId);
+
+    expect(
+      siblings.map((row) => ({ code: row.code, stock: row.stock, isActive: row.isActive })),
+    ).toEqual([
+      { code: `${scope}_L1`, stock: 90, isActive: true },
+      { code: `${scope}_L2`, stock: 5, isActive: true },
+    ]);
+  });
+});
+
 describe('listMovements', () => {
-  it('reports entry counts, author and revert status', async () => {
+  it('reports entry counts for the newest movements', async () => {
     const result = await listMovements(testContext(), params(), {
-      type: 'assign',
-      reason: 'reception',
+      movements: ['reception'],
     });
     const ours = result.items.find((item) => item.id === receptionMovementId);
 
     expect(ours).toBeDefined();
     expect(ours?.entryCount).toBe(1);
-    expect(ours?.userName).toBe('Test User');
-    expect(ours?.isReverted).toBe(false);
+    expect(ours?.sequentialNumber).toBeGreaterThan(0);
+    expect(result.items.map((item) => item.sequentialNumber)).toEqual(
+      [...result.items.map((item) => item.sequentialNumber)].sort((a, b) => b - a),
+    );
+  });
+
+  it('filters by multiple movements', async () => {
+    const result = await listMovements(testContext(), params({ q: scope }), {
+      movements: ['reception', 'transfer'],
+    });
+
+    expect(result.total).toBe(3);
+  });
+
+  it('filters by lot, cell and search term', async () => {
+    const byLot = await listMovements(testContext(), params(), { lotId: lot1 });
+    expect(byLot.total).toBe(3);
+
+    const byCell = await listMovements(testContext(), params(), { cellId: cellA2 });
+    expect(byCell.total).toBe(2);
+
+    const bySearch = await listMovements(testContext(), params({ q: 'A1' }), {
+      lotId: lot1,
+    });
+    expect(bySearch.total).toBe(2);
   });
 });
 
@@ -293,12 +481,38 @@ describe('listMovementEntries', () => {
     expect(result.items[0]?.originCellCode).toBe('A2');
     expect(result.items[0]?.destinationCellCode).toBeNull();
     expect(result.items[0]?.quantity).toBe(10);
+    expect(result.items[0]?.productTitle).toBe(productTitle);
+    expect(result.items[0]?.itemTitle).toBe('Variante');
   });
 
   it('filters entries by cell touching origin or destination', async () => {
     const result = await listMovementEntries(testContext(), params(), { cellId: cellA2 });
 
     expect(result.total).toBe(2);
+  });
+
+  it('searches entries by cell, product and lot', async () => {
+    const byCell = await listMovementEntries(testContext(), params({ q: 'A2' }), {
+      lotId: lot1,
+    });
+    expect(byCell.total).toBe(2);
+
+    const byProduct = await listMovementEntries(testContext(), params({ q: productTitle }), {});
+    expect(byProduct.total).toBe(4);
+
+    const byLot = await listMovementEntries(testContext(), params({ q: `${scope}_L1` }), {});
+    expect(byLot.total).toBe(3);
+  });
+});
+
+describe('getMovementHistoryOptions', () => {
+  it('lists lots and cells for the history filters', async () => {
+    const options = await getMovementHistoryOptions(testContext(), whId);
+
+    expect(options.lots.map((item) => item.id)).toEqual(expect.arrayContaining([lot1, lot2]));
+    expect(options.cells.map((item) => item.id)).toEqual(
+      expect.arrayContaining([cellA1, cellA2, cellB1, cellEmpty]),
+    );
   });
 });
 
@@ -315,6 +529,35 @@ describe('getMovement', () => {
     expect(movement?.entries).toHaveLength(1);
     expect(movement?.entries[0]?.destinationCellCode).toBe('A1');
     expect(movement?.entries[0]?.quantity).toBe(100);
+    expect(movement?.revertsId).toBeNull();
+    expect(movement?.revertedById).toBeNull();
+  });
+
+  it('returns the product and variant titles of every entry', async () => {
+    const detail = await getMovement(testContext(), receptionMovementId);
+
+    expect(detail?.entries[0]?.productTitle).toBe(productTitle);
+    expect(detail?.entries[0]?.itemTitle).toBe('Variante');
+  });
+
+  it('links the original and the reversal in both directions', async () => {
+    const reversal = await db.transaction((tx) =>
+      revertMovement(tx, userId, materialOutMovementId),
+    );
+
+    const original = await getMovement(testContext(), materialOutMovementId);
+
+    expect(original?.revertedById).toBe(reversal.movementId);
+    expect(original?.revertedBySequentialNumber).toBeGreaterThan(0);
+
+    const detail = await getMovement(testContext(), reversal.movementId);
+
+    expect(detail?.type).toBe('revert');
+    expect(detail?.revertsId).toBe(materialOutMovementId);
+    expect(detail?.revertsSequentialNumber).toBe(original?.sequentialNumber);
+    expect(detail?.revertedById).toBeNull();
+    expect(detail?.entries).toHaveLength(1);
+    expect(detail?.entries[0]?.productTitle).toBe(productTitle);
   });
 });
 

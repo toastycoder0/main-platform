@@ -5,7 +5,7 @@ export function NavbarSkeleton() {
     <div aria-busy='true'>
       <span className='sr-only'>Cargando navegación…</span>
 
-      <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 md:px-6 pt-3 pb-1.5 md:flex'>
+      <div className='mx-auto hidden max-w-360 items-center gap-3 px-4 py-3 md:flex md:px-6'>
         <div className='flex-1' aria-hidden='true'>
           <Skeleton className='h-8 w-40' />
         </div>
@@ -17,7 +17,7 @@ export function NavbarSkeleton() {
       </div>
 
       <div
-        className='mx-auto hidden max-w-7xl flex-wrap justify-center gap-2 px-4 pb-1.5 md:flex'
+        className='mx-auto hidden max-w-360 justify-center gap-2 px-4 pb-1.5 md:flex md:px-6'
         aria-hidden='true'
       >
         <Skeleton className='h-9 w-24' />

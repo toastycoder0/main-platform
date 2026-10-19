@@ -7,9 +7,15 @@ import { MobileNavLink, type NavLink } from './nav-link';
 
 interface MobileNavPanelProps {
   navLinks: NavLink[];
+  label?: string;
+  className?: string | undefined;
 }
 
-export function MobileNavPanel({ navLinks }: MobileNavPanelProps) {
+export function MobileNavPanel({
+  navLinks,
+  label = 'Navegación principal',
+  className,
+}: MobileNavPanelProps) {
   const [navStack, setNavStack] = useState<NavLink[]>([]);
   const [slideDir, setSlideDir] = useState<'forward' | 'backward'>('forward');
 
@@ -32,7 +38,7 @@ export function MobileNavPanel({ navLinks }: MobileNavPanelProps) {
   }
 
   return (
-    <nav aria-label='Categorías' className='mt-4 flex flex-col gap-1 overflow-hidden'>
+    <nav aria-label={label} className={cn('mt-4 flex flex-col gap-1 overflow-hidden', className)}>
       <div
         key={navStack.length}
         className={cn(

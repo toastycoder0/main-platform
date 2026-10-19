@@ -81,13 +81,13 @@ export const warehouseCell = snakeCase.table(
       .references(() => warehouseNode.id),
     code: text().notNull(),
     position: integer().notNull(),
-    capacity: numeric({ precision: 12, scale: 4 }).notNull(),
+    capacity: numeric({ precision: 12, scale: 4 }),
     isActive: boolean().default(true).notNull(),
     ...timestamps,
   },
   (table) => [
     unique('warehouse_cell_code_warehouse_unique').on(table.warehouseId, table.code),
-    check('warehouse_cell_capacity_check', sql`${table.capacity} > 0`),
+    check('warehouse_cell_capacity_check', sql`${table.capacity} IS NULL OR ${table.capacity} > 0`),
   ],
 );
 
@@ -101,19 +101,11 @@ export const lot = snakeCase.table(
       .notNull()
       .references(() => productItem.id),
     code: text().notNull(),
-    name: text().notNull(),
     normalizedCode: text().notNull(),
-    normalizedName: text().notNull(),
     isActive: boolean().default(true).notNull(),
     ...timestamps,
   },
-  (table) => [
-    unique('lot_item_code_name_unique').on(
-      table.itemId,
-      table.normalizedCode,
-      table.normalizedName,
-    ),
-  ],
+  (table) => [unique('lot_item_code_unique').on(table.itemId, table.normalizedCode)],
 );
 
 export const cellLot = snakeCase.table(

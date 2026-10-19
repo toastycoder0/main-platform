@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
@@ -17,14 +18,14 @@ import {
   warehouseNode,
 } from '@/infrastructure/db/schema';
 import { PERMISSIONS } from '@/shared/constants/permissions';
+import type { MovementFormKind } from '../application/warehouse.movement';
+import type { MovementReturnContextSchema } from '../application/warehouse.validation';
 import {
-  assignToCell,
   createLot,
-  deliverMaterial,
-  materialOut,
-  moveBetweenCells,
+  registerMovement,
   revertMovementAction,
   updateCell,
+  updateCellCapacity,
   updateLot,
 } from './warehouse.action';
 
@@ -119,6 +120,29 @@ async function stockQty(cellId: string, lotId: string): Promise<number> {
   return row ? Number(row.quantity) : 0;
 }
 
+interface MovementRow {
+  lotId: string;
+  originCellId: string;
+  destinationCellId: string;
+  quantity: string;
+}
+
+const DEFAULT_RETURN_CONTEXT: MovementReturnContextSchema = {
+  view: 'lots',
+  q: null,
+  page: 1,
+  pageSize: 10,
+  highlight: null,
+};
+
+function submitMovement(
+  kind: MovementFormKind,
+  rows: MovementRow[],
+  returnContext: MovementReturnContextSchema = DEFAULT_RETURN_CONTEXT,
+) {
+  return registerMovement({ kind, title: 'Integration movement', rows, returnContext });
+}
+
 async function latestMovementId(): Promise<string> {
   const [row] = await db
     .select({ id: movement.id })
@@ -178,17 +202,13 @@ async function seedWarehouse(): Promise<void> {
       id: lot1,
       itemId,
       code: `${scope}_L1`,
-      name: 'Lote 1',
       normalizedCode: `${scope}_l1`,
-      normalizedName: 'lote 1',
     },
     {
       id: lot2,
       itemId,
       code: `${scope}_L2`,
-      name: 'Lote 2',
       normalizedCode: `${scope}_l2`,
-      normalizedName: 'lote 2',
     },
   ]);
 }
@@ -224,26 +244,51 @@ beforeAll(async () => {
 
 beforeEach(() => {
   state.ctx = testContext();
+  vi.mocked(redirect).mockClear();
 });
 
 afterAll(async () => {
   await cleanup();
 });
 
-describe('assignToCell', () => {
-  it('assigns stock to a cell', async () => {
-    const result = await assignToCell({
-      entries: [{ lotId: lot1, destinationCellId: cellA1, quantity: 100 }],
-    });
+describe('registerMovement', () => {
+  it('assigns stock to a cell for a reception', async () => {
+    const result = await submitMovement('reception', [
+      { lotId: lot1, originCellId: '', destinationCellId: cellA1, quantity: '100' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellA1, lot1)).toBe(100);
+    expect(vi.mocked(redirect)).toHaveBeenCalledWith('/warehouse');
+
+    const [created] = await db
+      .select({ type: movement.type, reason: movement.reason, note: movement.note })
+      .from(movement)
+      .where(eq(movement.id, await latestMovementId()));
+    expect(created).toEqual({
+      type: 'assign',
+      reason: 'reception',
+      note: 'Integration movement',
+    });
+  });
+
+  it('redirects back to the origin context', async () => {
+    const result = await submitMovement(
+      'reception',
+      [{ lotId: lot2, originCellId: '', destinationCellId: cellC1, quantity: '1' }],
+      { view: 'map', q: 'A29', page: 2, pageSize: 25, highlight: cellA1 },
+    );
+
+    expect(result.success).toBe(true);
+    expect(vi.mocked(redirect)).toHaveBeenCalledWith(
+      `/warehouse?view=map&q=A29&page=2&pageSize=25&highlight=${cellA1}`,
+    );
   });
 
   it('rejects the movement when it exceeds capacity, returning structured details', async () => {
-    const result = await assignToCell({
-      entries: [{ lotId: lot1, destinationCellId: cellA1, quantity: 200 }],
-    });
+    const result = await submitMovement('reception', [
+      { lotId: lot1, originCellId: '', destinationCellId: cellA1, quantity: '200' },
+    ]);
 
     expect(result.success).toBe(false);
 
@@ -256,50 +301,76 @@ describe('assignToCell', () => {
     expect(result.details?.[0]?.objectId).toBe(cellA1);
   });
 
-  it('forbids the actor without the reception permission', async () => {
-    state.ctx = { ...testContext(), permissions: new Set([PERMISSIONS.warehouse.access]) };
+  it('forbids every kind without its permission', async () => {
+    const cases: Array<{
+      kind: MovementFormKind;
+      permission: string;
+      rows: MovementRow[];
+    }> = [
+      {
+        kind: 'reception',
+        permission: PERMISSIONS.warehouse.stock.reception,
+        rows: [{ lotId: lot1, originCellId: '', destinationCellId: cellA1, quantity: '1' }],
+      },
+      {
+        kind: 'transfer',
+        permission: PERMISSIONS.warehouse.stock.transfer,
+        rows: [{ lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: '1' }],
+      },
+      {
+        kind: 'materialOut',
+        permission: PERMISSIONS.warehouse.stock.materialOut,
+        rows: [{ lotId: lot1, originCellId: cellA1, destinationCellId: '', quantity: '1' }],
+      },
+      {
+        kind: 'delivery',
+        permission: PERMISSIONS.warehouse.stock.delivery,
+        rows: [{ lotId: lot1, originCellId: cellA1, destinationCellId: '', quantity: '1' }],
+      },
+    ];
 
-    const result = await assignToCell({
-      entries: [{ lotId: lot1, destinationCellId: cellA1, quantity: 1 }],
-    });
+    for (const { kind, permission, rows } of cases) {
+      state.ctx = {
+        ...testContext(),
+        permissions: new Set(ALL_PERMISSIONS.filter((item) => item !== permission)),
+      };
 
-    expect(result).toEqual({
-      success: false,
-      error: 'No tienes permiso para realizar esta acción',
-    });
+      const result = await submitMovement(kind, rows);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'No tienes permiso para realizar esta acción',
+      });
+    }
   });
-});
 
-describe('moveBetweenCells', () => {
   it('moves stock between cells', async () => {
-    const result = await moveBetweenCells({
-      entries: [{ lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: 40 }],
-    });
+    const result = await submitMovement('transfer', [
+      { lotId: lot1, originCellId: cellA1, destinationCellId: cellA2, quantity: '40' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellA1, lot1)).toBe(60);
     expect(await stockQty(cellA2, lot1)).toBe(40);
   });
-});
 
-describe('materialOut', () => {
   it('removes material from a cell', async () => {
-    const result = await materialOut({
-      entries: [{ lotId: lot1, originCellId: cellA2, quantity: 10 }],
-    });
+    const result = await submitMovement('materialOut', [
+      { lotId: lot1, originCellId: cellA2, destinationCellId: '', quantity: '10' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellA2, lot1)).toBe(30);
   });
-});
 
-describe('deliverMaterial', () => {
   it('delivers material with the delivery reason', async () => {
-    await assignToCell({ entries: [{ lotId: lot2, destinationCellId: cellB1, quantity: 5 }] });
+    await submitMovement('reception', [
+      { lotId: lot2, originCellId: '', destinationCellId: cellB1, quantity: '5' },
+    ]);
 
-    const result = await deliverMaterial({
-      entries: [{ lotId: lot2, originCellId: cellB1, quantity: 5 }],
-    });
+    const result = await submitMovement('delivery', [
+      { lotId: lot2, originCellId: cellB1, destinationCellId: '', quantity: '5' },
+    ]);
 
     expect(result.success).toBe(true);
     expect(await stockQty(cellB1, lot2)).toBe(0);
@@ -314,7 +385,9 @@ describe('deliverMaterial', () => {
 
 describe('revertMovementAction', () => {
   it('reverts a movement and restores the previous balance', async () => {
-    await assignToCell({ entries: [{ lotId: lot1, destinationCellId: cellC1, quantity: 20 }] });
+    await submitMovement('reception', [
+      { lotId: lot1, originCellId: '', destinationCellId: cellC1, quantity: '20' },
+    ]);
     const originalId = await latestMovementId();
     expect(await stockQty(cellC1, lot1)).toBe(20);
 
@@ -333,28 +406,25 @@ describe('revertMovementAction', () => {
 });
 
 describe('createLot', () => {
-  it('stores the lot with normalized code and name', async () => {
-    const result = await createLot({ itemId, code: 'NUEVO', name: 'Lote Nuevo' });
+  it('stores the lot with normalized code', async () => {
+    const result = await createLot({ itemId, code: 'NUEVO' });
 
     expect(result.success).toBe(true);
 
     const [row] = await db
       .select({
         code: lot.code,
-        name: lot.name,
         normalizedCode: lot.normalizedCode,
-        normalizedName: lot.normalizedName,
       })
       .from(lot)
       .where(eq(lot.normalizedCode, 'nuevo'));
 
     expect(row?.code).toBe('NUEVO');
     expect(row?.normalizedCode).toBe('nuevo');
-    expect(row?.normalizedName).toBe('lote nuevo');
   });
 
   it('rejects a duplicate lot for the same product', async () => {
-    const result = await createLot({ itemId, code: 'nuevo', name: 'Lote Nuevo' });
+    const result = await createLot({ itemId, code: 'nuevo' });
 
     expect(result.success).toBe(false);
 
@@ -364,7 +434,7 @@ describe('createLot', () => {
   });
 
   it('rejects a missing product', async () => {
-    const result = await createLot({ itemId: 'pitem_missing', code: 'X', name: 'X' });
+    const result = await createLot({ itemId: 'pitem_missing', code: 'X' });
 
     expect(result.success).toBe(false);
 
@@ -372,10 +442,23 @@ describe('createLot', () => {
       expect(result.error).toBe('El producto seleccionado no existe');
     }
   });
+
+  it('stores an inactive lot when isActive is false', async () => {
+    const result = await createLot({ itemId, code: 'INACTIVO', isActive: false });
+
+    expect(result.success).toBe(true);
+
+    const [row] = await db
+      .select({ isActive: lot.isActive })
+      .from(lot)
+      .where(eq(lot.normalizedCode, 'inactivo'));
+
+    expect(row?.isActive).toBe(false);
+  });
 });
 
 describe('updateLot', () => {
-  it('recomputes the normalized fields when renaming', async () => {
+  it('recomputes the normalized code when changing the code', async () => {
     const [target] = await db
       .select({ id: lot.id })
       .from(lot)
@@ -385,20 +468,20 @@ describe('updateLot', () => {
       throw new Error('Missing lot to update');
     }
 
-    const result = await updateLot({ id: target.id, name: 'Renombrado' });
+    const result = await updateLot({ id: target.id, code: 'RENOMBRADO' });
 
     expect(result.success).toBe(true);
 
     const [row] = await db
-      .select({ name: lot.name, normalizedName: lot.normalizedName })
+      .select({ code: lot.code, normalizedCode: lot.normalizedCode })
       .from(lot)
       .where(eq(lot.id, target.id));
-    expect(row?.name).toBe('Renombrado');
-    expect(row?.normalizedName).toBe('renombrado');
+    expect(row?.code).toBe('RENOMBRADO');
+    expect(row?.normalizedCode).toBe('renombrado');
   });
 
   it('fails with not_found for a missing lot', async () => {
-    const result = await updateLot({ id: 'lot_missing', name: 'Cualquiera' });
+    const result = await updateLot({ id: 'lot_missing', code: 'X' });
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
   });
@@ -432,5 +515,29 @@ describe('updateCell', () => {
     const result = await updateCell({ id: 'wcel_missing', capacity: 10 });
 
     expect(result).toEqual({ success: false, error: 'El recurso solicitado no existe' });
+  });
+});
+
+describe('updateCellCapacity', () => {
+  it('updates and clears the capacity', async () => {
+    const updated = await updateCellCapacity({ id: cellB1, capacity: 60 });
+    expect(updated.success).toBe(true);
+
+    const [updatedRow] = await db
+      .select({ capacity: warehouseCell.capacity })
+      .from(warehouseCell)
+      .where(eq(warehouseCell.id, cellB1));
+    expect(Number(updatedRow?.capacity)).toBe(60);
+
+    const cleared = await updateCellCapacity({ id: cellB1, capacity: null });
+    expect(cleared.success).toBe(true);
+
+    const [clearedRow] = await db
+      .select({ capacity: warehouseCell.capacity })
+      .from(warehouseCell)
+      .where(eq(warehouseCell.id, cellB1));
+    expect(clearedRow?.capacity).toBeNull();
+
+    await updateCellCapacity({ id: cellB1, capacity: 50 });
   });
 });

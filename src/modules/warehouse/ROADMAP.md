@@ -11,6 +11,7 @@
 - [x] Fase 4 — Queries: mapa, stock por celda, lotes, movimientos y entradas (kardex), detalle y reconciliación
 - [x] Fase 5 — Server Actions: assign, move, materialOut, delivery, revert, lotes y edición de celdas
 - [x] Errores estructurados (`Result.details`) para rechazos del motor
+- [x] Detalle de movimiento en `/warehouse/movements/[id]`: entradas con producto/variante, relación de reversión en ambos sentidos y botón **Revertir** con confirmación
 - [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ✅
 
 ## Diseño consolidado
@@ -19,7 +20,7 @@
 - Página principal **`/warehouse`** con tabs **Lotes | Mapa** y un **dropdown de acciones** filtrado por permiso.
 - Dos kardex en rutas aparte: **`/warehouse/movements`** (cabeceras) y **`/warehouse/entries`** (entradas planas).
 - **Detalle de movimiento** en `/warehouse/movements/[id]` con todas sus entradas y el botón **Revertir**.
-- **Entregas** = movimiento `out` con motivo `delivery` (sin entidad de pedidos).
+- **Entregas por pedido** = movimiento `out` con motivo `delivery` (sin entidad de pedidos).
 - Permisos por **rol conceptual** (motivo del movimiento), no por `type` del motor.
 - **Solo celdas** se editan (`updateCell`); no hay `createNode` ni creación masiva de celdas.
 - Todas las actions **redirigen a la página de origen** (`/warehouse` o el detalle).

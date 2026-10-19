@@ -198,9 +198,7 @@ async function seedWarehouse(): Promise<void> {
       id: lotId,
       itemId,
       code: `${scope}_${label}`.toUpperCase(),
-      name: `Lote ${label}`,
       normalizedCode: `${scope}_${label}`,
-      normalizedName: `lote ${label}`,
       isActive,
     })),
   );

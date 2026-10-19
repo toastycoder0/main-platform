@@ -6,7 +6,6 @@ export interface CellStockDTO {
   cellCode: string;
   lotId: string;
   lotCode: string | null;
-  lotName: string | null;
   itemName: string | null;
   quantity: number;
 }
@@ -15,7 +14,8 @@ export interface MovementEntryDTO {
   id: string;
   lotId: string;
   lotCode: string | null;
-  lotName: string | null;
+  productTitle: string | null;
+  itemTitle: string | null;
   originCellId: string | null;
   originCellCode: string | null;
   destinationCellId: string | null;
@@ -32,7 +32,10 @@ export interface MovementDTO {
   userName: string | null;
   note: string | null;
   reference: string | null;
-  isReverted: boolean;
+  revertsId: string | null;
+  revertsSequentialNumber: number | null;
+  revertedById: string | null;
+  revertedBySequentialNumber: number | null;
   entries: MovementEntryDTO[];
   createdAt: Date;
 }
@@ -58,21 +61,36 @@ export interface CellDTO {
   id: string;
   code: string;
   position: number;
-  capacity: number;
+  capacity: number | null;
   occupancy: number;
   isActive: boolean;
+}
+
+export interface MapStockRowDTO {
+  cellId: string;
+  cellCode: string;
+  lotId: string;
+  lotCode: string;
+  productTitle: string;
+  itemTitle: string;
+  quantity: number;
 }
 
 export interface LotDTO {
   id: string;
   itemId: string;
   code: string;
-  name: string;
   isActive: boolean;
 }
 
 export interface WarehouseMapDTO {
   nodes: NodeDTO[];
+}
+
+export interface MapViewData {
+  warehouse: WarehouseDTO;
+  map: WarehouseMapDTO;
+  stock: MapStockRowDTO[];
 }
 
 export type MovementKind =
@@ -101,10 +119,67 @@ export interface WarehouseDTO {
 export interface LotListItemDTO {
   id: string;
   itemId: string;
+  productTitle: string;
   itemTitle: string;
   code: string;
-  name: string;
+  stock: number;
+  locations: string[];
   isActive: boolean;
+  createdAt: Date;
+}
+
+export interface LotItemOptionDTO {
+  value: string;
+  label: string;
+}
+
+export interface MovementLotOptionDTO {
+  id: string;
+  code: string;
+  productTitle: string;
+  itemTitle: string;
+}
+
+export interface MovementCellOptionDTO {
+  id: string;
+  code: string;
+}
+
+export interface MovementFormOptionsDTO {
+  lots: MovementLotOptionDTO[];
+  cells: MovementCellOptionDTO[];
+}
+
+export interface LotFormDTO {
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  productTitle: string;
+  code: string;
+  isActive: boolean;
+}
+
+export interface LotSiblingDTO {
+  id: string;
+  itemId: string;
+  code: string;
+  isActive: boolean;
+  stock: number;
+}
+
+export interface LotSummaryCellDTO {
+  cellId: string;
+  cellCode: string;
+  quantity: number;
+}
+
+export interface LotSummaryDTO {
+  isActive: boolean;
+  stock: number;
+  cells: LotSummaryCellDTO[];
+  movementCount: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface MovementListItemDTO {
@@ -112,11 +187,9 @@ export interface MovementListItemDTO {
   sequentialNumber: number;
   type: MovementType;
   reason: MovementReason | null;
-  userName: string;
   note: string | null;
   reference: string | null;
   entryCount: number;
-  isReverted: boolean;
   createdAt: Date;
 }
 
@@ -128,13 +201,13 @@ export interface MovementEntryRowDTO {
   reason: MovementReason | null;
   lotId: string;
   lotCode: string;
-  lotName: string;
+  productTitle: string;
+  itemTitle: string;
   originCellId: string | null;
   originCellCode: string | null;
   destinationCellId: string | null;
   destinationCellCode: string | null;
   quantity: number;
-  userName: string;
   createdAt: Date;
 }
 

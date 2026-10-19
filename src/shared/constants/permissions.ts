@@ -31,6 +31,9 @@ export function getPermissionGroupLabel(slug: string): string {
 }
 
 export const PERMISSIONS = {
+  public: {
+    access: 'public.access',
+  },
   warehouse: {
     access: 'warehouse.access',
     lots: {

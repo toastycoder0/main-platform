@@ -1,37 +1,40 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useNavbar } from './navbar';
+import { cn } from '@/shared/utils/cn';
 import { DesktopUserArea, MobileAuthArea } from './user-area';
 
 interface NavbarUserProps {
   isAuthenticated: boolean;
   userName: string | undefined;
   userEmail?: string | undefined;
+  variant?: 'bar' | 'panel';
+  className?: string;
 }
 
-export function NavbarUser({ isAuthenticated, userName, userEmail }: NavbarUserProps) {
-  const { register, unregister } = useNavbar();
+export function NavbarUser({
+  isAuthenticated,
+  userName,
+  userEmail,
+  variant = 'bar',
+  className,
+}: NavbarUserProps) {
+  const isPanel = variant === 'panel';
 
-  useEffect(() => {
-    register('user', {
-      desktop: (
-        <DesktopUserArea
-          isAuthenticated={isAuthenticated}
-          userName={userName}
-          userEmail={userEmail}
-        />
-      ),
-      mobile: (
+  return (
+    <div className={cn('flex items-center', isPanel && 'w-full', className)}>
+      {isPanel ? (
         <MobileAuthArea
           isAuthenticated={isAuthenticated}
           userName={userName}
           userEmail={userEmail}
         />
-      ),
-    });
-    return () => unregister('user');
-  }, [isAuthenticated, userName, userEmail, register, unregister]);
-
-  return null;
+      ) : (
+        <DesktopUserArea
+          isAuthenticated={isAuthenticated}
+          userName={userName}
+          userEmail={userEmail}
+        />
+      )}
+    </div>
+  );
 }

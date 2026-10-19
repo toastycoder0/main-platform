@@ -20,6 +20,8 @@ import {
   PERMISSIONS,
   type PermissionGroupKey,
 } from '@/shared/constants/permissions';
+import { seedWarehouse } from './warehouse.seed';
+
 
 const { admin, warehouse } = PERMISSIONS;
 
@@ -32,6 +34,7 @@ function accessPermission(slug: string, group: PermissionGroupKey) {
 }
 
 const INITIAL_PERMISSIONS = [
+  { slug: PERMISSIONS.public.access, name: 'Acceso a la sección pública', type: 'access' as const },
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
   accessPermission(warehouse.lots.access, 'warehouse.lots'),
   { slug: warehouse.lots.create, name: 'Crear lotes', type: 'action' as const },
@@ -243,6 +246,7 @@ async function seed(): Promise<void> {
   await seedProductUnits();
   await seedDocumentTypes();
   await seedPriceLists();
+  await seedWarehouse();
 }
 
 async function seedCurrencies(): Promise<void> {

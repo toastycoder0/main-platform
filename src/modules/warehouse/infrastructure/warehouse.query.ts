@@ -1,11 +1,26 @@
-import { and, asc, desc, eq, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  or,
+  type SQL,
+  type SQLWrapper,
+  sql,
+} from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { searchILike } from '@/infrastructure/db/list-query';
+import { ilikePattern } from '@/infrastructure/db/list-query';
 import {
   cellLot,
   lot,
   movement,
   movementEntry,
+  product,
   productItem,
   user,
   warehouse,
@@ -14,17 +29,21 @@ import {
 } from '@/infrastructure/db/schema';
 import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
-import {
-  buildWarehouseTree,
-  type MapCellRow,
-  type MapNodeRow,
-} from '../application/warehouse.tree';
+import { SEARCH_ACCENTED, SEARCH_PLAIN } from '../application/warehouse.search';
+import { buildWarehouseTree, type MapCellRow } from '../application/warehouse.tree';
 import type {
   CellStockDTO,
+  LotFormDTO,
+  LotItemOptionDTO,
   LotListItemDTO,
+  LotSiblingDTO,
+  LotSummaryDTO,
+  MapStockRowDTO,
+  MapViewData,
   MovementDTO,
   MovementEntryDTO,
   MovementEntryRowDTO,
+  MovementFormOptionsDTO,
   MovementListItemDTO,
   ReconcileDifferenceDTO,
   ReconcileReportDTO,
@@ -32,17 +51,47 @@ import type {
   WarehouseMapDTO,
 } from '../application/warehouse.types';
 import type {
-  KardexParamsSchema,
-  MovementFiltersSchema,
+  MovementFilterValue,
+  MovementHistoryFiltersSchema,
+  MovementReason,
 } from '../application/warehouse.validation';
 
 function toNumber(value: string | number): number {
   return typeof value === 'number' ? value : Number(value);
 }
 
-function movementWhere(filters: MovementFiltersSchema): SQL | undefined {
-  const conditions: SQL[] = [];
+const originCell = alias(warehouseCell, 'origin_cell');
+const destinationCell = alias(warehouseCell, 'destination_cell');
 
+function movementFilterCondition(movements: MovementFilterValue[] | undefined): SQL | undefined {
+  if (!movements || movements.length === 0) {
+    return undefined;
+  }
+
+  const reasons = movements.filter((value): value is MovementReason => value !== 'revert');
+  const parts: SQL[] = [];
+
+  if (reasons.length > 0) {
+    parts.push(inArray(movement.reason, reasons));
+  }
+  if (movements.includes('revert')) {
+    parts.push(eq(movement.type, 'revert'));
+  }
+
+  if (parts.length === 0) {
+    return undefined;
+  }
+
+  return parts.length === 1 ? parts[0] : or(...parts);
+}
+
+function headerConditions(filters: MovementHistoryFiltersSchema): SQL[] {
+  const conditions: SQL[] = [];
+  const movementFilter = movementFilterCondition(filters.movements);
+
+  if (movementFilter) {
+    conditions.push(movementFilter);
+  }
   if (filters.type) {
     conditions.push(eq(movement.type, filters.type));
   }
@@ -56,12 +105,64 @@ function movementWhere(filters: MovementFiltersSchema): SQL | undefined {
     conditions.push(lte(movement.createdAt, new Date(`${filters.to}T23:59:59.999Z`)));
   }
 
+  return conditions;
+}
+
+function relatedMovementSearch(term: string): SQL {
+  const pattern = ilikePattern(term);
+
+  return sql`EXISTS (
+    SELECT 1
+    FROM "movement_entry" AS me
+    LEFT JOIN "lot" AS l ON l."id" = me."lot_id"
+    LEFT JOIN "product_item" AS pi ON pi."id" = l."item_id"
+    LEFT JOIN "product" AS p ON p."id" = pi."product_id"
+    LEFT JOIN "warehouse_cell" AS oc ON oc."id" = me."origin_cell_id"
+    LEFT JOIN "warehouse_cell" AS dc ON dc."id" = me."destination_cell_id"
+    WHERE me."movement_id" = "movement"."id"
+      AND (
+        l."code" ILIKE ${pattern}
+        OR pi."title" ILIKE ${pattern}
+        OR p."title" ILIKE ${pattern}
+        OR oc."code" ILIKE ${pattern}
+        OR dc."code" ILIKE ${pattern}
+      )
+  )`;
+}
+
+function movementSearchCondition(term: string): SQL {
+  const pattern = ilikePattern(term);
+  const header = sql`(
+    "movement"."note" ILIKE ${pattern}
+    OR "movement"."reference" ILIKE ${pattern}
+    OR "movement"."sequential_number"::text ILIKE ${pattern}
+  )`;
+
+  return sql`(${header} OR ${relatedMovementSearch(term)})`;
+}
+
+function movementWhere(filters: MovementHistoryFiltersSchema, q: string | null): SQL | undefined {
+  const conditions = headerConditions(filters);
+
+  if (q) {
+    conditions.push(movementSearchCondition(q));
+  }
+  if (filters.lotId) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM "movement_entry" AS me WHERE me."movement_id" = "movement"."id" AND me."lot_id" = ${filters.lotId})`,
+    );
+  }
+  if (filters.cellId) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM "movement_entry" AS me WHERE me."movement_id" = "movement"."id" AND (me."origin_cell_id" = ${filters.cellId} OR me."destination_cell_id" = ${filters.cellId}))`,
+    );
+  }
+
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
-function entryWhere(filters: KardexParamsSchema): SQL | undefined {
-  const header = movementWhere(filters);
-  const conditions: SQL[] = header ? [header] : [];
+function entryWhere(filters: MovementHistoryFiltersSchema, q: string | null): SQL | undefined {
+  const conditions = headerConditions(filters);
 
   if (filters.lotId) {
     conditions.push(eq(movementEntry.lotId, filters.lotId));
@@ -75,15 +176,40 @@ function entryWhere(filters: KardexParamsSchema): SQL | undefined {
       conditions.push(touchesCell);
     }
   }
+  if (q) {
+    const pattern = ilikePattern(q);
+    conditions.push(sql`(
+      "movement"."note" ILIKE ${pattern}
+      OR "movement"."reference" ILIKE ${pattern}
+      OR "movement"."sequential_number"::text ILIKE ${pattern}
+      OR "lot"."code" ILIKE ${pattern}
+      OR "product"."title" ILIKE ${pattern}
+      OR "product_item"."title" ILIKE ${pattern}
+      OR "origin_cell"."code" ILIKE ${pattern}
+      OR "destination_cell"."code" ILIKE ${pattern}
+    )`);
+  }
 
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
 const userNameSql = sql<string>`CONCAT_WS(' ', ${user.firstName}, ${user.lastName})`;
 
-const entryCountSql = sql<number>`(SELECT COUNT(*) FROM ${movementEntry} WHERE ${movementEntry.movementId} = ${movement.id})::int`;
+const entryCountSql = sql<number>`(SELECT COUNT(*) FROM "movement_entry" WHERE "movement_entry"."movement_id" = "movement"."id")::int`;
 
-const isRevertedSql = sql<boolean>`EXISTS (SELECT 1 FROM ${movement} AS reverting WHERE reverting.reverts_id = ${movement.id})`;
+// The unique index on `reverts_id` guarantees at most one row per side, so both
+// correlated subqueries return a single value.
+const revertsSequentialNumberSql = sql<
+  number | null
+>`(SELECT reverting."sequential_number" FROM "movement" AS reverting WHERE reverting."id" = "movement"."reverts_id")`;
+
+const revertedByIdSql = sql<
+  string | null
+>`(SELECT reverting."id" FROM "movement" AS reverting WHERE reverting."reverts_id" = "movement"."id")`;
+
+const revertedBySequentialNumberSql = sql<
+  number | null
+>`(SELECT reverting."sequential_number" FROM "movement" AS reverting WHERE reverting."reverts_id" = "movement"."id")`;
 
 async function readCellCodes(
   ctx: RequestContext,
@@ -149,12 +275,52 @@ export async function getMap(ctx: RequestContext, warehouseId: string): Promise<
     nodeId: row.nodeId,
     code: row.code,
     position: row.position,
-    capacity: toNumber(row.capacity),
+    capacity: row.capacity === null ? null : toNumber(row.capacity),
     occupancy: toNumber(row.occupancy),
     isActive: row.isActive,
   }));
 
-  return { nodes: buildWarehouseTree(nodeRows as MapNodeRow[], cells) };
+  return { nodes: buildWarehouseTree(nodeRows, cells) };
+}
+
+export async function listMapStock(
+  ctx: RequestContext,
+  warehouseId: string,
+): Promise<MapStockRowDTO[]> {
+  const rows = await ctx.db
+    .select({
+      cellId: cellLot.cellId,
+      cellCode: warehouseCell.code,
+      lotId: cellLot.lotId,
+      lotCode: lot.code,
+      productTitle: product.title,
+      itemTitle: productItem.title,
+      quantity: cellLot.quantity,
+    })
+    .from(cellLot)
+    .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+    .innerJoin(lot, eq(lot.id, cellLot.lotId))
+    .innerJoin(productItem, eq(productItem.id, lot.itemId))
+    .innerJoin(product, eq(product.id, productItem.productId))
+    .where(and(eq(warehouseCell.warehouseId, warehouseId), sql`${cellLot.quantity} > 0`))
+    .orderBy(asc(warehouseCell.code), asc(lot.code), asc(lot.id));
+
+  return rows.map((row) => ({ ...row, quantity: toNumber(row.quantity) }));
+}
+
+export async function getMapViewData(ctx: RequestContext): Promise<MapViewData | undefined> {
+  const warehouse = await getPrimaryWarehouse(ctx);
+
+  if (!warehouse) {
+    return undefined;
+  }
+
+  const [map, stock] = await Promise.all([
+    getMap(ctx, warehouse.id),
+    listMapStock(ctx, warehouse.id),
+  ]);
+
+  return { warehouse, map, stock };
 }
 
 export async function getCellStock(ctx: RequestContext, cellId: string): Promise<CellStockDTO[]> {
@@ -164,7 +330,6 @@ export async function getCellStock(ctx: RequestContext, cellId: string): Promise
       cellCode: warehouseCell.code,
       lotId: cellLot.lotId,
       lotCode: lot.code,
-      lotName: lot.name,
       itemName: productItem.title,
       quantity: cellLot.quantity,
     })
@@ -178,46 +343,278 @@ export async function getCellStock(ctx: RequestContext, cellId: string): Promise
   return rows.map((row) => ({ ...row, quantity: toNumber(row.quantity) }));
 }
 
+function unaccentedILike(column: SQLWrapper, pattern: string): SQL {
+  return sql`translate(lower(${column}), ${SEARCH_ACCENTED}, ${SEARCH_PLAIN}) ILIKE translate(lower(${pattern}), ${SEARCH_ACCENTED}, ${SEARCH_PLAIN})`;
+}
+
+function lotSearchCondition(term: string): SQL {
+  const pattern = ilikePattern(term);
+
+  return sql`(
+    ${unaccentedILike(lot.code, pattern)}
+    OR ${unaccentedILike(product.title, pattern)}
+    OR ${unaccentedILike(productItem.title, pattern)}
+    OR EXISTS (
+      SELECT 1
+      FROM "cell_lot" AS cl
+      INNER JOIN "warehouse_cell" AS wc ON wc."id" = cl."cell_id"
+      WHERE cl."lot_id" = "lot"."id"
+        AND ${unaccentedILike(sql`wc."code"`, pattern)}
+    )
+  )`;
+}
+
 export async function listLots(
   ctx: RequestContext,
   params: ListParams,
 ): Promise<Paginated<LotListItemDTO>> {
-  const where = params.q
-    ? searchILike([lot.code, lot.name, productItem.title], params.q)
-    : undefined;
+  const where = params.q ? lotSearchCondition(params.q) : undefined;
+
+  const stock = ctx.db
+    .select({
+      lotId: cellLot.lotId,
+      quantity: sql<string>`SUM(${cellLot.quantity})`.as('quantity'),
+      locations:
+        sql<string>`string_agg(DISTINCT ${warehouseCell.code}, ', ' ORDER BY ${warehouseCell.code})`.as(
+          'locations',
+        ),
+    })
+    .from(cellLot)
+    .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+    .groupBy(cellLot.lotId)
+    .as('lot_stock');
 
   const [counted, rows] = await Promise.all([
     ctx.db
       .select({ total: sql<number>`count(*)::int` })
       .from(lot)
       .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
       .where(where),
     ctx.db
       .select({
         id: lot.id,
         itemId: lot.itemId,
+        productTitle: product.title,
         itemTitle: productItem.title,
         code: lot.code,
-        name: lot.name,
         isActive: lot.isActive,
+        createdAt: lot.createdAt,
+        stock: sql<string>`COALESCE(${stock.quantity}, 0)`,
+        locations: sql<string>`${stock.locations}`,
       })
       .from(lot)
       .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .leftJoin(stock, eq(stock.lotId, lot.id))
       .where(where)
       .orderBy(asc(lot.code), asc(lot.id))
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);
 
-  return { items: rows, total: counted[0]?.total ?? 0 };
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      itemId: row.itemId,
+      productTitle: row.productTitle,
+      itemTitle: row.itemTitle,
+      code: row.code,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      stock: toNumber(row.stock),
+      locations: row.locations ? row.locations.split(', ') : [],
+    })),
+    total: counted[0]?.total ?? 0,
+  };
+}
+
+export async function listLotItemOptions(ctx: RequestContext): Promise<LotItemOptionDTO[]> {
+  const rows = await ctx.db
+    .select({
+      value: productItem.id,
+      productTitle: product.title,
+      itemTitle: productItem.title,
+      itemCode: productItem.code,
+    })
+    .from(productItem)
+    .innerJoin(product, eq(product.id, productItem.productId))
+    .where(
+      and(
+        eq(productItem.isActive, true),
+        eq(productItem.managesInventory, true),
+        isNull(product.deletedAt),
+      ),
+    )
+    .orderBy(asc(product.title), asc(productItem.sortOrder), asc(productItem.id));
+
+  return rows.map((row) => ({
+    value: row.value,
+    label: `${row.productTitle} — ${row.itemTitle} (${row.itemCode})`,
+  }));
+}
+
+async function readMovementOptions(
+  ctx: RequestContext,
+  warehouseId: string,
+  activeOnly: boolean,
+): Promise<MovementFormOptionsDTO> {
+  const [lotRows, cellRows] = await Promise.all([
+    ctx.db
+      .select({
+        id: lot.id,
+        code: lot.code,
+        productTitle: product.title,
+        itemTitle: productItem.title,
+      })
+      .from(lot)
+      .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .where(activeOnly ? eq(lot.isActive, true) : undefined)
+      .orderBy(asc(lot.code), asc(lot.id)),
+    ctx.db
+      .select({ id: warehouseCell.id, code: warehouseCell.code })
+      .from(warehouseCell)
+      .where(
+        activeOnly
+          ? and(eq(warehouseCell.warehouseId, warehouseId), eq(warehouseCell.isActive, true))
+          : eq(warehouseCell.warehouseId, warehouseId),
+      )
+      .orderBy(asc(warehouseCell.code), asc(warehouseCell.id)),
+  ]);
+
+  return { lots: lotRows, cells: cellRows };
+}
+
+export async function getMovementFormOptions(
+  ctx: RequestContext,
+  warehouseId?: string,
+): Promise<MovementFormOptionsDTO> {
+  const targetWarehouseId = warehouseId ?? (await getPrimaryWarehouse(ctx))?.id;
+
+  if (!targetWarehouseId) {
+    return { lots: [], cells: [] };
+  }
+
+  return readMovementOptions(ctx, targetWarehouseId, true);
+}
+
+export async function getMovementHistoryOptions(
+  ctx: RequestContext,
+  warehouseId?: string,
+): Promise<MovementFormOptionsDTO> {
+  const targetWarehouseId = warehouseId ?? (await getPrimaryWarehouse(ctx))?.id;
+
+  if (!targetWarehouseId) {
+    return { lots: [], cells: [] };
+  }
+
+  return readMovementOptions(ctx, targetWarehouseId, false);
+}
+
+export async function getLotById(ctx: RequestContext, id: string): Promise<LotFormDTO | undefined> {
+  const rows = await ctx.db
+    .select({
+      id: lot.id,
+      itemId: lot.itemId,
+      itemTitle: productItem.title,
+      productTitle: product.title,
+      code: lot.code,
+      isActive: lot.isActive,
+    })
+    .from(lot)
+    .innerJoin(productItem, eq(productItem.id, lot.itemId))
+    .innerJoin(product, eq(product.id, productItem.productId))
+    .where(eq(lot.id, id))
+    .limit(1);
+
+  return rows[0];
+}
+
+export async function listLotSiblings(ctx: RequestContext): Promise<LotSiblingDTO[]> {
+  const stock = ctx.db
+    .select({
+      lotId: cellLot.lotId,
+      quantity: sql<string>`SUM(${cellLot.quantity})`.as('quantity'),
+    })
+    .from(cellLot)
+    .groupBy(cellLot.lotId)
+    .as('lot_stock');
+
+  const rows = await ctx.db
+    .select({
+      id: lot.id,
+      itemId: lot.itemId,
+      code: lot.code,
+      isActive: lot.isActive,
+      stock: sql<string>`COALESCE(${stock.quantity}, 0)`,
+    })
+    .from(lot)
+    .leftJoin(stock, eq(stock.lotId, lot.id))
+    .orderBy(asc(lot.code), asc(lot.id));
+
+  return rows.map((row) => ({
+    id: row.id,
+    itemId: row.itemId,
+    code: row.code,
+    isActive: row.isActive,
+    stock: toNumber(row.stock),
+  }));
+}
+
+export async function getLotSummary(
+  ctx: RequestContext,
+  lotId: string,
+): Promise<LotSummaryDTO | undefined> {
+  const [header] = await ctx.db
+    .select({ isActive: lot.isActive, createdAt: lot.createdAt, updatedAt: lot.updatedAt })
+    .from(lot)
+    .where(eq(lot.id, lotId))
+    .limit(1);
+
+  if (!header) {
+    return undefined;
+  }
+
+  const [cellRows, movementRows] = await Promise.all([
+    ctx.db
+      .select({
+        cellId: warehouseCell.id,
+        cellCode: warehouseCell.code,
+        quantity: cellLot.quantity,
+      })
+      .from(cellLot)
+      .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+      .where(and(eq(cellLot.lotId, lotId), sql`${cellLot.quantity} > 0`))
+      .orderBy(asc(warehouseCell.code), asc(warehouseCell.id)),
+    ctx.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(movementEntry)
+      .where(eq(movementEntry.lotId, lotId)),
+  ]);
+
+  const cells = cellRows.map((row) => ({
+    cellId: row.cellId,
+    cellCode: row.cellCode,
+    quantity: toNumber(row.quantity),
+  }));
+
+  return {
+    isActive: header.isActive,
+    stock: cells.reduce((total, cell) => total + cell.quantity, 0),
+    cells,
+    movementCount: movementRows[0]?.total ?? 0,
+    createdAt: header.createdAt,
+    updatedAt: header.updatedAt,
+  };
 }
 
 export async function listMovements(
   ctx: RequestContext,
   params: ListParams,
-  filters: MovementFiltersSchema,
+  filters: MovementHistoryFiltersSchema,
 ): Promise<Paginated<MovementListItemDTO>> {
-  const where = movementWhere(filters);
+  const where = movementWhere(filters, params.q);
 
   const [counted, rows] = await Promise.all([
     ctx.db.select({ total: sql<number>`count(*)::int` }).from(movement).where(where),
@@ -230,12 +627,9 @@ export async function listMovements(
         note: movement.note,
         reference: movement.reference,
         createdAt: movement.createdAt,
-        userName: userNameSql,
         entryCount: entryCountSql,
-        isReverted: isRevertedSql,
       })
       .from(movement)
-      .innerJoin(user, eq(user.id, movement.userId))
       .where(where)
       .orderBy(desc(movement.sequentialNumber))
       .limit(params.pageSize)
@@ -248,15 +642,20 @@ export async function listMovements(
 export async function listMovementEntries(
   ctx: RequestContext,
   params: ListParams,
-  filters: KardexParamsSchema,
+  filters: MovementHistoryFiltersSchema,
 ): Promise<Paginated<MovementEntryRowDTO>> {
-  const where = entryWhere(filters);
+  const where = entryWhere(filters, params.q);
 
   const [counted, rows] = await Promise.all([
     ctx.db
       .select({ total: sql<number>`count(*)::int` })
       .from(movementEntry)
       .innerJoin(movement, eq(movement.id, movementEntry.movementId))
+      .innerJoin(lot, eq(lot.id, movementEntry.lotId))
+      .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .leftJoin(originCell, eq(originCell.id, movementEntry.originCellId))
+      .leftJoin(destinationCell, eq(destinationCell.id, movementEntry.destinationCellId))
       .where(where),
     ctx.db
       .select({
@@ -267,27 +666,27 @@ export async function listMovementEntries(
         reason: movement.reason,
         lotId: movementEntry.lotId,
         lotCode: lot.code,
-        lotName: lot.name,
+        productTitle: product.title,
+        itemTitle: productItem.title,
         originCellId: movementEntry.originCellId,
+        originCellCode: originCell.code,
         destinationCellId: movementEntry.destinationCellId,
+        destinationCellCode: destinationCell.code,
         quantity: movementEntry.quantity,
-        userName: userNameSql,
         createdAt: movement.createdAt,
       })
       .from(movementEntry)
       .innerJoin(movement, eq(movement.id, movementEntry.movementId))
       .innerJoin(lot, eq(lot.id, movementEntry.lotId))
-      .innerJoin(user, eq(user.id, movement.userId))
+      .innerJoin(productItem, eq(productItem.id, lot.itemId))
+      .innerJoin(product, eq(product.id, productItem.productId))
+      .leftJoin(originCell, eq(originCell.id, movementEntry.originCellId))
+      .leftJoin(destinationCell, eq(destinationCell.id, movementEntry.destinationCellId))
       .where(where)
       .orderBy(desc(movement.sequentialNumber), asc(movementEntry.id))
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);
-
-  const cellCodes = await readCellCodes(
-    ctx,
-    rows.flatMap((row) => [row.originCellId, row.destinationCellId]),
-  );
 
   const items = rows.map(
     (row): MovementEntryRowDTO => ({
@@ -298,15 +697,13 @@ export async function listMovementEntries(
       reason: row.reason,
       lotId: row.lotId,
       lotCode: row.lotCode,
-      lotName: row.lotName,
+      productTitle: row.productTitle,
+      itemTitle: row.itemTitle,
       originCellId: row.originCellId,
-      originCellCode: row.originCellId ? (cellCodes.get(row.originCellId) ?? null) : null,
+      originCellCode: row.originCellCode,
       destinationCellId: row.destinationCellId,
-      destinationCellCode: row.destinationCellId
-        ? (cellCodes.get(row.destinationCellId) ?? null)
-        : null,
+      destinationCellCode: row.destinationCellCode,
       quantity: toNumber(row.quantity),
-      userName: row.userName,
       createdAt: row.createdAt,
     }),
   );
@@ -327,9 +724,12 @@ export async function getMovement(
       userId: movement.userId,
       note: movement.note,
       reference: movement.reference,
+      revertsId: movement.revertsId,
+      revertsSequentialNumber: revertsSequentialNumberSql,
+      revertedById: revertedByIdSql,
+      revertedBySequentialNumber: revertedBySequentialNumberSql,
       createdAt: movement.createdAt,
       userName: userNameSql,
-      isReverted: isRevertedSql,
     })
     .from(movement)
     .innerJoin(user, eq(user.id, movement.userId))
@@ -347,13 +747,16 @@ export async function getMovement(
       id: movementEntry.id,
       lotId: movementEntry.lotId,
       lotCode: lot.code,
-      lotName: lot.name,
+      productTitle: product.title,
+      itemTitle: productItem.title,
       originCellId: movementEntry.originCellId,
       destinationCellId: movementEntry.destinationCellId,
       quantity: movementEntry.quantity,
     })
     .from(movementEntry)
     .innerJoin(lot, eq(lot.id, movementEntry.lotId))
+    .innerJoin(productItem, eq(productItem.id, lot.itemId))
+    .innerJoin(product, eq(product.id, productItem.productId))
     .where(eq(movementEntry.movementId, id))
     .orderBy(asc(movementEntry.id));
 
@@ -367,7 +770,8 @@ export async function getMovement(
       id: row.id,
       lotId: row.lotId,
       lotCode: row.lotCode,
-      lotName: row.lotName,
+      productTitle: row.productTitle,
+      itemTitle: row.itemTitle,
       originCellId: row.originCellId,
       originCellCode: row.originCellId ? (cellCodes.get(row.originCellId) ?? null) : null,
       destinationCellId: row.destinationCellId,

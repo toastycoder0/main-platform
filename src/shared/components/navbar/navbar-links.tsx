@@ -1,29 +1,37 @@
 'use client';
 
-import { useEffect } from 'react';
+import { NavigationMenu, NavigationMenuList } from '@/shared/components/navigation-menu';
+import { cn } from '@/shared/utils/cn';
 import { NavLinks } from './category-dropdown';
 import { MobileNavPanel } from './mobile-panel';
 import type { NavLink } from './nav-link';
-import { useNavbar } from './navbar';
 
 interface NavbarLinksProps {
   links: NavLink[];
+  variant?: 'bar' | 'panel';
+  ariaLabel?: string;
+  className?: string;
 }
 
-export function NavbarLinks({ links }: NavbarLinksProps) {
-  const { register, unregister } = useNavbar();
+export function NavbarLinks({
+  links,
+  variant = 'bar',
+  ariaLabel = 'Navegación principal',
+  className,
+}: NavbarLinksProps) {
+  if (links.length === 0) {
+    return null;
+  }
 
-  useEffect(() => {
-    if (links.length === 0) {
-      return;
-    }
+  if (variant === 'panel') {
+    return <MobileNavPanel navLinks={links} label={ariaLabel} className={className} />;
+  }
 
-    register('links', {
-      desktop: <NavLinks links={links} />,
-      mobile: <MobileNavPanel navLinks={links} />,
-    });
-    return () => unregister('links');
-  }, [links, register, unregister]);
-
-  return null;
+  return (
+    <NavigationMenu aria-label={ariaLabel} className={cn('max-w-max', className)}>
+      <NavigationMenuList>
+        <NavLinks links={links} />
+      </NavigationMenuList>
+    </NavigationMenu>
+  );
 }

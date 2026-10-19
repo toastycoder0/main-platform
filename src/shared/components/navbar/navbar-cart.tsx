@@ -2,31 +2,19 @@
 
 import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { buttonVariants } from '@/shared/components/button';
-import { useNavbar } from './navbar';
+import { cn } from '@/shared/utils/cn';
 
 interface NavbarCartProps {
   count?: number;
+  className?: string;
 }
 
-export function NavbarCart({ count = 0 }: NavbarCartProps) {
-  const { register, unregister } = useNavbar();
-
-  useEffect(() => {
-    const cart = <CartButton count={count} />;
-    register('cart', { desktop: cart, mobile: cart });
-    return () => unregister('cart');
-  }, [count, register, unregister]);
-
-  return null;
-}
-
-function CartButton({ count }: { count: number }) {
+export function NavbarCart({ count = 0, className }: NavbarCartProps) {
   return (
     <Link
       href='/cart'
-      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+      className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), className)}
       aria-label={`Carrito${count > 0 ? `, ${count} producto${count !== 1 ? 's' : ''}` : ''}`}
     >
       <ShoppingCart className='size-5' />

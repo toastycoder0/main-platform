@@ -2,25 +2,15 @@
 
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useEffect, useRef } from 'react';
+import { type FormEvent, useRef } from 'react';
 import { Input } from '@/shared/components/input';
-import { useNavbar } from './navbar';
+import { cn } from '@/shared/utils/cn';
 
-export function NavbarSearch() {
-  const { register, unregister } = useNavbar();
-
-  useEffect(() => {
-    register('search', {
-      desktop: <SearchForm />,
-      mobile: <SearchForm />,
-    });
-    return () => unregister('search');
-  }, [register, unregister]);
-
-  return null;
+interface NavbarSearchProps {
+  className?: string;
 }
 
-function SearchForm() {
+export function NavbarSearch({ className }: NavbarSearchProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -36,7 +26,10 @@ function SearchForm() {
   return (
     <form
       onSubmit={submitSearch}
-      className='group flex w-full rounded-md focus-within:ring-2 focus-within:ring-ring/50'
+      className={cn(
+        'group flex w-full rounded-md focus-within:ring-2 focus-within:ring-ring/50',
+        className,
+      )}
     >
       <Input
         ref={searchRef}

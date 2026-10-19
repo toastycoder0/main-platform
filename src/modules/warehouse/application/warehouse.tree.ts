@@ -14,7 +14,7 @@ export interface MapCellRow {
   nodeId: string;
   code: string;
   position: number;
-  capacity: number;
+  capacity: number | null;
   occupancy: number;
   isActive: boolean;
 }
