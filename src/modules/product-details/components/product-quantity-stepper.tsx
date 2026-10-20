@@ -10,6 +10,7 @@ interface ProductQuantityStepperProps {
   id: string;
   value: number;
   min: number;
+  max?: number | undefined;
   step: number;
   error?: string | undefined;
   disabled?: boolean | undefined;
@@ -23,6 +24,7 @@ export function ProductQuantityStepper({
   id,
   value,
   min,
+  max,
   step,
   error,
   disabled,
@@ -32,9 +34,16 @@ export function ProductQuantityStepper({
   onCommit,
 }: ProductQuantityStepperProps) {
   const safeValue = Number.isFinite(value) ? value : min;
+  const upper = max ?? Number.POSITIVE_INFINITY;
+  const displayValue = Number.isFinite(value) ? value : '';
 
   function adjust(direction: 1 | -1) {
-    const next = Math.max(min, safeValue + direction * step);
+    const next = Math.min(Math.max(min, safeValue + direction * step), upper);
+
+    if (next === safeValue) {
+      return;
+    }
+
     onChange(next);
     onCommit?.(next);
   }
@@ -60,8 +69,9 @@ export function ProductQuantityStepper({
           type='number'
           inputMode='numeric'
           min={min}
+          max={max}
           step={step}
-          value={Number.isFinite(value) ? value : ''}
+          value={displayValue}
           disabled={disabled}
           aria-invalid={error !== undefined}
           className={cn(
@@ -76,17 +86,25 @@ export function ProductQuantityStepper({
           variant='outline'
           size={compact ? 'icon-xs' : 'icon'}
           aria-label='Aumentar cantidad'
-          disabled={disabled}
+          disabled={disabled || safeValue >= upper}
           onClick={() => adjust(1)}
         >
           <PlusIcon />
         </Button>
       </div>
-      {error ? (
-        <FieldError>{error}</FieldError>
-      ) : hint ? (
-        <p className='text-xs text-neutral-500'>{hint}</p>
-      ) : null}
+      <QuantityMessage error={error} hint={hint} />
     </Field>
   );
+}
+
+function QuantityMessage({ error, hint }: Pick<ProductQuantityStepperProps, 'error' | 'hint'>) {
+  if (error) {
+    return <FieldError>{error}</FieldError>;
+  }
+
+  if (hint) {
+    return <p className='text-xs text-neutral-500'>{hint}</p>;
+  }
+
+  return null;
 }

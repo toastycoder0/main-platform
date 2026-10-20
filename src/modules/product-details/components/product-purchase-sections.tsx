@@ -7,6 +7,7 @@ import { FieldGroup } from '@/shared/components/field';
 import { Spinner } from '@/shared/components/spinner';
 import {
   describeQuantityRules,
+  isVariantOutOfStock,
   type SelectionSchema,
 } from '../application/product-details.selection';
 import type { VariantDTO } from '../application/product-details.types';
@@ -73,6 +74,8 @@ export function ProductQuantitySection({
   onAdd: () => void;
 }) {
   const hasRules = variant.minOrderQty > 1 || variant.incrementQty > 1;
+  const outOfStock = isVariantOutOfStock(variant);
+  const maxStock = variant.managesInventory ? (variant.availableStock ?? 0) : undefined;
 
   return (
     <div className='flex flex-wrap items-end gap-3 border-t border-neutral-100 pt-4'>
@@ -84,16 +87,23 @@ export function ProductQuantitySection({
             id='product-quantity'
             value={control.value}
             min={variant.minOrderQty}
+            max={maxStock}
             step={variant.incrementQty}
             error={fieldState.error?.message}
             hint={hasRules ? describeQuantityRules(variant) : undefined}
-            disabled={disabled}
+            disabled={disabled || outOfStock}
             onChange={control.onChange}
             onCommit={onCommit}
           />
         )}
       />
-      <Button type='button' size='lg' disabled={disabled} className='flex-1' onClick={onAdd}>
+      <Button
+        type='button'
+        size='lg'
+        disabled={disabled || outOfStock}
+        className='flex-1'
+        onClick={onAdd}
+      >
         {isAdding ? <Spinner /> : <ShoppingCartIcon />}
         Añadir
       </Button>

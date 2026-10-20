@@ -3,7 +3,10 @@
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { FieldGroup } from '@/shared/components/field';
 import type { ComplementsSchema } from '../application/product-details.complements';
-import { describeQuantityRules } from '../application/product-details.selection';
+import {
+  describeQuantityRules,
+  isVariantOutOfStock,
+} from '../application/product-details.selection';
 import type { ComplementDTO, ComplementVariantDTO } from '../application/product-details.types';
 import { ProductOpenField } from './product-open-field';
 import { ProductQuantityStepper } from './product-quantity-stepper';
@@ -26,6 +29,8 @@ export function ProductComplementOptions({
 }: ProductComplementOptionsProps) {
   const isLocked = complement.lockedVariantId !== null;
   const hasRules = variant.minOrderQty > 1 || variant.incrementQty > 1;
+  const outOfStock = isVariantOutOfStock(variant);
+  const maxStock = variant.managesInventory ? (variant.availableStock ?? 0) : undefined;
 
   function selectVariant(variantId: string) {
     const next = complement.variants.find((candidate) => candidate.id === variantId);
@@ -57,6 +62,7 @@ export function ProductComplementOptions({
       ) : null}
 
       <FieldGroup className='gap-2'>
+        {outOfStock ? <p className='text-xs font-medium text-destructive'>Agotado</p> : null}
         {variant.openFields.map((field) => (
           <Controller
             key={field.key}
@@ -86,10 +92,11 @@ export function ProductComplementOptions({
             id={`complement-${index}-quantity`}
             value={control.value}
             min={variant.minOrderQty}
+            max={maxStock}
             step={variant.incrementQty}
             error={fieldState.error?.message}
             hint={hasRules ? describeQuantityRules(variant) : undefined}
-            disabled={disabled}
+            disabled={disabled || outOfStock}
             compact
             onChange={control.onChange}
           />

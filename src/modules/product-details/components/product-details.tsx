@@ -96,6 +96,7 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
             <ProductPurchasePanel
               key={`${view.variant.id}:${view.quantity}:${JSON.stringify(view.fields)}`}
               productSlug={product.slug}
+              unit={product.unit}
               variants={product.variants}
               variant={view.variant}
               quantity={view.quantity}

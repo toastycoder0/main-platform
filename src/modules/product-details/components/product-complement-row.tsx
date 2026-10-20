@@ -9,6 +9,7 @@ import {
   complementLineAmount,
   pickComplementVariant,
 } from '../application/product-details.complements';
+import { isVariantOutOfStock } from '../application/product-details.selection';
 import type { ComplementDTO } from '../application/product-details.types';
 import { ProductComplementOptions } from './product-complement-options';
 
@@ -60,6 +61,7 @@ export function ProductComplementRow({
 }: ProductComplementRowProps) {
   const item = useWatch({ control: form.control, name: `items.${index}` });
   const variant = pickComplementVariant(complement, item.variantId);
+  const outOfStock = isVariantOutOfStock(variant);
   const showSelection = canBuy && item.checked;
 
   return (
@@ -72,7 +74,7 @@ export function ProductComplementRow({
             render={({ field }) => (
               <Checkbox
                 checked={field.value}
-                disabled={disabled}
+                disabled={disabled || outOfStock}
                 aria-label={`Incluir ${complement.title}`}
                 onCheckedChange={(value) => field.onChange(value === true)}
               />
@@ -88,7 +90,9 @@ export function ProductComplementRow({
         </picture>
         <div className='flex min-w-0 flex-1 flex-col'>
           <ComplementTitle complement={complement} />
-          {complement.unit ? (
+          {outOfStock ? (
+            <span className='text-xs font-medium text-destructive'>Agotado</span>
+          ) : complement.unit ? (
             <span className='text-xs text-neutral-500'>{complement.unit}</span>
           ) : null}
         </div>

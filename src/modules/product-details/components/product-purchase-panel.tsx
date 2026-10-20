@@ -9,18 +9,22 @@ import {
   buildSelectionSchema,
   describeQuantityRules,
   isValidQuantity,
+  isVariantOutOfStock,
   pruneEmptyFields,
   type SelectionSchema,
+  STOCK_ERRORS,
 } from '../application/product-details.selection';
 import type { OpenFieldValues, VariantDTO } from '../application/product-details.types';
 import { addToCart } from '../infrastructure/product-details.action';
 import { showCartToast } from './product-cart-toast';
 import { ProductOpenFieldsSection, ProductQuantitySection } from './product-purchase-sections';
+import { ProductVariantLotsDialog } from './product-variant-lots-dialog';
 import { ProductVariantSelector } from './product-variant-selector';
 import { useProductDetailParams } from './use-product-details-params';
 
 interface ProductPurchasePanelProps {
   productSlug: string;
+  unit: string | null;
   variants: VariantDTO[];
   variant: VariantDTO;
   quantity: number;
@@ -34,8 +38,28 @@ function toUrlFields(values: OpenFieldValues): OpenFieldValues | null {
   return Object.keys(pruned).length > 0 ? pruned : null;
 }
 
+function VariantAvailability({ variant, unit }: { variant: VariantDTO; unit: string | null }) {
+  if (!variant.managesInventory) {
+    return null;
+  }
+
+  const outOfStock = isVariantOutOfStock(variant);
+
+  return (
+    <div className='flex items-center justify-between gap-2 border-t border-neutral-100 pt-3'>
+      <span
+        className={cn('text-sm font-medium', outOfStock ? 'text-destructive' : 'text-emerald-600')}
+      >
+        {outOfStock ? 'Agotado' : 'Disponible'}
+      </span>
+      <ProductVariantLotsDialog variantTitle={variant.title} unit={unit} lots={variant.lots} />
+    </div>
+  );
+}
+
 export function ProductPurchasePanel({
   productSlug,
+  unit,
   variants,
   variant,
   quantity,
@@ -66,8 +90,13 @@ export function ProductPurchasePanel({
   }
 
   function commitQuantity(next: number) {
-    if (!isValidQuantity(next, variant)) {
-      form.setError('quantity', { message: describeQuantityRules(variant) });
+    const exceedsStock =
+      variant.managesInventory && variant.availableStock !== null && next > variant.availableStock;
+
+    if (!isValidQuantity(next, variant) || exceedsStock) {
+      form.setError('quantity', {
+        message: exceedsStock ? STOCK_ERRORS.insufficient : describeQuantityRules(variant),
+      });
       return;
     }
 
@@ -101,6 +130,8 @@ export function ProductPurchasePanel({
   return (
     <form noValidate onSubmit={calculate} aria-busy={busy} className='flex flex-col gap-5'>
       <div className={cn('transition-opacity', isPending && 'opacity-60')}>{priceSlot}</div>
+
+      <VariantAvailability variant={variant} unit={unit} />
 
       {variants.length > 1 ? (
         <ProductVariantSelector
