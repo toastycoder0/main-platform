@@ -293,6 +293,7 @@ describe('createProduct', () => {
 
   it('persists the full payload across every related table', async () => {
     const imageTemp = await seedTempFile('product_images');
+    const detailImageTemp = await seedTempFile('product_images');
     const documentTemp = await seedTempFile('product_documents', 'pdf');
 
     const id = await createAndFind(
@@ -336,7 +337,15 @@ describe('createProduct', () => {
             ],
           }),
         ],
-        images: [{ fileUrl: imageTemp, altText: 'Frente', isVisible: true, variantId: 'v-b' }],
+        images: [
+          { fileUrl: imageTemp, altText: 'Frente', isVisible: true, variantId: 'v-b' },
+          {
+            fileUrl: detailImageTemp,
+            altText: 'Detalle',
+            isVisible: true,
+            section: 'details',
+          },
+        ],
         documents: [
           {
             documentTypeId: seeds.documentTypeId,
@@ -410,12 +419,15 @@ describe('createProduct', () => {
     ]);
 
     const images = await db.select().from(productImage).where(eq(productImage.productId, id));
-    expect(images).toHaveLength(1);
-    expect(images[0]).toMatchObject({ altText: 'Frente', itemId: items[1]?.id });
+    expect(images).toHaveLength(2);
+    const variantImage = images.find((image) => image.itemId === items[1]?.id);
+    const detailImage = images.find((image) => image.section === 'details');
+    expect(variantImage).toMatchObject({ altText: 'Frente', section: null });
+    expect(detailImage).toMatchObject({ altText: 'Detalle', itemId: null });
     const [imageFile] = await db
       .select()
       .from(file)
-      .where(and(eq(file.entity, 'product_images'), eq(file.ownerId, images[0]?.id ?? '')));
+      .where(and(eq(file.entity, 'product_images'), eq(file.ownerId, variantImage?.id ?? '')));
     expect(imageFile?.tempKey).toBeNull();
     expect(imageFile?.key).toContain('products/images/');
 

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, or, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { searchILike } from '@/infrastructure/db/list-query';
 import {
@@ -234,7 +234,13 @@ async function queryFirstProductImages(
   const rows = await ctx.db
     .select({ id: productImage.id, productId: productImage.productId })
     .from(productImage)
-    .where(and(inArray(productImage.productId, productIds), eq(productImage.isVisible, true)))
+    .where(
+      and(
+        inArray(productImage.productId, productIds),
+        eq(productImage.isVisible, true),
+        or(isNull(productImage.section), ne(productImage.section, 'details')),
+      ),
+    )
     .orderBy(asc(productImage.sortOrder), asc(productImage.id));
 
   const firstImageIdByProduct = new Map<string, string>();

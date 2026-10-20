@@ -298,7 +298,9 @@ async function writeImages(
       isExisting,
       fileUrl: image.fileUrl,
       columns: {
-        itemId: image.variantId ? (variantIds.get(image.variantId) ?? null) : null,
+        itemId:
+          image.section || !image.variantId ? null : (variantIds.get(image.variantId) ?? null),
+        section: image.section ?? null,
         altText: emptyToNull(image.altText),
         isVisible: image.isVisible,
         sortOrder: index,

@@ -1,13 +1,15 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import type { RequestContext } from '@/infrastructure/context/types';
+import { PRODUCT_IMAGE_DETAILS_SECTION } from '@/modules/products/application/products.gallery';
 import type { ComplementsMain } from '../application/product-details.complements';
-import type { ProductDetailDTO } from '../application/product-details.types';
+import type { ProductDetailDTO, ProductImageDTO } from '../application/product-details.types';
 import { buildProductView, type ProductView } from '../application/product-details.view';
 import type { ProductDetailParams } from '../infrastructure/product-details.params';
 import { getProductDetail } from '../infrastructure/product-details.query';
 import { ProductBreadcrumb } from './product-breadcrumb';
 import { ProductComplements } from './product-complements';
+import { ProductDescriptionImages } from './product-description-images';
 import { ProductComplementsSkeleton, ProductRelatedSkeleton } from './product-details-skeleton';
 import { ProductGallery } from './product-gallery';
 import { ProductHeader } from './product-header';
@@ -28,13 +30,14 @@ function toComplementsMain(
   product: ProductDetailDTO,
   view: ProductView,
   canBuy: boolean,
+  galleryImages: ProductImageDTO[],
 ): ComplementsMain {
   const { variant, quantity, fields, outcome } = view;
 
   return {
     title: product.title,
     unit: product.unit,
-    imageUrl: variant.imageUrl ?? product.images[0]?.url ?? null,
+    imageUrl: variant.imageUrl ?? galleryImages[0]?.url ?? null,
     variantTitle: variant.title,
     currency: product.currency,
     totalAmount: outcome.kind === 'priced' ? outcome.totalAmount : null,
@@ -60,6 +63,13 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
     canBuy,
   );
 
+  const galleryImages = product.images.filter(
+    (image) => image.section !== PRODUCT_IMAGE_DETAILS_SECTION,
+  );
+  const descriptionImages = product.images.filter(
+    (image) => image.section === PRODUCT_IMAGE_DETAILS_SECTION,
+  );
+
   return (
     <div className='flex flex-col gap-6'>
       <ProductBreadcrumb crumbs={product.crumbs} title={product.title} />
@@ -68,7 +78,7 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
         <div className='lg:sticky lg:top-6 lg:z-20 lg:self-start'>
           <ProductGallery
             key={product.slug}
-            images={product.images}
+            images={galleryImages}
             selectedVariantId={view?.variant.id ?? null}
             title={product.title}
           />
@@ -115,6 +125,8 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
             specs={product.specs}
             documents={product.documents}
           />
+
+          <ProductDescriptionImages images={descriptionImages} />
         </div>
       </div>
 
@@ -124,7 +136,7 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
             ctx={ctx}
             productId={product.id}
             selectedVariantId={view.variant.id}
-            main={toComplementsMain(product, view, canBuy)}
+            main={toComplementsMain(product, view, canBuy, galleryImages)}
           />
         </Suspense>
       ) : null}

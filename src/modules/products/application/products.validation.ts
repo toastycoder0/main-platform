@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { isSatTaxName, isSatTaxObject, isSatUnit } from './products.sat';
 import { PRODUCT_STATUSES } from './products.status';
 import {
   MAX_SELECT_CHOICES,
@@ -156,13 +157,19 @@ const productVariantsSchema = z
     });
   });
 
-const productImageSchema = z.object({
-  id: z.string().min(1).optional(),
-  fileUrl: z.string().min(1, FIELD_ERRORS.required),
-  altText: z.string().trim().max(200, FIELD_ERRORS.tooLong).nullable().optional(),
-  isVisible: z.boolean().default(true),
-  variantId: z.string().min(1).nullable().optional(),
-});
+const productImageSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    fileUrl: z.string().min(1, FIELD_ERRORS.required),
+    altText: z.string().trim().max(200, FIELD_ERRORS.tooLong).nullable().optional(),
+    isVisible: z.boolean().default(true),
+    variantId: z.string().min(1).nullable().optional(),
+    section: z.enum(['details']).nullable().optional(),
+  })
+  .refine((image) => !(image.section && image.variantId), {
+    message: 'Una imagen de detalles no puede asociarse a una variante',
+    path: ['variantId'],
+  });
 
 const productImagesSchema = z.array(productImageSchema).default([]);
 
@@ -237,9 +244,30 @@ const productFieldsSchema = {
   baseCurrency: z.string().min(1, FIELD_ERRORS.required),
   costCurrency: z.string().min(1).nullable().optional(),
   satId: z.string().trim().max(50, FIELD_ERRORS.tooLong).nullable().optional(),
-  satUnit: z.string().trim().max(50, FIELD_ERRORS.tooLong).nullable().optional(),
-  taxObject: z.string().trim().max(100, FIELD_ERRORS.tooLong).nullable().optional(),
-  taxName: z.string().trim().max(100, FIELD_ERRORS.tooLong).nullable().optional(),
+  satUnit: z
+    .string()
+    .trim()
+    .max(50, FIELD_ERRORS.tooLong)
+    .refine((value) => value === '' || isSatUnit(value), 'Selecciona una unidad SAT válida')
+    .nullable()
+    .optional(),
+  taxObject: z
+    .string()
+    .trim()
+    .max(100, FIELD_ERRORS.tooLong)
+    .refine(
+      (value) => value === '' || isSatTaxObject(value),
+      'Selecciona un objeto de impuesto válido',
+    )
+    .nullable()
+    .optional(),
+  taxName: z
+    .string()
+    .trim()
+    .max(100, FIELD_ERRORS.tooLong)
+    .refine((value) => value === '' || isSatTaxName(value), 'Selecciona un impuesto válido')
+    .nullable()
+    .optional(),
   taxRate: z
     .number('La tasa debe ser un número')
     .min(0, 'La tasa no puede ser negativa')

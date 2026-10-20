@@ -124,6 +124,7 @@ async function queryGallery(ctx: RequestContext, productId: string): Promise<Pro
       id: productImage.id,
       itemId: productImage.itemId,
       altText: productImage.altText,
+      section: productImage.section,
     })
     .from(productImage)
     .where(and(eq(productImage.productId, productId), eq(productImage.isVisible, true)))
@@ -136,7 +137,9 @@ async function queryGallery(ctx: RequestContext, productId: string): Promise<Pro
 
   return rows.flatMap((row) => {
     const url = urls.get(row.id);
-    return url ? [{ id: row.id, url, altText: row.altText, variantId: row.itemId }] : [];
+    return url
+      ? [{ id: row.id, url, altText: row.altText, variantId: row.itemId, section: row.section }]
+      : [];
   });
 }
 

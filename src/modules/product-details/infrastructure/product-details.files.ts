@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne, or } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { productImage } from '@/infrastructure/db/schema';
 import { listFilesByOwners } from '@/infrastructure/files/service';
@@ -49,7 +49,13 @@ export async function queryCoverImageUrls(
   const rows = await ctx.db
     .select({ id: productImage.id, productId: productImage.productId })
     .from(productImage)
-    .where(and(inArray(productImage.productId, productIds), eq(productImage.isVisible, true)))
+    .where(
+      and(
+        inArray(productImage.productId, productIds),
+        eq(productImage.isVisible, true),
+        or(isNull(productImage.section), ne(productImage.section, 'details')),
+      ),
+    )
     .orderBy(asc(productImage.sortOrder), asc(productImage.id));
 
   const urlByImage = await queryImageUrls(

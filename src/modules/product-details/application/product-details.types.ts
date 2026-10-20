@@ -31,6 +31,7 @@ export interface ProductImageDTO {
   url: string;
   altText: string | null;
   variantId: string | null;
+  section: string | null;
 }
 
 export interface ProductSpecDTO {

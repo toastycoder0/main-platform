@@ -520,10 +520,17 @@ describe('Products E2E', () => {
       await page.locator('#form-cost').fill('12.5');
       await chooseCombobox(page, page.locator('#form-product-cost-currency'), 'Peso Mexicano');
       await page.locator('#form-product-sat-id').fill('01010101');
-      await page.locator('#form-product-sat-unit').fill('H87');
-      await page.locator('#form-product-tax-object').fill('02');
-      await page.locator('#form-product-tax-name').fill('IVA');
-      await page.locator('#form-taxRate').fill('16');
+      await chooseSelect(page, page.locator('#form-product-sat-unit'), 'H87 - Pieza');
+      await chooseSelect(
+        page,
+        page.locator('#form-product-tax-object'),
+        '02 - Sí objeto de impuesto (Requiere desglose)',
+      );
+      await chooseSelect(
+        page,
+        page.locator('#form-product-tax-name'),
+        'IVA - Impuesto al Valor Agregado',
+      );
       await page.locator('#form-variants-0-code').fill('GEN-STD');
 
       await submitForm(page);
@@ -548,9 +555,15 @@ describe('Products E2E', () => {
       expect(await page.locator('#form-cost').inputValue()).toBe('12.5');
       expect(await page.locator('#form-product-cost-currency').inputValue()).toBe('Peso Mexicano');
       expect(await page.locator('#form-product-sat-id').inputValue()).toBe('01010101');
-      expect(await page.locator('#form-product-sat-unit').inputValue()).toBe('H87');
-      expect(await page.locator('#form-product-tax-object').inputValue()).toBe('02');
-      expect(await page.locator('#form-product-tax-name').inputValue()).toBe('IVA');
+      await page.locator('#form-product-sat-unit').filter({ hasText: 'H87 - Pieza' }).waitFor();
+      await page
+        .locator('#form-product-tax-object')
+        .filter({ hasText: '02 - Sí objeto de impuesto (Requiere desglose)' })
+        .waitFor();
+      await page
+        .locator('#form-product-tax-name')
+        .filter({ hasText: 'IVA - Impuesto al Valor Agregado' })
+        .waitFor();
       expect(await page.locator('#form-taxRate').inputValue()).toBe('16');
     });
 
