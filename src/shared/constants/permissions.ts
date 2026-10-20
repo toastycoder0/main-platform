@@ -1,4 +1,5 @@
 export const PERMISSION_GROUP_LABELS = {
+  public: 'Sección pública',
   warehouse: 'Almacén',
   'warehouse.lots': 'Lotes',
   'warehouse.map': 'Mapa del almacén',
