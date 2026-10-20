@@ -11,13 +11,20 @@ import {
   tag,
   userProductPrice,
 } from '@/infrastructure/db/schema';
+import type { ProductCardAvailability } from '@/modules/products/application/products.card';
+import { PUBLIC_LISTING_STATUSES } from '@/modules/products/application/products.status';
+import { queryCardAvailability } from '@/modules/products/infrastructure/products.card.query';
 import type {
   PublicProductDTO,
   PublicProductFilters,
   PublicProductsResult,
 } from '../application/public-products.types';
 import { queryBrandLogoUrls, queryFirstProductImageUrls } from './public-products.files';
-import { resolvePriceListId, resolveProductPrices } from './public-products.prices';
+import {
+  type ResolvedPrice,
+  resolvePriceListId,
+  resolveProductPrices,
+} from './public-products.prices';
 
 const HOME_PRODUCT_LIMIT = 10;
 
@@ -29,6 +36,35 @@ interface ProductCardRow {
   brandId: string | null;
   brandName: string | null;
   unitAbbreviation: string | null;
+}
+
+interface PublicProductExtras {
+  imageUrlByProduct: Map<string, string>;
+  logoUrlByBrand: Map<string, string>;
+  priceByProduct: Map<string, ResolvedPrice>;
+  availabilityByProduct: Map<string, ProductCardAvailability>;
+}
+
+function toPublicProduct(row: ProductCardRow, extras: PublicProductExtras): PublicProductDTO {
+  const price = extras.priceByProduct.get(row.id);
+  const availability = extras.availabilityByProduct.get(row.id);
+
+  return {
+    slug: row.slug,
+    title: row.title,
+    imageUrl: extras.imageUrlByProduct.get(row.id) ?? null,
+    brand: row.brandName
+      ? {
+          name: row.brandName,
+          logoUrl: row.brandId ? (extras.logoUrlByBrand.get(row.brandId) ?? null) : null,
+        }
+      : null,
+    price: price ? { amount: price.amount, currency: row.baseCurrency, label: price.label } : null,
+    unit: row.unitAbbreviation,
+    variants: availability?.variants ?? [],
+    onDemand: availability?.onDemand ?? false,
+    leadTimeDays: availability?.leadTimeDays ?? 0,
+  };
 }
 
 async function toPublicProducts(
@@ -45,31 +81,22 @@ async function toPublicProducts(
     ...new Set(rows.map((row) => row.brandId).filter((id): id is string => id !== null)),
   ];
 
-  const [imageUrlByProduct, logoUrlByBrand, priceByProduct] = await Promise.all([
-    queryFirstProductImageUrls(ctx, productIds),
-    queryBrandLogoUrls(ctx, brandIds),
-    resolveProductPrices(ctx, productIds, priceListId),
-  ]);
+  const [imageUrlByProduct, logoUrlByBrand, priceByProduct, availabilityByProduct] =
+    await Promise.all([
+      queryFirstProductImageUrls(ctx, productIds),
+      queryBrandLogoUrls(ctx, brandIds),
+      resolveProductPrices(ctx, productIds, priceListId),
+      queryCardAvailability(ctx, productIds),
+    ]);
 
-  return rows.map((row) => {
-    const price = priceByProduct.get(row.id);
+  const extras: PublicProductExtras = {
+    imageUrlByProduct,
+    logoUrlByBrand,
+    priceByProduct,
+    availabilityByProduct,
+  };
 
-    return {
-      slug: row.slug,
-      title: row.title,
-      imageUrl: imageUrlByProduct.get(row.id) ?? null,
-      brand: row.brandName
-        ? {
-            name: row.brandName,
-            logoUrl: row.brandId ? (logoUrlByBrand.get(row.brandId) ?? null) : null,
-          }
-        : null,
-      price: price
-        ? { amount: price.amount, currency: row.baseCurrency, label: price.label }
-        : null,
-      unit: row.unitAbbreviation,
-    };
-  });
+  return rows.map((row) => toPublicProduct(row, extras));
 }
 
 export async function getHomeProducts(
@@ -94,7 +121,7 @@ export async function getHomeProducts(
     .from(product)
     .leftJoin(brand, eq(product.brandId, brand.id))
     .leftJoin(productUnit, eq(product.unitId, productUnit.id))
-    .where(and(isNull(product.deletedAt), eq(product.status, 'active')))
+    .where(and(isNull(product.deletedAt), inArray(product.status, [...PUBLIC_LISTING_STATUSES])))
     .orderBy(...orderClause)
     .limit(HOME_PRODUCT_LIMIT);
 
@@ -224,7 +251,7 @@ export async function queryPublicProducts(
 
   const where = and(
     isNull(product.deletedAt),
-    eq(product.status, 'active'),
+    inArray(product.status, [...PUBLIC_LISTING_STATUSES]),
     ...buildCatalogConditions(ctx, filters),
     ...(userId ? buildPriceConditions(filters, effectivePrice) : []),
   );

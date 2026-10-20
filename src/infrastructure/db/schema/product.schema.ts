@@ -237,6 +237,7 @@ export const productImage = snakeCase.table(
       .notNull()
       .references(() => product.id, { onDelete: 'cascade' }),
     itemId: text().references(() => productItem.id, { onDelete: 'set null' }),
+    section: text().$type<'details'>(),
     altText: text(),
     isVisible: boolean().default(true).notNull(),
     ...ordering,
@@ -245,6 +246,14 @@ export const productImage = snakeCase.table(
   (table) => [
     index('product_image_product_idx').on(table.productId, table.sortOrder),
     index('product_image_item_idx').on(table.itemId),
+    check(
+      'product_image_section_check',
+      sql`${table.section} IS NULL OR ${table.section} = 'details'`,
+    ),
+    check(
+      'product_image_section_scope_check',
+      sql`${table.section} IS NULL OR ${table.itemId} IS NULL`,
+    ),
   ],
 );
 

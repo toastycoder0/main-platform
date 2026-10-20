@@ -1,17 +1,6 @@
-export interface PublicProductPriceDTO {
-  amount: number;
-  currency: string;
-  label: 'fixed' | 'starts_at' | 'variable';
-}
+import type { ProductCardProduct } from '@/shared/components/product-card.types';
 
-export interface PublicProductDTO {
-  slug: string;
-  title: string;
-  imageUrl: string | null;
-  brand: { name: string; logoUrl: string | null } | null;
-  price: PublicProductPriceDTO | null;
-  unit: string | null;
-}
+export type PublicProductDTO = ProductCardProduct;
 
 export interface PublicProductsResult {
   items: PublicProductDTO[];

@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, FormProvider, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
@@ -33,6 +33,12 @@ import {
 import { Switch } from '@/shared/components/switch';
 import { Textarea } from '@/shared/components/textarea';
 import { buildPriceEntries } from '../application/products.prices';
+import {
+  SAT_DEFAULTS,
+  SAT_TAX_NAME_OPTIONS,
+  SAT_TAX_OBJECT_OPTIONS,
+  SAT_UNIT_OPTIONS,
+} from '../application/products.sat';
 import { PRODUCT_STATUS_LABELS, PRODUCT_STATUSES } from '../application/products.status';
 import type { ProductFormDTO, ProductVariantOption } from '../application/products.types';
 import type { ProductFormSchema } from '../application/products.validation';
@@ -105,10 +111,10 @@ export function ProductForm({
           baseCurrency: defaultCurrency,
           costCurrency: null,
           satId: '',
-          satUnit: '',
-          taxObject: '',
-          taxName: '',
-          taxRate: null,
+          satUnit: SAT_DEFAULTS.satUnit,
+          taxObject: SAT_DEFAULTS.taxObject,
+          taxName: SAT_DEFAULTS.taxName,
+          taxRate: SAT_DEFAULTS.taxRate,
           cost: null,
           status: 'active',
           tagIds: [],
@@ -127,6 +133,11 @@ export function ProductForm({
     control,
     formState: { isSubmitting },
   } = form;
+
+  const taxObject = useWatch({ control, name: 'taxObject' });
+  const taxName = useWatch({ control, name: 'taxName' });
+  const showTaxFields = taxObject !== '01';
+  const isDefaultIva = taxObject === '02' && taxName === 'IVA';
 
   useEffect(() => {
     const subscription = form.watch((_values, { name }) => {
@@ -459,13 +470,18 @@ export function ProductForm({
             render={({ field, fieldState }) => (
               <Field orientation='vertical' data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor='form-product-sat-unit'>Unidad SAT</FieldLabel>
-                <Input
-                  {...field}
-                  id='form-product-sat-unit'
-                  value={field.value ?? ''}
-                  aria-invalid={fieldState.invalid}
-                  placeholder='Unidad SAT'
-                />
+                <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                  <SelectTrigger id='form-product-sat-unit' aria-invalid={fieldState.invalid}>
+                    <SelectValue placeholder='Seleccionar unidad SAT' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SAT_UNIT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
@@ -476,46 +492,69 @@ export function ProductForm({
             control={control}
             render={({ field, fieldState }) => (
               <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='form-product-tax-object'>Objeto de impuesto</FieldLabel>
-                <Input
-                  {...field}
-                  id='form-product-tax-object'
-                  value={field.value ?? ''}
-                  aria-invalid={fieldState.invalid}
-                  placeholder='Objeto de impuesto'
-                />
+                <FieldLabel htmlFor='form-product-tax-object'>Objeto de impuesto SAT</FieldLabel>
+                <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                  <SelectTrigger id='form-product-tax-object' aria-invalid={fieldState.invalid}>
+                    <SelectValue placeholder='Seleccionar objeto de impuesto' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SAT_TAX_OBJECT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
 
-          <Controller
-            name='taxName'
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field orientation='vertical' data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor='form-product-tax-name'>Nombre del impuesto</FieldLabel>
-                <Input
-                  {...field}
-                  id='form-product-tax-name'
-                  value={field.value ?? ''}
-                  aria-invalid={fieldState.invalid}
-                  placeholder='Ej: IVA'
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
+          {showTaxFields ? (
+            <>
+              <Controller
+                name='taxName'
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Field orientation='vertical' data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor='form-product-tax-name'>Tipo de impuesto SAT</FieldLabel>
+                    <Select
+                      value={field.value ?? ''}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value === 'IVA') {
+                          form.setValue('taxRate', SAT_DEFAULTS.taxRate);
+                        }
+                      }}
+                    >
+                      <SelectTrigger id='form-product-tax-name' aria-invalid={fieldState.invalid}>
+                        <SelectValue placeholder='Seleccionar tipo de impuesto' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SAT_TAX_NAME_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
-          <ControlledNumberField
-            control={control}
-            name='taxRate'
-            label='Tasa de impuesto (%)'
-            placeholder='Ej: 16.00'
-            min={0}
-            step='0.01'
-            nullable
-          />
+              <ControlledNumberField
+                control={control}
+                name='taxRate'
+                label='Tasa de impuesto (%)'
+                placeholder='Ej: 16.00'
+                min={0}
+                step='0.01'
+                disabled={isDefaultIva}
+                nullable
+              />
+            </>
+          ) : null}
           <Controller
             name='tagIds'
             control={control}

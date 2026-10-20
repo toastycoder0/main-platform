@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import { Field, FieldError, FieldLabel } from '@/shared/components/field';
@@ -39,9 +39,11 @@ export function ProductGalleryImageCard({
   onMove,
   onRemove,
 }: ProductGalleryImageCardProps) {
-  const { control } = useFormContext<ProductFormSchema>();
+  const { control, setValue } = useFormContext<ProductFormSchema>();
   const basePath = `images.${index}` as const;
   const scopeId = `form-images-${index}-variantId`;
+  const images = useWatch({ control, name: 'images' });
+  const section = images?.[index]?.section;
 
   return (
     <Card data-slot='collection-item' size='sm'>
@@ -97,8 +99,15 @@ export function ProductGalleryImageCard({
             <Field orientation='vertical' data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor={scopeId}>Asociada a</FieldLabel>
               <Select
-                value={toImageScopeValue(field.value)}
-                onValueChange={(next) => field.onChange(fromImageScopeValue(next))}
+                value={toImageScopeValue({ variantId: field.value, section })}
+                onValueChange={(next) => {
+                  const scope = fromImageScopeValue(next);
+                  field.onChange(scope.variantId);
+                  setValue(`${basePath}.section`, scope.section, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
               >
                 <SelectTrigger id={scopeId} aria-invalid={fieldState.invalid}>
                   <SelectValue placeholder='Seleccionar' />

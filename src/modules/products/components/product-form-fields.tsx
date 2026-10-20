@@ -134,6 +134,7 @@ interface ControlledNumberFieldProps<T extends FieldValues> extends ControlledFi
   placeholder?: string;
   min?: number;
   step?: string;
+  disabled?: boolean;
   /** Stores `null` instead of an empty string when the input is cleared. */
   nullable?: boolean;
 }
@@ -148,6 +149,7 @@ export function ControlledNumberField<T extends FieldValues>({
   placeholder,
   min,
   step = '1',
+  disabled = false,
   nullable = false,
 }: ControlledNumberFieldProps<T>) {
   const id = fieldId(name);
@@ -167,6 +169,7 @@ export function ControlledNumberField<T extends FieldValues>({
             type='number'
             min={min}
             step={step}
+            disabled={disabled}
             value={field.value ?? ''}
             placeholder={placeholder}
             aria-invalid={fieldState.invalid}

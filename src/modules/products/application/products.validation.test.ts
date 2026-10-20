@@ -79,6 +79,30 @@ describe('createProductSchema', () => {
     expect(createProductSchema.safeParse(validProduct({ status: 'draft' })).success).toBe(false);
   });
 
+  describe('SAT fields', () => {
+    it('accepts catalog values and empty values', () => {
+      expect(
+        createProductSchema.safeParse(
+          validProduct({ satUnit: 'H87', taxObject: '02', taxName: 'IVA' }),
+        ).success,
+      ).toBe(true);
+      expect(
+        createProductSchema.safeParse(validProduct({ satUnit: '', taxObject: '', taxName: '' }))
+          .success,
+      ).toBe(true);
+    });
+
+    it('rejects values outside the catalogs', () => {
+      const result = createProductSchema.safeParse(
+        validProduct({ satUnit: 'ABC', taxObject: '99', taxName: 'XYZ' }),
+      );
+
+      expect(messagesAt(result, 'satUnit')).toContain('Selecciona una unidad SAT válida');
+      expect(messagesAt(result, 'taxObject')).toContain('Selecciona un objeto de impuesto válido');
+      expect(messagesAt(result, 'taxName')).toContain('Selecciona un impuesto válido');
+    });
+  });
+
   it.each(PRODUCT_STATUSES)('accepts the %s status', (status) => {
     expect(createProductSchema.safeParse(validProduct({ status })).success).toBe(true);
   });
@@ -399,6 +423,28 @@ describe('createProductSchema', () => {
       const image = { id: 'pimg_1', fileUrl: 'tmp/a.png', isVisible: true };
       const result = createProductSchema.safeParse(validProduct({ images: [image, image] }));
       expect(messagesAt(result, 'images.1.id')).toHaveLength(1);
+    });
+
+    it('accepts images in the details section', () => {
+      expect(
+        createProductSchema.safeParse(
+          validProduct({
+            images: [{ fileUrl: 'tmp/a.png', isVisible: true, section: 'details' }],
+          }),
+        ).success,
+      ).toBe(true);
+    });
+
+    it('rejects an image linked to both a variant and the details section', () => {
+      const result = createProductSchema.safeParse(
+        validProduct({
+          images: [{ fileUrl: 'tmp/a.png', isVisible: true, variantId: 'v1', section: 'details' }],
+        }),
+      );
+
+      expect(messagesAt(result, 'images.0.variantId')).toContain(
+        'Una imagen de detalles no puede asociarse a una variante',
+      );
     });
   });
 

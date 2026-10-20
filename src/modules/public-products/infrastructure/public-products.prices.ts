@@ -7,11 +7,9 @@ import {
   user,
   userProductPrice,
 } from '@/infrastructure/db/schema';
+import { type CardPrice, resolveCardPrice } from '@/modules/products/application/products.card';
 
-export interface ResolvedPrice {
-  amount: number;
-  label: 'fixed' | 'starts_at' | 'variable';
-}
+export type ResolvedPrice = CardPrice;
 
 interface PriceInputs {
   userPriceByProduct: Map<string, { amount: string | null; priceListId: string | null }>;
@@ -67,7 +65,11 @@ async function queryPriceInputs(
       .select({ productId: productItem.productId })
       .from(productItem)
       .where(
-        and(inArray(productItem.productId, productIds), eq(productItem.pricingModel, 'formula')),
+        and(
+          inArray(productItem.productId, productIds),
+          eq(productItem.pricingModel, 'formula'),
+          eq(productItem.isActive, true),
+        ),
       ),
   ]);
 
@@ -106,7 +108,7 @@ function resolvePrice(
   productId: string,
   inputs: PriceInputs,
   priceListId: string | null,
-): ResolvedPrice | undefined {
+): ResolvedPrice {
   const userEntry = inputs.userPriceByProduct.get(productId);
   let baseAmount: number | null = null;
 
@@ -118,17 +120,7 @@ function resolvePrice(
     baseAmount = inputs.priceByProductAndList.get(`${productId}:${priceListId}`) ?? null;
   }
 
-  const hasFormula = inputs.formulaProductIds.has(productId);
-
-  if (baseAmount !== null && baseAmount > 0) {
-    return { amount: baseAmount, label: hasFormula ? 'starts_at' : 'fixed' };
-  }
-
-  if (hasFormula) {
-    return { amount: 0, label: 'variable' };
-  }
-
-  return undefined;
+  return resolveCardPrice(baseAmount, inputs.formulaProductIds.has(productId));
 }
 
 export async function resolveProductPrices(
@@ -146,10 +138,7 @@ export async function resolveProductPrices(
   const inputs = await queryPriceInputs(ctx, userId, productIds, priceListId);
 
   for (const productId of productIds) {
-    const resolved = resolvePrice(productId, inputs, priceListId);
-    if (resolved) {
-      result.set(productId, resolved);
-    }
+    result.set(productId, resolvePrice(productId, inputs, priceListId));
   }
 
   return result;

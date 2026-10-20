@@ -6,9 +6,12 @@ import {
   brand,
   category,
   currency,
+  file,
   priceList,
   product,
   productCategory,
+  productImage,
+  productItem,
   productPrice,
   productTag,
   productUnit,
@@ -35,6 +38,10 @@ const ids = {
   alpha: '',
   beta: '',
   gamma: '',
+  quote: '',
+  formula: '',
+  betaVariantId: '',
+  variantImageFileId: '',
 };
 
 function testContext(withSession: boolean): RequestContext {
@@ -219,9 +226,101 @@ beforeAll(async () => {
   await db
     .insert(userProductPrice)
     .values({ userId: ids.userId, productId: ids.gamma, amount: '20' });
+
+  const betaVariant = firstId(
+    await db
+      .insert(productItem)
+      .values({
+        productId: ids.beta,
+        title: 'Azul',
+        code: `${scope}-beta-azul`,
+        sortOrder: 1,
+        managesInventory: false,
+        leadTimeDays: 3,
+      })
+      .returning({ id: productItem.id }),
+  );
+  ids.betaVariantId = betaVariant;
+  await db.insert(productItem).values([
+    { productId: ids.alpha, title: 'Estándar', code: `${scope}-alpha-1`, sortOrder: 1 },
+    {
+      productId: ids.alpha,
+      title: 'Inactiva',
+      code: `${scope}-alpha-2`,
+      sortOrder: 2,
+      isActive: false,
+      pricingModel: 'formula',
+      priceFormula: 'base_price * 2',
+    },
+    {
+      productId: ids.beta,
+      title: 'Rojo',
+      code: `${scope}-beta-rojo`,
+      sortOrder: 2,
+    },
+    { productId: ids.gamma, title: 'Gamma', code: `${scope}-gamma-1`, sortOrder: 1 },
+  ]);
+
+  const betaImage = firstId(
+    await db
+      .insert(productImage)
+      .values({ productId: ids.beta, itemId: betaVariant, isVisible: true })
+      .returning({ id: productImage.id }),
+  );
+  ids.variantImageFileId = firstId(
+    await db
+      .insert(file)
+      .values({
+        entity: 'product_images',
+        scope: 'image',
+        ownerId: betaImage,
+        key: `${scope}/beta-azul.png`,
+      })
+      .returning({ id: file.id }),
+  );
+
+  ids.quote = firstId(
+    await db
+      .insert(product)
+      .values({
+        ...base,
+        slug: `${scope}-quote`,
+        title: 'Cotización única',
+        sortOrder: 4,
+      })
+      .returning({ id: product.id }),
+  );
+  await db
+    .insert(productItem)
+    .values({ productId: ids.quote, title: 'Único', code: `${scope}-quote-1` });
+
+  ids.formula = firstId(
+    await db
+      .insert(product)
+      .values({
+        ...base,
+        slug: `${scope}-formula`,
+        title: 'Fórmula única',
+        sortOrder: 5,
+      })
+      .returning({ id: product.id }),
+  );
+  await db.insert(productItem).values({
+    productId: ids.formula,
+    title: 'Fórmula',
+    code: `${scope}-formula-1`,
+    pricingModel: 'formula',
+    priceFormula: 'base_price * 2',
+  });
+  await db
+    .insert(productPrice)
+    .values({ productId: ids.formula, priceListId: ids.priceListId, amount: '50' });
 });
 
 afterAll(async () => {
+  if (ids.variantImageFileId) {
+    await db.delete(file).where(eq(file.id, ids.variantImageFileId));
+  }
   await db.delete(product).where(eq(product.baseCurrency, CURRENCY));
   await db.delete(user).where(eq(user.id, ids.userId));
   await db.delete(priceList).where(eq(priceList.id, ids.priceListId));
@@ -316,5 +415,43 @@ describe('queryPublicProducts', () => {
     expect(titles(atLeast.items)).toEqual(['Alpha']);
     expect(titles(atMost.items)).toEqual(['Gamma', 'Beta']);
     expect(atLeast.total).toBe(1);
+  });
+
+  it('includes active variants, swatches and availability metadata', async () => {
+    const result = await queryPublicProducts(testContext(false), filters());
+    const byTitle = (suffix: string) => result.items.find((item) => item.title.endsWith(suffix));
+
+    expect(byTitle('Beta')?.variants).toEqual([
+      { label: 'Azul', imageUrl: expect.any(String) },
+      { label: 'Rojo', imageUrl: null },
+    ]);
+    expect(byTitle('Beta')).toMatchObject({ onDemand: true, leadTimeDays: 3 });
+
+    expect(byTitle('Alpha')?.variants).toEqual([{ label: 'Estándar', imageUrl: null }]);
+    expect(byTitle('Alpha')).toMatchObject({ onDemand: false, leadTimeDays: 0 });
+  });
+
+  it('labels quote and starts-at prices for authenticated users', async () => {
+    const ctx = testContext(true);
+    const quote = await queryPublicProducts(ctx, filters({ q: 'Cotización única' }));
+    const formula = await queryPublicProducts(ctx, filters({ q: 'Fórmula única' }));
+    const guestQuote = await queryPublicProducts(
+      testContext(false),
+      filters({ q: 'Cotización única' }),
+    );
+
+    expect(quote.items[0]?.price).toEqual({ amount: 0, currency: CURRENCY, label: 'quote' });
+    expect(formula.items[0]?.price).toEqual({
+      amount: 50,
+      currency: CURRENCY,
+      label: 'starts_at',
+    });
+    expect(guestQuote.items[0]?.price).toBeNull();
+  });
+
+  it('ignores inactive formula variants when labeling the price', async () => {
+    const result = await queryPublicProducts(testContext(true), filters({ q: `${scope} Alpha` }));
+
+    expect(result.items[0]?.price).toMatchObject({ amount: 100, label: 'fixed' });
   });
 });

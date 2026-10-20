@@ -422,6 +422,7 @@ export async function findProductForm(ctx: RequestContext, id: string): Promise<
               altText: image.altText ?? '',
               isVisible: image.isVisible,
               variantId: image.itemId,
+              section: image.section,
             },
           ]
         : [];
