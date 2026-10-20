@@ -3,7 +3,7 @@
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/shared/utils/cn';
 
 export interface GallerySlide {
@@ -19,6 +19,26 @@ interface ProductGalleryLightboxProps {
   onClose: () => void;
 }
 
+interface ZoomOrigin {
+  x: number;
+  y: number;
+}
+
+const CENTER_ORIGIN: ZoomOrigin = { x: 50, y: 50 };
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function pointerOrigin(element: HTMLElement, clientX: number, clientY: number): ZoomOrigin {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: clamp(((clientX - rect.left) / rect.width) * 100, 0, 100),
+    y: clamp(((clientY - rect.top) / rect.height) * 100, 0, 100),
+  };
+}
+
 export function ProductGalleryLightbox({
   slides,
   initialIndex,
@@ -28,6 +48,8 @@ export function ProductGalleryLightbox({
   const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex: initialIndex, loop: true });
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [zoomed, setZoomed] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState<ZoomOrigin>(CENTER_ORIGIN);
+  const dragged = useRef(false);
 
   useEffect(() => {
     if (!emblaApi) {
@@ -37,6 +59,7 @@ export function ProductGalleryLightbox({
     const onSelect = () => {
       setCurrentIndex(emblaApi.selectedScrollSnap());
       setZoomed(false);
+      setZoomOrigin(CENTER_ORIGIN);
     };
 
     emblaApi.on('select', onSelect);
@@ -99,22 +122,59 @@ export function ProductGalleryLightbox({
                 {slides.map((slide, index) => (
                   <div
                     key={slide.id}
-                    className='relative flex min-w-0 shrink-0 grow-0 basis-full items-center justify-center p-4'
+                    className='relative flex min-w-0 shrink-0 grow-0 basis-full items-center justify-center overflow-hidden p-4'
                   >
                     <button
                       type='button'
-                      onClick={() => setZoomed((value) => !value)}
+                      onClick={(event) => {
+                        if (dragged.current) {
+                          dragged.current = false;
+                          return;
+                        }
+
+                        if (zoomed) {
+                          setZoomed(false);
+                          setZoomOrigin(CENTER_ORIGIN);
+                          return;
+                        }
+
+                        setZoomOrigin(
+                          pointerOrigin(event.currentTarget, event.clientX, event.clientY),
+                        );
+                        setZoomed(true);
+                      }}
+                      onPointerDown={() => {
+                        dragged.current = false;
+                      }}
+                      onPointerMove={(event) => {
+                        if (!zoomed) {
+                          return;
+                        }
+
+                        if (event.buttons > 0) {
+                          dragged.current = true;
+                        }
+
+                        setZoomOrigin(
+                          pointerOrigin(event.currentTarget, event.clientX, event.clientY),
+                        );
+                      }}
                       aria-label={zoomed ? 'Reducir imagen' : 'Acercar imagen'}
-                      className={zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}
+                      className={cn('cursor-zoom-in', zoomed && 'cursor-zoom-out touch-none')}
                     >
                       <picture>
                         <img
                           src={slide.url}
                           alt={slide.altText ?? `${title} - ${index + 1}`}
                           className={cn(
-                            'h-auto max-h-[80vh] w-auto max-w-full object-contain transition-transform duration-300 select-none',
-                            zoomed ? 'scale-200' : 'scale-100',
+                            'h-auto max-h-[80vh] w-auto max-w-full object-contain transition-transform duration-200 select-none',
+                            zoomed ? 'scale-[2.5]' : 'scale-100',
                           )}
+                          style={
+                            zoomed
+                              ? { transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%` }
+                              : undefined
+                          }
                         />
                       </picture>
                     </button>
