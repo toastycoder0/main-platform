@@ -4,6 +4,7 @@ import type {
   ComplementVariantDTO,
   OpenFieldDTO,
   VariantDTO,
+  VariantStockDTO,
 } from '../application/product-details.types';
 
 type VariantRow = typeof productItem.$inferSelect;
@@ -21,12 +22,18 @@ export function toOpenField(option: ProductItemOption): OpenFieldDTO {
   };
 }
 
-export function toVariant(row: VariantRow, imageUrl: string | null): VariantDTO {
+export function toVariant(
+  row: VariantRow,
+  imageUrl: string | null,
+  stock: VariantStockDTO | undefined,
+): VariantDTO {
   return {
     id: row.id,
     title: row.title,
     code: row.code,
     managesInventory: row.managesInventory,
+    availableStock: row.managesInventory ? (stock?.available ?? 0) : null,
+    lots: row.managesInventory ? (stock?.lots ?? []) : [],
     minOrderQty: row.minOrderQty,
     incrementQty: row.incrementQty,
     leadTimeDays: row.leadTimeDays,
@@ -36,10 +43,15 @@ export function toVariant(row: VariantRow, imageUrl: string | null): VariantDTO 
   };
 }
 
-export function toComplementVariant(row: VariantRow): ComplementVariantDTO {
+export function toComplementVariant(
+  row: VariantRow,
+  stock: VariantStockDTO | undefined,
+): ComplementVariantDTO {
   return {
     id: row.id,
     title: row.title,
+    managesInventory: row.managesInventory,
+    availableStock: row.managesInventory ? (stock?.available ?? 0) : null,
     minOrderQty: row.minOrderQty,
     incrementQty: row.incrementQty,
     pricingModel: row.pricingModel,
@@ -47,6 +59,9 @@ export function toComplementVariant(row: VariantRow): ComplementVariantDTO {
   };
 }
 
-export function toCartVariant(row: VariantRow): CartVariantSource {
-  return { ...toVariant(row, null), priceFormula: row.priceFormula };
+export function toCartVariant(
+  row: VariantRow,
+  stock: VariantStockDTO | undefined,
+): CartVariantSource {
+  return { ...toVariant(row, null, stock), priceFormula: row.priceFormula };
 }

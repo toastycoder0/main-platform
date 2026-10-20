@@ -10,6 +10,7 @@ import type { ComplementDTO, ComplementLink } from '../application/product-detai
 import { queryCoverImageUrls } from './product-details.files';
 import { toComplementVariant } from './product-details.mapper';
 import { resolveBaseAmounts } from './product-details.prices';
+import { getVariantStock } from './product-details.stock.query';
 
 export function getComplementLinks(
   ctx: RequestContext,
@@ -77,12 +78,16 @@ export async function getComplements(
   ]);
 
   const rowById = new Map(rows.map((row) => [row.id, row]));
+  const stock = await getVariantStock(
+    ctx,
+    items.map((item) => item.id),
+  );
 
   return visible.flatMap(({ linkedProductId, lockedVariantId }) => {
     const row = rowById.get(linkedProductId);
     const variants = items
       .filter((item) => item.productId === linkedProductId)
-      .map(toComplementVariant);
+      .map((item) => toComplementVariant(item, stock.get(item.id)));
     const lockIsValid = lockedVariantId === null || variants.some((v) => v.id === lockedVariantId);
 
     if (!row || variants.length === 0 || !lockIsValid) {

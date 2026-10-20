@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCartLine, type CartSource } from './product-details.cart';
+import { buildCartLine, type CartSource, type CartVariantSource } from './product-details.cart';
 
 const source: CartSource = {
   title: 'Cortina',
@@ -13,6 +13,8 @@ const source: CartSource = {
       title: 'Estándar',
       code: 'STD',
       managesInventory: true,
+      availableStock: 100,
+      lots: [],
       minOrderQty: 2,
       incrementQty: 2,
       leadTimeDays: 0,
@@ -26,6 +28,8 @@ const source: CartSource = {
       title: 'A medida',
       code: 'MED',
       managesInventory: false,
+      availableStock: null,
+      lots: [],
       minOrderQty: 1,
       incrementQty: 1,
       leadTimeDays: 10,
@@ -47,6 +51,25 @@ const source: CartSource = {
     },
   ],
 };
+
+function stockVariant(overrides: Partial<CartVariantSource> = {}): CartVariantSource {
+  return {
+    id: 'v_stock',
+    title: 'Con stock',
+    code: 'STK',
+    managesInventory: true,
+    availableStock: 10,
+    lots: [],
+    minOrderQty: 2,
+    incrementQty: 2,
+    leadTimeDays: 0,
+    pricingModel: 'flat',
+    openFields: [],
+    imageUrl: null,
+    priceFormula: null,
+    ...overrides,
+  };
+}
 
 describe('buildCartLine', () => {
   it('prices flat variants from the trusted base amount', () => {
@@ -98,5 +121,35 @@ describe('buildCartLine', () => {
       ok: false,
       message: 'Cortina: El campo es requerido',
     });
+  });
+
+  it('rejects inventory variants without stock', () => {
+    const result = buildCartLine(
+      { ...source, variants: [stockVariant({ availableStock: 0 })] },
+      { productSlug: 'cortina', variantId: 'v_stock', quantity: 2, fields: {} },
+    );
+
+    expect(result).toEqual({ ok: false, message: 'Cortina: Esta variante está agotada' });
+  });
+
+  it('rejects quantities above the available stock', () => {
+    const result = buildCartLine(
+      { ...source, variants: [stockVariant({ availableStock: 2 })] },
+      { productSlug: 'cortina', variantId: 'v_stock', quantity: 4, fields: {} },
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      message: 'Cortina: No hay stock suficiente para esta variante',
+    });
+  });
+
+  it('does not check stock for on-demand variants', () => {
+    const result = buildCartLine(
+      { ...source, variants: [stockVariant({ managesInventory: false, availableStock: null })] },
+      { productSlug: 'cortina', variantId: 'v_stock', quantity: 4, fields: {} },
+    );
+
+    expect(result).toMatchObject({ ok: true });
   });
 });

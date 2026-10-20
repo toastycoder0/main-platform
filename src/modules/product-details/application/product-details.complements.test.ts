@@ -26,6 +26,8 @@ function complement(overrides: Partial<ComplementDTO> = {}): ComplementDTO {
       {
         id: 'v1',
         title: 'Chica',
+        managesInventory: false,
+        availableStock: null,
         minOrderQty: 2,
         incrementQty: 2,
         pricingModel: 'flat',
@@ -34,6 +36,8 @@ function complement(overrides: Partial<ComplementDTO> = {}): ComplementDTO {
       {
         id: 'v2',
         title: 'Grande',
+        managesInventory: false,
+        availableStock: null,
         minOrderQty: 1,
         incrementQty: 1,
         pricingModel: 'formula',
@@ -92,6 +96,27 @@ describe('complement helpers', () => {
     ]);
   });
 
+  it('leaves out-of-stock complements unchecked by default', () => {
+    const outOfStock = complement({
+      variants: [
+        {
+          id: 'v1',
+          title: 'Chica',
+          managesInventory: true,
+          availableStock: 0,
+          minOrderQty: 2,
+          incrementQty: 2,
+          pricingModel: 'flat',
+          openFields: [],
+        },
+      ],
+    });
+
+    expect(buildComplementDefaults([outOfStock])).toEqual([
+      { checked: false, variantId: 'v1', quantity: 2, fields: {} },
+    ]);
+  });
+
   it('only prices flat variants with a base amount', () => {
     const [flat, formula] = complement().variants;
 
@@ -135,6 +160,30 @@ describe('buildComplementsSchema', () => {
       schema.safeParse({ items: [{ checked: true, variantId: 'v1', quantity: 4, fields: {} }] })
         .success,
     ).toBe(true);
+  });
+
+  it('rejects checked complements above their stock', () => {
+    const stocked = buildComplementsSchema([
+      complement({
+        variants: [
+          {
+            id: 'v1',
+            title: 'Chica',
+            managesInventory: true,
+            availableStock: 2,
+            minOrderQty: 2,
+            incrementQty: 2,
+            pricingModel: 'flat',
+            openFields: [],
+          },
+        ],
+      }),
+    ]);
+
+    expect(
+      stocked.safeParse({ items: [{ checked: true, variantId: 'v1', quantity: 4, fields: {} }] })
+        .success,
+    ).toBe(false);
   });
 });
 

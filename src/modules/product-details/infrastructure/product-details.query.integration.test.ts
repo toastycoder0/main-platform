@@ -1,9 +1,11 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { db } from '@/infrastructure/db';
 import {
+  cellLot,
   currency,
+  lot,
   priceList,
   product,
   productItem,
@@ -11,6 +13,9 @@ import {
   productPrice,
   productUnit,
   user,
+  warehouse,
+  warehouseCell,
+  warehouseNode,
 } from '@/infrastructure/db/schema';
 import { getComplements } from './product-details.complements.query';
 import { getProductDetail, getProductMetadata } from './product-details.query';
@@ -36,6 +41,12 @@ const ids = {
   relatedVariantB: '',
   deleted: '',
   hiddenStatus: '',
+  warehouseId: '',
+  nodeId: '',
+  cellId: '',
+  inactiveCellId: '',
+  flatLotId: '',
+  secondLotId: '',
 };
 
 function testContext(withSession: boolean): RequestContext {
@@ -184,9 +195,93 @@ beforeAll(async () => {
     { productId: ids.main, priceListId: ids.priceListId, amount: '100' },
     { productId: ids.related, priceListId: ids.priceListId, amount: '9.5' },
   ]);
+
+  ids.warehouseId = firstId(
+    await db
+      .insert(warehouse)
+      .values({ name: `${scope} WH` })
+      .returning({ id: warehouse.id }),
+  );
+  ids.nodeId = firstId(
+    await db
+      .insert(warehouseNode)
+      .values({
+        warehouseId: ids.warehouseId,
+        name: `${scope} Root`,
+        kind: 'zone',
+        path: `${scope}-root`,
+      })
+      .returning({ id: warehouseNode.id }),
+  );
+  ids.cellId = firstId(
+    await db
+      .insert(warehouseCell)
+      .values({
+        warehouseId: ids.warehouseId,
+        nodeId: ids.nodeId,
+        code: `${scope}-C1`,
+        position: 1,
+      })
+      .returning({ id: warehouseCell.id }),
+  );
+  ids.inactiveCellId = firstId(
+    await db
+      .insert(warehouseCell)
+      .values({
+        warehouseId: ids.warehouseId,
+        nodeId: ids.nodeId,
+        code: `${scope}-C2`,
+        position: 2,
+        isActive: false,
+      })
+      .returning({ id: warehouseCell.id }),
+  );
+  ids.flatLotId = firstId(
+    await db
+      .insert(lot)
+      .values({
+        itemId: ids.flat,
+        code: `${scope}-L1`,
+        normalizedCode: `${scope}-l1`,
+      })
+      .returning({ id: lot.id }),
+  );
+  ids.secondLotId = firstId(
+    await db
+      .insert(lot)
+      .values({
+        itemId: ids.flat,
+        code: `${scope}-L3`,
+        normalizedCode: `${scope}-l3`,
+      })
+      .returning({ id: lot.id }),
+  );
+  const inactiveLotId = firstId(
+    await db
+      .insert(lot)
+      .values({
+        itemId: ids.flat,
+        code: `${scope}-L2`,
+        normalizedCode: `${scope}-l2`,
+        isActive: false,
+      })
+      .returning({ id: lot.id }),
+  );
+
+  await db.insert(cellLot).values([
+    { cellId: ids.cellId, lotId: ids.flatLotId, quantity: '6.5' },
+    { cellId: ids.inactiveCellId, lotId: ids.flatLotId, quantity: '99' },
+    { cellId: ids.cellId, lotId: inactiveLotId, quantity: '50' },
+    { cellId: ids.cellId, lotId: ids.secondLotId, quantity: '2' },
+  ]);
 });
 
 afterAll(async () => {
+  await db.delete(cellLot).where(inArray(cellLot.cellId, [ids.cellId, ids.inactiveCellId]));
+  await db.delete(lot).where(eq(lot.itemId, ids.flat));
+  await db.delete(warehouseCell).where(eq(warehouseCell.warehouseId, ids.warehouseId));
+  await db.delete(warehouseNode).where(eq(warehouseNode.warehouseId, ids.warehouseId));
+  await db.delete(warehouse).where(eq(warehouse.id, ids.warehouseId));
   await db.delete(product).where(eq(product.baseCurrency, CURRENCY));
   await db.delete(user).where(eq(user.id, ids.userId));
   await db.delete(priceList).where(eq(priceList.id, ids.priceListId));
@@ -215,6 +310,21 @@ describe('getProductDetail', () => {
       'option.ancho * base_price + cost',
     );
     expect(data?.pricing.cost).toBe(40);
+  });
+
+  it('reports inventory stock from active lots and cells only', async () => {
+    const data = await getProductDetail(testContext(false), `${scope}-main`);
+    const flat = data?.product.variants.find((variant) => variant.id === ids.flat);
+    const formula = data?.product.variants.find((variant) => variant.id === ids.formula);
+
+    // 6.5 from the active cell + 2 from the second lot; the inactive cell and
+    // the inactive lot are excluded, so the sellable stock floors to 8.
+    expect(flat).toMatchObject({ managesInventory: true, availableStock: 8 });
+    expect(flat?.lots).toEqual([
+      { id: ids.flatLotId, code: `${scope}-L1`, quantity: 6.5 },
+      { id: ids.secondLotId, code: `${scope}-L3`, quantity: 2 },
+    ]);
+    expect(formula).toMatchObject({ managesInventory: false, availableStock: null, lots: [] });
   });
 
   it('resolves prices only for authenticated users', async () => {

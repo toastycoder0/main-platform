@@ -15,11 +15,24 @@ export interface OpenFieldDTO {
   helpText: string | null;
 }
 
+export interface VariantLotDTO {
+  id: string;
+  code: string;
+  quantity: number;
+}
+
+export interface VariantStockDTO {
+  available: number;
+  lots: VariantLotDTO[];
+}
+
 export interface VariantDTO {
   id: string;
   title: string;
   code: string;
   managesInventory: boolean;
+  availableStock: number | null;
+  lots: VariantLotDTO[];
   minOrderQty: number;
   incrementQty: number;
   leadTimeDays: number;
@@ -118,6 +131,8 @@ export type PriceOutcome =
 export interface ComplementVariantDTO {
   id: string;
   title: string;
+  managesInventory: boolean;
+  availableStock: number | null;
   minOrderQty: number;
   incrementQty: number;
   pricingModel: PricingModel;

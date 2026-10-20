@@ -6,6 +6,7 @@ import {
   MAX_QUANTITY,
   pickVariant,
   pruneEmptyFields,
+  STOCK_ERRORS,
   sanitizeFieldValues,
   snapQuantity,
   validateOpenFields,
@@ -26,7 +27,7 @@ function field(
   };
 }
 
-const rules = { minOrderQty: 5, incrementQty: 5 };
+const rules = { minOrderQty: 5, incrementQty: 5, managesInventory: false, availableStock: null };
 
 describe('quantity rules', () => {
   it('accepts only the minimum plus whole increments', () => {
@@ -49,6 +50,19 @@ describe('quantity rules', () => {
 
     expect(snapped).toBeLessThanOrEqual(MAX_QUANTITY);
     expect(isValidQuantity(snapped, { minOrderQty: 1, incrementQty: 7 })).toBe(true);
+  });
+
+  it('blocks inventory variants without enough stock', () => {
+    const stocked = { ...rules, managesInventory: true, availableStock: 10, openFields: [] };
+
+    expect(collectSelectionIssues(stocked, 15, {})).toContainEqual({
+      path: ['quantity'],
+      message: STOCK_ERRORS.insufficient,
+    });
+    expect(collectSelectionIssues({ ...stocked, availableStock: 0 }, 5, {})).toContainEqual({
+      path: ['quantity'],
+      message: STOCK_ERRORS.outOfStock,
+    });
   });
 });
 

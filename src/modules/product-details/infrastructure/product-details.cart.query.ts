@@ -5,6 +5,7 @@ import { PUBLIC_DETAIL_STATUSES } from '@/modules/products/application/products.
 import type { CartSource } from '../application/product-details.cart';
 import { toCartVariant } from './product-details.mapper';
 import { resolveBaseAmounts } from './product-details.prices';
+import { getVariantStock } from './product-details.stock.query';
 
 /** Trusted, server-side snapshot of every product referenced by the submitted lines. */
 export async function findCartSources(
@@ -45,6 +46,11 @@ export async function findCartSources(
     resolveBaseAmounts(ctx, ids),
   ]);
 
+  const stock = await getVariantStock(
+    ctx,
+    items.map((item) => item.id),
+  );
+
   return new Map(
     rows.map((row) => [
       row.slug,
@@ -54,7 +60,9 @@ export async function findCartSources(
         unit: row.unit,
         baseAmount: amounts.get(row.id) ?? null,
         cost: row.cost === null ? null : Number(row.cost),
-        variants: items.filter((item) => item.productId === row.id).map(toCartVariant),
+        variants: items
+          .filter((item) => item.productId === row.id)
+          .map((item) => toCartVariant(item, stock.get(item.id))),
       },
     ]),
   );

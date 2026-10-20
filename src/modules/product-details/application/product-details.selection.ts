@@ -7,7 +7,17 @@ export const MAX_SHORT_TEXT = 200;
 export const MAX_LONG_TEXT = 1000;
 
 type QuantityRules = Pick<VariantDTO, 'minOrderQty' | 'incrementQty'>;
-type SelectionVariant = QuantityRules & Pick<VariantDTO, 'openFields'>;
+type StockRules = Pick<VariantDTO, 'managesInventory' | 'availableStock'>;
+type SelectionVariant = QuantityRules & StockRules & Pick<VariantDTO, 'openFields'>;
+
+export const STOCK_ERRORS = {
+  outOfStock: 'Esta variante está agotada',
+  insufficient: 'No hay stock suficiente para esta variante',
+} as const;
+
+export function isVariantOutOfStock(variant: StockRules | null | undefined): boolean {
+  return Boolean(variant?.managesInventory && (variant.availableStock ?? 0) <= 0);
+}
 
 export interface SelectionIssue {
   path: string[];
@@ -146,6 +156,14 @@ export function collectSelectionIssues(
 
   if (!isValidQuantity(quantity, variant)) {
     issues.push({ path: ['quantity'], message: describeQuantityRules(variant) });
+  }
+
+  if (variant.managesInventory && variant.availableStock !== null) {
+    if (variant.availableStock <= 0) {
+      issues.push({ path: ['quantity'], message: STOCK_ERRORS.outOfStock });
+    } else if (quantity > variant.availableStock) {
+      issues.push({ path: ['quantity'], message: STOCK_ERRORS.insufficient });
+    }
   }
 
   for (const [key, message] of Object.entries(

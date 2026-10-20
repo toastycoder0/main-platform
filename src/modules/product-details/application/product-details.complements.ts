@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import {
   collectSelectionIssues,
+  isVariantOutOfStock,
   MAX_LONG_TEXT,
   MAX_QUANTITY,
   pruneEmptyFields,
@@ -69,7 +70,7 @@ export function buildComplementDefaults(complements: ComplementDTO[]): Complemen
     const variant = pickComplementVariant(complement, null);
 
     return {
-      checked: true,
+      checked: variant ? !isVariantOutOfStock(variant) : false,
       variantId: variant?.id ?? '',
       quantity: variant?.minOrderQty ?? 1,
       fields: {},

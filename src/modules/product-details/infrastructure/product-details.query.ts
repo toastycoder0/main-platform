@@ -29,6 +29,7 @@ import type {
 import { queryBrandLogoUrls, queryDocumentUrls, queryImageUrls } from './product-details.files';
 import { toVariant } from './product-details.mapper';
 import { resolveBaseAmounts } from './product-details.prices';
+import { getVariantStock } from './product-details.stock.query';
 
 const EXCHANGE_LOOKUP_LIMIT = 20;
 
@@ -225,8 +226,17 @@ export async function getProductDetail(
       : Promise.resolve(new Map<string, string>()),
   ]);
 
+  const stock = await getVariantStock(
+    ctx,
+    items.map((item) => item.id),
+  );
+
   const variants: VariantDTO[] = items.map((item) =>
-    toVariant(item, images.find((image) => image.variantId === item.id)?.url ?? null),
+    toVariant(
+      item,
+      images.find((image) => image.variantId === item.id)?.url ?? null,
+      stock.get(item.id),
+    ),
   );
 
   return {

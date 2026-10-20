@@ -8,6 +8,8 @@ function variant(overrides: Partial<VariantDTO> = {}): VariantDTO {
     title: 'Estándar',
     code: 'STD',
     managesInventory: true,
+    availableStock: 100,
+    lots: [],
     minOrderQty: 2,
     incrementQty: 2,
     leadTimeDays: 0,
