@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { brand, product, productLink, productUnit } from '@/infrastructure/db/schema';
 import { PUBLIC_LISTING_STATUSES } from '@/modules/products/application/products.status';
+import { queryCardAvailability } from '@/modules/products/infrastructure/products.card.query';
 import { type CardPrice, resolveCardPrice } from '../application/product-details.card-price';
 import type { RelatedProductDTO } from '../application/product-details.types';
 import { queryBrandLogoUrls, queryCoverImageUrls } from './product-details.files';
@@ -19,7 +20,14 @@ interface RelatedRow {
 
 function toRelatedProduct(
   row: RelatedRow,
-  extras: { imageUrl: string | null; logoUrl: string | null; price: CardPrice | null },
+  extras: {
+    imageUrl: string | null;
+    logoUrl: string | null;
+    price: CardPrice | null;
+    variants: RelatedProductDTO['variants'];
+    onDemand: boolean;
+    leadTimeDays: number;
+  },
 ): RelatedProductDTO {
   return {
     slug: row.slug,
@@ -28,6 +36,9 @@ function toRelatedProduct(
     brand: row.brandName ? { name: row.brandName, logoUrl: extras.logoUrl } : null,
     price: extras.price ? { ...extras.price, currency: row.currency } : null,
     unit: row.unit,
+    variants: extras.variants,
+    onDemand: extras.onDemand,
+    leadTimeDays: extras.leadTimeDays,
   };
 }
 
@@ -67,20 +78,26 @@ export async function getRelatedProducts(
   const ids = rows.map((row) => row.id);
   const brandIds = [...new Set(rows.flatMap((row) => (row.brandId ? [row.brandId] : [])))];
 
-  const [covers, logos, amounts, formulaIds] = await Promise.all([
+  const [covers, logos, amounts, formulaIds, availabilityByProduct] = await Promise.all([
     queryCoverImageUrls(ctx, ids),
     queryBrandLogoUrls(ctx, brandIds),
     resolveBaseAmounts(ctx, ids),
     queryFormulaProductIds(ctx, ids),
+    queryCardAvailability(ctx, ids),
   ]);
 
-  return rows.map((row) =>
-    toRelatedProduct(row, {
+  return rows.map((row) => {
+    const availability = availabilityByProduct.get(row.id);
+
+    return toRelatedProduct(row, {
       imageUrl: covers.get(row.id) ?? null,
       logoUrl: row.brandId ? (logos.get(row.brandId) ?? null) : null,
       price: ctx.session
         ? resolveCardPrice(amounts.get(row.id) ?? null, formulaIds.has(row.id))
         : null,
-    }),
-  );
+      variants: availability?.variants ?? [],
+      onDemand: availability?.onDemand ?? false,
+      leadTimeDays: availability?.leadTimeDays ?? 0,
+    });
+  });
 }

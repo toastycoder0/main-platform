@@ -1,3 +1,5 @@
+import type { ProductCardProduct } from '@/shared/components/product-card.types';
+
 export type OpenFieldType = 'short_text' | 'long_text' | 'number' | 'select';
 
 export type PricingModel = 'flat' | 'formula';
@@ -161,11 +163,4 @@ export interface AddToCartPreviewDTO {
   lines: CartLinePreviewDTO[];
 }
 
-export interface RelatedProductDTO {
-  slug: string;
-  title: string;
-  imageUrl: string | null;
-  brand: ProductBrandDTO | null;
-  price: { amount: number; currency: string; label: 'fixed' | 'starts_at' | 'variable' } | null;
-  unit: string | null;
-}
+export type RelatedProductDTO = ProductCardProduct;

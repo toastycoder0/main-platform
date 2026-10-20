@@ -32,6 +32,8 @@ const ids = {
   inactiveComplement: '',
   unlistedRelated: '',
   related: '',
+  relatedVariantA: '',
+  relatedVariantB: '',
   deleted: '',
   hiddenStatus: '',
 };
@@ -148,6 +150,12 @@ beforeAll(async () => {
   ids.inactiveComplement = await seedProduct('inactive-complement', { status: 'inactive' });
   await seedItem(ids.inactiveComplement, 'only');
   ids.related = await seedProduct('related');
+  ids.relatedVariantA = await seedItem(ids.related, 'related-a', {
+    sortOrder: 1,
+    managesInventory: false,
+    leadTimeDays: 4,
+  });
+  ids.relatedVariantB = await seedItem(ids.related, 'related-b', { sortOrder: 2 });
   ids.unlistedRelated = await seedProduct('unlisted-related', { status: 'unlisted' });
   ids.deleted = await seedProduct('deleted', { deletedAt: new Date() });
   ids.hiddenStatus = await seedProduct('hidden', { status: 'warehouse_only' });
@@ -251,5 +259,7 @@ describe('getRelatedProducts', () => {
     expect(member.map((entry) => entry.slug)).toEqual([`${scope}-related`]);
     expect(guest[0]?.price).toBeNull();
     expect(member[0]?.price).toEqual({ amount: 9.5, currency: CURRENCY, label: 'fixed' });
+    expect(member[0]?.variants.map((variant) => variant.label)).toEqual(['related-a', 'related-b']);
+    expect(member[0]).toMatchObject({ onDemand: true, leadTimeDays: 4 });
   });
 });
