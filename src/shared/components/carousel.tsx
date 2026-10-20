@@ -25,6 +25,7 @@ type CarouselContextProps = {
   scrollNext: () => void;
   canScrollPrev: boolean;
   canScrollNext: boolean;
+  mounted: boolean;
 } & CarouselProps;
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
@@ -57,6 +58,13 @@ function Carousel({
   );
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
+  // Embla only knows the scroll state after mounting, so gate `disabled` until
+  // then to keep the SSR markup identical to the first client render.
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) {
@@ -118,6 +126,7 @@ function Carousel({
         scrollNext,
         canScrollPrev,
         canScrollNext,
+        mounted,
       }}
     >
       <section
@@ -168,7 +177,7 @@ function CarouselPrevious({
   size = 'icon-sm',
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { orientation, scrollPrev, canScrollPrev } = useCarousel();
+  const { orientation, scrollPrev, canScrollPrev, mounted } = useCarousel();
 
   return (
     <Button
@@ -182,7 +191,7 @@ function CarouselPrevious({
           : '-top-12 left-1/2 -translate-x-1/2 rotate-90',
         className,
       )}
-      disabled={!canScrollPrev}
+      disabled={mounted ? !canScrollPrev : undefined}
       onClick={scrollPrev}
       {...props}
     >
@@ -198,7 +207,7 @@ function CarouselNext({
   size = 'icon-sm',
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { orientation, scrollNext, canScrollNext } = useCarousel();
+  const { orientation, scrollNext, canScrollNext, mounted } = useCarousel();
 
   return (
     <Button
@@ -212,7 +221,7 @@ function CarouselNext({
           : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',
         className,
       )}
-      disabled={!canScrollNext}
+      disabled={mounted ? !canScrollNext : undefined}
       onClick={scrollNext}
       {...props}
     >
