@@ -11,6 +11,7 @@ import {
   tag,
   userProductPrice,
 } from '@/infrastructure/db/schema';
+import { PUBLIC_LISTING_STATUSES } from '@/modules/products/application/products.status';
 import type {
   PublicProductDTO,
   PublicProductFilters,
@@ -94,7 +95,7 @@ export async function getHomeProducts(
     .from(product)
     .leftJoin(brand, eq(product.brandId, brand.id))
     .leftJoin(productUnit, eq(product.unitId, productUnit.id))
-    .where(and(isNull(product.deletedAt), eq(product.status, 'active')))
+    .where(and(isNull(product.deletedAt), inArray(product.status, [...PUBLIC_LISTING_STATUSES])))
     .orderBy(...orderClause)
     .limit(HOME_PRODUCT_LIMIT);
 
@@ -224,7 +225,7 @@ export async function queryPublicProducts(
 
   const where = and(
     isNull(product.deletedAt),
-    eq(product.status, 'active'),
+    inArray(product.status, [...PUBLIC_LISTING_STATUSES]),
     ...buildCatalogConditions(ctx, filters),
     ...(userId ? buildPriceConditions(filters, effectivePrice) : []),
   );

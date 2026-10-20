@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isUnlisted,
   PRODUCT_STATUS_LABELS,
   PRODUCT_STATUSES,
   PUBLIC_DETAIL_STATUSES,
@@ -21,5 +22,10 @@ describe('product statuses', () => {
     expect(PUBLIC_DETAIL_STATUSES).toContain('active');
     expect(PUBLIC_DETAIL_STATUSES).not.toContain('inactive');
     expect(PUBLIC_DETAIL_STATUSES).not.toContain('warehouse_only');
+  });
+
+  it('detects the unlisted status', () => {
+    expect(isUnlisted('unlisted')).toBe(true);
+    expect(PRODUCT_STATUSES.filter((status) => isUnlisted(status))).toEqual(['unlisted']);
   });
 });

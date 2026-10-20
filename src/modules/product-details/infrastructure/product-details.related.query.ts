@@ -1,8 +1,8 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { brand, product, productLink, productUnit } from '@/infrastructure/db/schema';
+import { PUBLIC_LISTING_STATUSES } from '@/modules/products/application/products.status';
 import { type CardPrice, resolveCardPrice } from '../application/product-details.card-price';
-import { LISTED_STATUSES } from '../application/product-details.status';
 import type { RelatedProductDTO } from '../application/product-details.types';
 import { queryBrandLogoUrls, queryCoverImageUrls } from './product-details.files';
 import { queryFormulaProductIds, resolveBaseAmounts } from './product-details.prices';
@@ -54,7 +54,7 @@ export async function getRelatedProducts(
         eq(productLink.type, 'related'),
         eq(productLink.productId, productId),
         isNull(product.deletedAt),
-        inArray(product.status, [...LISTED_STATUSES]),
+        inArray(product.status, [...PUBLIC_LISTING_STATUSES]),
       ),
     )
     .orderBy(asc(productLink.sortOrder), asc(productLink.id))

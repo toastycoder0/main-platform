@@ -13,9 +13,9 @@ import {
   productItem,
   productUnit,
 } from '@/infrastructure/db/schema';
+import { isUnlisted, PUBLIC_DETAIL_STATUSES } from '@/modules/products/application/products.status';
 import { buildCategoryCrumbs, orderByPath } from '../application/product-details.crumbs';
 import { pickExchange } from '../application/product-details.exchange';
-import { DETAIL_STATUSES, isUnlisted } from '../application/product-details.status';
 import type {
   ExchangeDTO,
   ProductCrumbDTO,
@@ -36,7 +36,7 @@ const detailVisibility = (slug: string) =>
   and(
     eq(product.slug, slug),
     isNull(product.deletedAt),
-    inArray(product.status, [...DETAIL_STATUSES]),
+    inArray(product.status, [...PUBLIC_DETAIL_STATUSES]),
   );
 
 export async function getProductMetadata(

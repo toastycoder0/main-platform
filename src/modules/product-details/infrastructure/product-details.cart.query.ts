@@ -1,8 +1,8 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { product, productItem, productUnit } from '@/infrastructure/db/schema';
+import { PUBLIC_DETAIL_STATUSES } from '@/modules/products/application/products.status';
 import type { CartSource } from '../application/product-details.cart';
-import { DETAIL_STATUSES } from '../application/product-details.status';
 import { toCartVariant } from './product-details.mapper';
 import { resolveBaseAmounts } from './product-details.prices';
 
@@ -26,7 +26,7 @@ export async function findCartSources(
       and(
         inArray(product.slug, slugs),
         isNull(product.deletedAt),
-        inArray(product.status, [...DETAIL_STATUSES]),
+        inArray(product.status, [...PUBLIC_DETAIL_STATUSES]),
       ),
     );
 

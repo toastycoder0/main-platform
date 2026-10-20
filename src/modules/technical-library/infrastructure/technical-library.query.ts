@@ -13,6 +13,7 @@ import {
 } from '@/infrastructure/db/schema';
 import type { FileDTO } from '@/infrastructure/files/service';
 import { listFilesByOwners } from '@/infrastructure/files/service';
+import { PUBLIC_LISTING_STATUSES } from '@/modules/products/application/products.status';
 import type {
   LibraryFilterCounts,
   LibraryFilterOption,
@@ -58,7 +59,7 @@ function buildSearchCondition(q: string | null): SQL | undefined {
 function buildConditions(input: LibraryFilterInput): SQL | undefined {
   const conditions: SQL[] = [
     isNull(product.deletedAt),
-    eq(product.status, 'active'),
+    inArray(product.status, [...PUBLIC_LISTING_STATUSES]),
     eq(productDocument.isVisible, true),
   ];
 

@@ -9,7 +9,10 @@ export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
   unlisted: 'No listado',
 };
 
-/** Statuses reachable from public listings, search and category pages. */
+/**
+ * Statuses surfaced by public listings, search, category pages, the technical
+ * library and product recommendations.
+ */
 export const PUBLIC_LISTING_STATUSES = ['active'] as const satisfies readonly ProductStatus[];
 
 /**
@@ -20,3 +23,7 @@ export const PUBLIC_DETAIL_STATUSES = [
   'active',
   'unlisted',
 ] as const satisfies readonly ProductStatus[];
+
+export function isUnlisted(status: ProductStatus): boolean {
+  return status === 'unlisted';
+}

@@ -1,8 +1,11 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { product, productItem, productLink, productUnit } from '@/infrastructure/db/schema';
+import {
+  PUBLIC_DETAIL_STATUSES,
+  PUBLIC_LISTING_STATUSES,
+} from '@/modules/products/application/products.status';
 import { resolveVisibleComplements } from '../application/product-details.complements';
-import { DETAIL_STATUSES, LISTED_STATUSES } from '../application/product-details.status';
 import type { ComplementDTO, ComplementLink } from '../application/product-details.types';
 import { queryCoverImageUrls } from './product-details.files';
 import { toComplementVariant } from './product-details.mapper';
@@ -25,7 +28,7 @@ export function getComplementLinks(
         eq(productLink.type, 'complement'),
         eq(productLink.productId, productId),
         isNull(product.deletedAt),
-        inArray(product.status, [...DETAIL_STATUSES]),
+        inArray(product.status, [...PUBLIC_DETAIL_STATUSES]),
       ),
     )
     .orderBy(asc(productLink.sortOrder), asc(productLink.id));
@@ -95,7 +98,7 @@ export async function getComplements(
         unit: row.unit,
         currency: row.currency,
         baseAmount: amounts.get(row.id) ?? null,
-        canOpen: LISTED_STATUSES.some((status) => status === row.status),
+        canOpen: PUBLIC_LISTING_STATUSES.some((status) => status === row.status),
         lockedVariantId,
         variants,
       },
