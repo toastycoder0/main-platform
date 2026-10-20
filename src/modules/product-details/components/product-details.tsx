@@ -67,6 +67,7 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-10'>
         <div className='lg:sticky lg:top-6 lg:self-start'>
           <ProductGallery
+            key={product.slug}
             images={product.images}
             selectedVariantId={view?.variant.id ?? null}
             title={product.title}

@@ -1,7 +1,7 @@
 'use client';
 
 import { ZoomInIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Carousel,
   type CarouselApi,
@@ -87,11 +87,25 @@ export function ProductGallery({ images, selectedVariantId, title }: ProductGall
     };
   }, [api]);
 
-  // Shows the picture the admin assigned to the chosen variant.
+  // Shows the picture the admin assigned to the chosen variant. The server
+  // pre-selects a default variant, so the first sync is skipped to avoid
+  // jumping away from the first image on page load.
+  const lastSyncedVariant = useRef(selectedVariantId);
+
   useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    if (lastSyncedVariant.current === selectedVariantId) {
+      return;
+    }
+
+    lastSyncedVariant.current = selectedVariantId;
+
     const target = images.findIndex((image) => image.variantId === selectedVariantId);
 
-    if (api && target >= 0) {
+    if (target >= 0) {
       api.scrollTo(target);
     }
   }, [api, images, selectedVariantId]);
