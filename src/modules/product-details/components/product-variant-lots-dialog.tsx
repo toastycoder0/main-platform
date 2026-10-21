@@ -48,7 +48,7 @@ export function ProductVariantLotsDialog({
           Ver lotes
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className='z-60' overlayClassName='z-60'>
         <DialogHeader>
           <DialogTitle>Lotes de {variantTitle}</DialogTitle>
           <DialogDescription>Solo se muestran lotes activos con stock.</DialogDescription>
@@ -61,6 +61,7 @@ export function ProductVariantLotsDialog({
             <TableHeader>
               <TableRow>
                 <TableHead>Lote</TableHead>
+                <TableHead>Unidad</TableHead>
                 <TableHead className='text-right'>Stock</TableHead>
               </TableRow>
             </TableHeader>
@@ -68,10 +69,8 @@ export function ProductVariantLotsDialog({
               {lots.map((lot) => (
                 <TableRow key={lot.id}>
                   <TableCell className='font-mono text-xs'>{lot.code}</TableCell>
-                  <TableCell className='text-right'>
-                    {formatQuantity(lot.quantity)}
-                    {unit ? ` ${unit}` : ''}
-                  </TableCell>
+                  <TableCell>{unit ?? '—'}</TableCell>
+                  <TableCell className='text-right'>{formatQuantity(lot.quantity)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
