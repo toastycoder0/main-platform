@@ -44,7 +44,7 @@ export function DestructiveConfirm({
       <AlertDialogTrigger asChild>
         <Button type='button' variant={variant} size={size} className={className} disabled={busy}>
           <Icon />
-          {label}
+          <span className='hidden md:inline-block md:ml-2'>{label}</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
