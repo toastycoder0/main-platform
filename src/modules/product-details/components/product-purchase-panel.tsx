@@ -7,12 +7,15 @@ import { showCartToast } from '@/modules/cart/components/cart-toast';
 import { addToCart } from '@/modules/cart/infrastructure/cart.action';
 import { submitAction } from '@/shared/actions/submit-action';
 import {
+  adjustQuantity,
   buildSelectionSchema,
   isVariantOutOfStock,
   pruneEmptyFields,
+  type QuantityBounds,
   type SelectionSchema,
 } from '@/shared/pricing/selection';
 import { cn } from '@/shared/utils/cn';
+import { notifyQuantityAdjustment } from '@/shared/utils/quantity-correction-toast';
 import type { VariantDTO } from '../application/product-details.types';
 import type { ProductView } from '../application/product-details.view';
 import { ProductOpenFieldsSection, ProductQuantitySection } from './product-purchase-sections';
@@ -69,6 +72,23 @@ function ProductPurchaseForm({
 
   const watchedFields = useWatch({ control: form.control, name: 'fields' });
   const watchedQuantity = useWatch({ control: form.control, name: 'quantity' });
+
+  const quantityBounds: QuantityBounds = {
+    minOrderQty: variant.minOrderQty,
+    incrementQty: variant.incrementQty,
+    maxQuantity: variant.managesInventory ? (variant.availableStock ?? 0) : null,
+  };
+
+  function commitQuantity(raw: number) {
+    const adjustment = adjustQuantity(raw, quantityBounds, view.quantity);
+
+    if (!adjustment.correction) {
+      return;
+    }
+
+    form.setValue('quantity', adjustment.quantity, { shouldValidate: true });
+    notifyQuantityAdjustment(adjustment, quantityBounds);
+  }
 
   // The form owns the inputs; the selection mirrors only what the price can use.
   useEffect(() => {
@@ -131,6 +151,7 @@ function ProductPurchaseForm({
           variant={variant}
           disabled={isAdding}
           isAdding={isAdding}
+          onCommit={commitQuantity}
           onAdd={add}
         />
       ) : null}

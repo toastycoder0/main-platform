@@ -53,9 +53,11 @@ export function ProductQuantitySection({
   variant,
   disabled,
   isAdding,
+  onCommit,
   onAdd,
 }: SectionProps & {
   isAdding: boolean;
+  onCommit: (value: number) => void;
   onAdd: () => void;
 }) {
   const hasRules = variant.minOrderQty > 1 || variant.incrementQty > 1;
@@ -78,6 +80,7 @@ export function ProductQuantitySection({
             hint={hasRules ? describeQuantityRules(variant) : undefined}
             disabled={disabled || outOfStock}
             onChange={control.onChange}
+            onCommit={onCommit}
           />
         )}
       />

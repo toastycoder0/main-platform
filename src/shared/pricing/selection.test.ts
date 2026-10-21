@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adjustQuantity,
   buildSelectionSchema,
   collectSelectionIssues,
   isValidQuantity,
@@ -62,6 +63,52 @@ describe('quantity rules', () => {
     expect(collectSelectionIssues({ ...stocked, availableStock: 0 }, 5, {})).toContainEqual({
       path: ['quantity'],
       message: STOCK_ERRORS.outOfStock,
+    });
+  });
+});
+
+describe('adjustQuantity', () => {
+  const bounds = (overrides: Partial<{ maxQuantity: number | null }> = {}) => ({
+    minOrderQty: 5,
+    incrementQty: 5,
+    maxQuantity: null,
+    ...overrides,
+  });
+
+  it('snaps to the nearest valid step', () => {
+    expect(adjustQuantity(7, bounds())).toEqual({ quantity: 5, correction: 'step' });
+    expect(adjustQuantity(8, bounds())).toEqual({ quantity: 10, correction: 'step' });
+    expect(adjustQuantity(5, bounds())).toEqual({ quantity: 5, correction: null });
+    expect(adjustQuantity(15, bounds())).toEqual({ quantity: 15, correction: null });
+  });
+
+  it('raises values below the minimum', () => {
+    expect(adjustQuantity(1, bounds())).toEqual({ quantity: 5, correction: 'minimum' });
+    expect(adjustQuantity(0, bounds())).toEqual({ quantity: 5, correction: 'minimum' });
+  });
+
+  it('clamps to the last valid step within stock', () => {
+    const stocked = { minOrderQty: 20, incrementQty: 20, maxQuantity: 50 };
+
+    expect(adjustQuantity(45, stocked)).toEqual({ quantity: 40, correction: 'stock' });
+    expect(adjustQuantity(30, stocked)).toEqual({ quantity: 40, correction: 'step' });
+    expect(adjustQuantity(40, stocked)).toEqual({ quantity: 40, correction: null });
+  });
+
+  it('restores the fallback when the input is not a number', () => {
+    expect(adjustQuantity(Number.NaN, bounds(), 15)).toEqual({
+      quantity: 15,
+      correction: 'invalid',
+    });
+    expect(adjustQuantity(Number.NaN, bounds())).toEqual({ quantity: 5, correction: 'invalid' });
+  });
+
+  it('falls back to the capped maximum without inventory', () => {
+    const unbounded = { minOrderQty: 1, incrementQty: 1, maxQuantity: null };
+
+    expect(adjustQuantity(MAX_QUANTITY + 1, unbounded)).toEqual({
+      quantity: MAX_QUANTITY,
+      correction: 'maximum',
     });
   });
 });

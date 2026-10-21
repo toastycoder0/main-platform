@@ -83,6 +83,12 @@ export function QuantityStepper({
           )}
           onChange={(event) => onChange(event.target.valueAsNumber)}
           onBlur={(event) => onCommit?.(event.target.valueAsNumber)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
         />
         <Button
           type='button'

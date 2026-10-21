@@ -58,6 +58,75 @@ export function describeQuantityRules({ minOrderQty, incrementQty }: QuantityRul
     : `Mínimo ${minOrderQty}`;
 }
 
+export type QuantityCorrection = 'minimum' | 'step' | 'stock' | 'maximum' | 'invalid';
+
+export interface QuantityBounds extends QuantityRules {
+  /** Sellable stock, or null when the variant does not manage inventory. */
+  maxQuantity: number | null;
+}
+
+export interface QuantityAdjustment {
+  quantity: number;
+  correction: QuantityCorrection | null;
+}
+
+function lowerCorrection(raw: number, min: number): QuantityAdjustment | null {
+  if (raw > min) {
+    return null;
+  }
+
+  return { quantity: min, correction: raw === min ? null : 'minimum' };
+}
+
+function upperCorrection(
+  raw: number,
+  lastValid: number,
+  maxQuantity: number | null,
+): QuantityAdjustment | null {
+  if (raw < lastValid) {
+    return null;
+  }
+
+  if (raw === lastValid) {
+    return { quantity: lastValid, correction: null };
+  }
+
+  return { quantity: lastValid, correction: maxQuantity === null ? 'maximum' : 'stock' };
+}
+
+/**
+ * Snaps a typed quantity to the nearest valid one, honoring the stock cap.
+ * Ties round up. Used on commit so users can type freely while the price stays
+ * on the last valid selection.
+ */
+export function adjustQuantity(
+  raw: number,
+  bounds: QuantityBounds,
+  fallback = bounds.minOrderQty,
+): QuantityAdjustment {
+  const { minOrderQty: min, incrementQty: increment, maxQuantity } = bounds;
+  const limit = Math.min(maxQuantity ?? MAX_QUANTITY, MAX_QUANTITY);
+  const lastValid = min + Math.floor(Math.max(0, limit - min) / increment) * increment;
+
+  if (!Number.isFinite(raw)) {
+    return { quantity: fallback, correction: 'invalid' };
+  }
+
+  const lower = lowerCorrection(raw, min);
+  if (lower) {
+    return lower;
+  }
+
+  const upper = upperCorrection(raw, lastValid, maxQuantity);
+  if (upper) {
+    return upper;
+  }
+
+  const quantity = min + Math.round((raw - min) / increment) * increment;
+
+  return { quantity, correction: quantity === raw ? null : 'step' };
+}
+
 /** Rounds up to the next valid step so URL-provided quantities never break the variant rules. */
 export function snapQuantity(raw: number | null, rules: QuantityRules): number {
   const { minOrderQty, incrementQty } = rules;
