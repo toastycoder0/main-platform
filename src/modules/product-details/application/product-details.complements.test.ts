@@ -3,13 +3,16 @@ import {
   buildComboLines,
   buildComplementDefaults,
   buildComplementsSchema,
+  buildMainComboState,
   complementLineAmount,
   computeComboTotals,
   pickComplementVariant,
+  resolveProductComplements,
   resolveVisibleComplements,
   sumByCurrency,
 } from './product-details.complements';
-import type { ComplementDTO, ComplementLink } from './product-details.types';
+import type { ComplementDTO, ComplementLink, VariantDTO } from './product-details.types';
+import type { ProductView } from './product-details.view';
 
 function complement(overrides: Partial<ComplementDTO> = {}): ComplementDTO {
   return {
@@ -78,6 +81,28 @@ describe('resolveVisibleComplements', () => {
     expect(resolveVisibleComplements(links, 'v2')).toEqual([
       { linkedProductId: 'a', lockedVariantId: null },
     ]);
+  });
+});
+
+describe('resolveProductComplements', () => {
+  const general = complement();
+  const scoped = complement({ productId: 'prd_2', slug: 'otro' });
+  const complements = [general, scoped];
+
+  it('resolves visible links and applies the lock of the selected variant', () => {
+    const links = [link('prd_1', null), link('prd_2', 'v1', 'v2')];
+
+    expect(resolveProductComplements(links, complements, 'v1')).toEqual([
+      general,
+      { ...scoped, lockedVariantId: 'v2' },
+    ]);
+    expect(resolveProductComplements(links, complements, 'v2')).toEqual([general]);
+  });
+
+  it('drops links without data and links locked to a missing variant', () => {
+    const links = [link('prd_missing', null), link('prd_1', null, 'nope')];
+
+    expect(resolveProductComplements(links, complements, 'v1')).toEqual([]);
   });
 });
 
@@ -195,6 +220,45 @@ describe('combo helpers', () => {
   const first = { checked: true, variantId: 'v1', quantity: 2, fields: {} };
   const second = { checked: true, variantId: 'v2', quantity: 1, fields: { nota: ' hola ' } };
   const items = [first, second];
+
+  const viewVariant: VariantDTO = {
+    id: 'vm',
+    title: 'Estándar',
+    code: 'STD',
+    managesInventory: false,
+    availableStock: null,
+    lots: [],
+    minOrderQty: 1,
+    incrementQty: 1,
+    leadTimeDays: 0,
+    pricingModel: 'flat',
+    openFields: [],
+    imageUrl: null,
+  };
+
+  function mainView(outcome: ProductView['outcome']): ProductView {
+    return { variant: viewVariant, quantity: 2, fields: { nota: 'hola' }, outcome };
+  }
+
+  it('derives the main combo total and line from the live selection', () => {
+    const priced = buildMainComboState(
+      'principal',
+      mainView({ kind: 'priced', unitAmount: 10, totalAmount: 20, isFormula: false }),
+      true,
+    );
+
+    expect(priced).toEqual({
+      totalAmount: 20,
+      line: { productSlug: 'principal', variantId: 'vm', quantity: 2, fields: { nota: 'hola' } },
+    });
+    expect(buildMainComboState('principal', mainView({ kind: 'quote' }), true).totalAmount).toBe(
+      null,
+    );
+    expect(
+      buildMainComboState('principal', mainView({ kind: 'incomplete', startsAt: 10 }), true).line,
+    ).toBeNull();
+    expect(buildMainComboState('principal', mainView({ kind: 'hidden' }), false).line).toBeNull();
+  });
 
   it('totals priced lines per currency and flags quote-only lines', () => {
     expect(computeComboTotals({ currency: 'MXN', totalAmount: 200 }, complements, items)).toEqual({

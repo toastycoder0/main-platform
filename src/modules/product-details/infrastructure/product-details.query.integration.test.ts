@@ -17,7 +17,8 @@ import {
   warehouseCell,
   warehouseNode,
 } from '@/infrastructure/db/schema';
-import { getComplements } from './product-details.complements.query';
+import { resolveProductComplements } from '../application/product-details.complements';
+import { getProductComplements } from './product-details.complements.query';
 import { getProductDetail, getProductMetadata } from './product-details.query';
 import { getRelatedProducts } from './product-details.related.query';
 
@@ -301,14 +302,12 @@ describe('getProductDetail', () => {
     expect(await getProductDetail(ctx, `${scope}-missing`)).toBeNull();
   });
 
-  it('exposes only active variants and never the formula or cost to the DTO', async () => {
+  it('keeps the formula and cost out of the product DTO and exposes them only as pricing inputs', async () => {
     const data = await getProductDetail(testContext(true), `${scope}-main`);
 
     expect(data?.product.variants.map((variant) => variant.id)).toEqual([ids.flat, ids.formula]);
     expect(JSON.stringify(data?.product)).not.toContain('base_price');
-    expect(data?.pricing.formulaByVariant.get(ids.formula)).toBe(
-      'option.ancho * base_price + cost',
-    );
+    expect(data?.pricing.formulaByVariant[ids.formula]).toBe('option.ancho * base_price + cost');
     expect(data?.pricing.cost).toBe(40);
   });
 
@@ -331,7 +330,7 @@ describe('getProductDetail', () => {
     const guest = await getProductDetail(testContext(false), `${scope}-main`);
     const member = await getProductDetail(testContext(true), `${scope}-main`);
 
-    expect(guest?.pricing.baseAmount).toBeNull();
+    expect(guest?.pricing).toEqual({ baseAmount: null, cost: null, formulaByVariant: {} });
     expect(member?.pricing.baseAmount).toBe(100);
   });
 
@@ -344,20 +343,23 @@ describe('getProductDetail', () => {
   });
 });
 
-describe('getComplements', () => {
+describe('getProductComplements', () => {
   it('offers general complements and hides inactive products', async () => {
-    const complements = await getComplements(testContext(true), ids.main, ids.flat);
+    const { links, complements } = await getProductComplements(testContext(true), ids.main);
 
-    expect(complements.map((entry) => entry.slug)).toEqual([`${scope}-general`]);
+    expect(
+      resolveProductComplements(links, complements, ids.flat).map((entry) => entry.slug),
+    ).toEqual([`${scope}-general`]);
   });
 
   it('adds scoped complements for the matching variant, locked and not openable when unlisted', async () => {
-    const complements = await getComplements(testContext(true), ids.main, ids.formula);
-    const scoped = complements.find((entry) => entry.slug === `${scope}-scoped`);
+    const { links, complements } = await getProductComplements(testContext(true), ids.main);
+    const visible = resolveProductComplements(links, complements, ids.formula);
+    const scoped = visible.find((entry) => entry.slug === `${scope}-scoped`);
 
-    expect(complements).toHaveLength(2);
+    expect(visible).toHaveLength(2);
     expect(scoped).toMatchObject({ canOpen: false, lockedVariantId: ids.scopedItem });
-    expect(complements.find((entry) => entry.slug === `${scope}-general`)?.canOpen).toBe(true);
+    expect(visible.find((entry) => entry.slug === `${scope}-general`)?.canOpen).toBe(true);
   });
 });
 

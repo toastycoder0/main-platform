@@ -20,14 +20,7 @@ interface SectionProps {
   disabled: boolean;
 }
 
-export function ProductOpenFieldsSection({
-  form,
-  variant,
-  disabled,
-  isCalculating,
-}: SectionProps & { isCalculating: boolean }) {
-  const canCalculate = variant.pricingModel === 'formula';
-
+export function ProductOpenFieldsSection({ form, variant, disabled }: SectionProps) {
   return (
     <fieldset className='flex flex-col gap-3 border-t border-neutral-100 pt-4'>
       <legend className='mb-1 text-sm font-medium text-neutral-700'>Personaliza tu pedido</legend>
@@ -51,12 +44,6 @@ export function ProductOpenFieldsSection({
           />
         ))}
       </FieldGroup>
-      {canCalculate ? (
-        <Button type='submit' variant='outline' disabled={disabled} className='w-fit'>
-          {isCalculating ? <Spinner /> : null}
-          Calcular precio
-        </Button>
-      ) : null}
     </fieldset>
   );
 }
@@ -66,11 +53,9 @@ export function ProductQuantitySection({
   variant,
   disabled,
   isAdding,
-  onCommit,
   onAdd,
 }: SectionProps & {
   isAdding: boolean;
-  onCommit: (value: number) => void;
   onAdd: () => void;
 }) {
   const hasRules = variant.minOrderQty > 1 || variant.incrementQty > 1;
@@ -93,7 +78,6 @@ export function ProductQuantitySection({
             hint={hasRules ? describeQuantityRules(variant) : undefined}
             disabled={disabled || outOfStock}
             onChange={control.onChange}
-            onCommit={onCommit}
           />
         )}
       />

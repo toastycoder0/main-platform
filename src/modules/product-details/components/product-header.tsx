@@ -1,15 +1,20 @@
+'use client';
+
 import { PackageSearchIcon } from 'lucide-react';
 import { Badge } from '@/shared/components/badge';
 import type { ProductBrandDTO } from '../application/product-details.types';
+import { useProductSelection } from './product-selection-context';
 
 interface ProductHeaderProps {
   title: string;
   subtitle: string | null;
   brand: ProductBrandDTO | null;
-  onDemand: boolean;
 }
 
-export function ProductHeader({ title, subtitle, brand, onDemand }: ProductHeaderProps) {
+export function ProductHeader({ title, subtitle, brand }: ProductHeaderProps) {
+  const { view } = useProductSelection();
+  const onDemand = view ? !view.variant.managesInventory : false;
+
   return (
     <header className='flex flex-col gap-1'>
       {brand ? (

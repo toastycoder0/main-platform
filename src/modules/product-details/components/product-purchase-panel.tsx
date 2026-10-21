@@ -1,41 +1,30 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ReactNode, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { type ReactNode, useEffect, useTransition } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { submitAction } from '@/shared/actions/submit-action';
 import { cn } from '@/shared/utils/cn';
 import {
   buildSelectionSchema,
-  describeQuantityRules,
-  isValidQuantity,
   isVariantOutOfStock,
   pruneEmptyFields,
   type SelectionSchema,
-  STOCK_ERRORS,
 } from '../application/product-details.selection';
-import type { OpenFieldValues, VariantDTO } from '../application/product-details.types';
+import type { VariantDTO } from '../application/product-details.types';
+import type { ProductView } from '../application/product-details.view';
 import { addToCart } from '../infrastructure/product-details.action';
 import { showCartToast } from './product-cart-toast';
 import { ProductOpenFieldsSection, ProductQuantitySection } from './product-purchase-sections';
+import { useProductSelection } from './product-selection-context';
+import { ProductUnavailable } from './product-unavailable';
 import { ProductVariantLotsDialog } from './product-variant-lots-dialog';
 import { ProductVariantSelector } from './product-variant-selector';
-import { useProductDetailParams } from './use-product-details-params';
 
 interface ProductPurchasePanelProps {
-  productSlug: string;
   unit: string | null;
-  variants: VariantDTO[];
-  variant: VariantDTO;
-  quantity: number;
-  fields: OpenFieldValues;
-  canBuy: boolean;
+  /** Price block rendered by the page; it reads the live selection from the context. */
   priceSlot: ReactNode;
-}
-
-function toUrlFields(values: OpenFieldValues): OpenFieldValues | null {
-  const pruned = pruneEmptyFields(values);
-  return Object.keys(pruned).length > 0 ? pruned : null;
 }
 
 function VariantAvailability({ variant, unit }: { variant: VariantDTO; unit: string | null }) {
@@ -57,57 +46,40 @@ function VariantAvailability({ variant, unit }: { variant: VariantDTO; unit: str
   );
 }
 
-export function ProductPurchasePanel({
-  productSlug,
+function ProductPurchaseForm({
+  view,
   unit,
-  variants,
-  variant,
-  quantity,
-  fields,
-  canBuy,
   priceSlot,
-}: ProductPurchasePanelProps) {
-  const { setParams, isPending } = useProductDetailParams();
+}: ProductPurchasePanelProps & { view: ProductView }) {
+  const { variants, productSlug, canBuy, setQuantity, setFields, selectVariant } =
+    useProductSelection();
+  const { variant } = view;
   const [isAdding, startAdding] = useTransition();
-  const busy = isPending || isAdding;
 
   const form = useForm<SelectionSchema>({
     resolver: zodResolver(buildSelectionSchema(variant)),
+    mode: 'onChange',
     defaultValues: {
-      quantity,
+      quantity: view.quantity,
       fields: Object.fromEntries(
-        variant.openFields.map((field) => [field.key, fields[field.key] ?? '']),
+        variant.openFields.map((field) => [field.key, view.fields[field.key] ?? '']),
       ),
     },
   });
 
-  // Default values are omitted so shared links stay short and canonical.
-  function commit(nextQuantity: number, nextFields: OpenFieldValues) {
-    setParams({
-      qty: nextQuantity === variant.minOrderQty ? null : nextQuantity,
-      fields: toUrlFields(nextFields),
-    });
-  }
+  const watchedFields = useWatch({ control: form.control, name: 'fields' });
+  const watchedQuantity = useWatch({ control: form.control, name: 'quantity' });
 
-  function commitQuantity(next: number) {
-    const exceedsStock =
-      variant.managesInventory && variant.availableStock !== null && next > variant.availableStock;
+  // The form owns the inputs; the selection mirrors only what the price can use.
+  useEffect(() => {
+    setFields(watchedFields ?? {});
+  }, [watchedFields, setFields]);
 
-    if (!isValidQuantity(next, variant) || exceedsStock) {
-      form.setError('quantity', {
-        message: exceedsStock ? STOCK_ERRORS.insufficient : describeQuantityRules(variant),
-      });
-      return;
+  useEffect(() => {
+    if (Number.isFinite(watchedQuantity)) {
+      setQuantity(watchedQuantity);
     }
-
-    form.clearErrors('quantity');
-
-    if (next !== quantity) {
-      commit(next, form.getValues('fields'));
-    }
-  }
-
-  const calculate = form.handleSubmit((values) => commit(values.quantity, values.fields));
+  }, [watchedQuantity, setQuantity]);
 
   const add = form.handleSubmit((values) => {
     startAdding(async () => {
@@ -128,8 +100,14 @@ export function ProductPurchasePanel({
   });
 
   return (
-    <form noValidate onSubmit={calculate} aria-busy={busy} className='flex flex-col gap-5'>
-      <div className={cn('transition-opacity', isPending && 'opacity-60')}>{priceSlot}</div>
+    <form
+      noValidate
+      // Enter must not reload the page: the price is already live and adding is explicit.
+      onSubmit={(event) => event.preventDefault()}
+      aria-busy={isAdding}
+      className='flex flex-col gap-5'
+    >
+      {priceSlot}
 
       <VariantAvailability variant={variant} unit={unit} />
 
@@ -138,36 +116,35 @@ export function ProductPurchasePanel({
           label='Variante'
           variants={variants}
           selectedId={variant.id}
-          disabled={busy}
-          onSelect={(variantId) =>
-            setParams({
-              variant: variantId === variants[0]?.id ? null : variantId,
-              qty: null,
-              fields: null,
-            })
-          }
+          disabled={isAdding}
+          onSelect={selectVariant}
         />
       ) : null}
 
       {canBuy && variant.openFields.length > 0 ? (
-        <ProductOpenFieldsSection
-          form={form}
-          variant={variant}
-          disabled={busy}
-          isCalculating={isPending}
-        />
+        <ProductOpenFieldsSection form={form} variant={variant} disabled={isAdding} />
       ) : null}
 
       {canBuy ? (
         <ProductQuantitySection
           form={form}
           variant={variant}
-          disabled={busy}
+          disabled={isAdding}
           isAdding={isAdding}
-          onCommit={commitQuantity}
           onAdd={add}
         />
       ) : null}
     </form>
   );
+}
+
+export function ProductPurchasePanel(props: ProductPurchasePanelProps) {
+  const { view } = useProductSelection();
+
+  if (!view) {
+    return <ProductUnavailable />;
+  }
+
+  // Remounting per variant rebuilds the form defaults from its rules and open fields.
+  return <ProductPurchaseForm key={view.variant.id} view={view} {...props} />;
 }

@@ -1,9 +1,9 @@
-import { calculatePrice } from './product-details.pricing';
+import { calculatePrice, type PriceInput } from './product-details.pricing';
 import { pickVariant, sanitizeFieldValues, snapQuantity } from './product-details.selection';
 import type {
   OpenFieldValues,
   PriceOutcome,
-  ProductDetailData,
+  ProductPricingDTO,
   VariantDTO,
 } from './product-details.types';
 
@@ -13,6 +13,11 @@ export interface ProductSelection {
   fields: OpenFieldValues | null;
 }
 
+export interface ProductViewSource {
+  variants: VariantDTO[];
+  pricing: ProductPricingDTO;
+}
+
 export interface ProductView {
   variant: VariantDTO;
   quantity: number;
@@ -20,16 +25,26 @@ export interface ProductView {
   outcome: PriceOutcome;
 }
 
+/** Preview only: the server reprices every line from trusted data. */
+function safePrice(input: PriceInput): PriceOutcome {
+  try {
+    return calculatePrice(input);
+  } catch {
+    // An unexpected evaluator failure must not break the page; treat it as unpriced.
+    return { kind: 'quote' };
+  }
+}
+
 /**
- * Turns untrusted URL state into a consistent selection and derives its price.
- * Server-only: it evaluates formulas, so it must not be imported by client code.
+ * Turns untrusted selection state into a consistent selection and derives its
+ * price. It runs on both server and client, so it only depends on serializable data.
  */
 export function buildProductView(
-  { product, pricing }: ProductDetailData,
+  { variants, pricing }: ProductViewSource,
   selection: ProductSelection,
   hasSession: boolean,
 ): ProductView | null {
-  const variant = pickVariant(product.variants, selection.variantId);
+  const variant = pickVariant(variants, selection.variantId);
 
   if (!variant) {
     return null;
@@ -42,12 +57,12 @@ export function buildProductView(
     variant,
     quantity,
     fields,
-    outcome: calculatePrice({
+    outcome: safePrice({
       hasSession,
       baseAmount: pricing.baseAmount,
       cost: pricing.cost,
       variant,
-      formula: pricing.formulaByVariant.get(variant.id) ?? null,
+      formula: pricing.formulaByVariant[variant.id] ?? null,
       quantity,
       values: fields,
     }),

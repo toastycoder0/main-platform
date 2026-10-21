@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ProductDetailData, VariantDTO } from './product-details.types';
-import { buildProductView } from './product-details.view';
+import type { VariantDTO } from './product-details.types';
+import { buildProductView, type ProductViewSource } from './product-details.view';
 
 function variant(overrides: Partial<VariantDTO> = {}): VariantDTO {
   return {
@@ -20,27 +20,10 @@ function variant(overrides: Partial<VariantDTO> = {}): VariantDTO {
   };
 }
 
-function data(variants: VariantDTO[], baseAmount: number | null = 50): ProductDetailData {
+function source(variants: VariantDTO[], baseAmount: number | null = 50): ProductViewSource {
   return {
-    product: {
-      id: 'prd_1',
-      slug: 'producto',
-      title: 'Producto',
-      subtitle: null,
-      description: null,
-      isUnlisted: false,
-      brand: null,
-      unit: 'pza',
-      currency: 'MXN',
-      tax: null,
-      variants,
-      images: [],
-      specs: [],
-      documents: [],
-      crumbs: [],
-      exchange: null,
-    },
-    pricing: { baseAmount, cost: null, formulaByVariant: new Map([['v2', 'base_price * 2']]) },
+    variants,
+    pricing: { baseAmount, cost: null, formulaByVariant: { v2: 'base_price * 2' } },
   };
 }
 
@@ -48,11 +31,11 @@ const none = { variantId: null, quantity: null, fields: null };
 
 describe('buildProductView', () => {
   it('returns null when the product has no purchasable variant', () => {
-    expect(buildProductView(data([]), none, true)).toBeNull();
+    expect(buildProductView(source([]), none, true)).toBeNull();
   });
 
   it('falls back to the first variant and its minimum quantity', () => {
-    const view = buildProductView(data([variant()]), { ...none, variantId: 'zzz' }, true);
+    const view = buildProductView(source([variant()]), { ...none, variantId: 'zzz' }, true);
 
     expect(view).toMatchObject({
       quantity: 2,
@@ -63,7 +46,7 @@ describe('buildProductView', () => {
 
   it('snaps quantities and drops unknown fields coming from the URL', () => {
     const view = buildProductView(
-      data([variant()]),
+      source([variant()]),
       { variantId: 'v1', quantity: 3, fields: { fantasma: 'x' } },
       true,
     );
@@ -73,7 +56,7 @@ describe('buildProductView', () => {
 
   it('uses the formula registered for the selected variant', () => {
     const view = buildProductView(
-      data([
+      source([
         variant(),
         variant({ id: 'v2', pricingModel: 'formula', minOrderQty: 1, incrementQty: 1 }),
       ]),
@@ -85,6 +68,6 @@ describe('buildProductView', () => {
   });
 
   it('hides the price for guests', () => {
-    expect(buildProductView(data([variant()]), none, false)?.outcome).toEqual({ kind: 'hidden' });
+    expect(buildProductView(source([variant()]), none, false)?.outcome).toEqual({ kind: 'hidden' });
   });
 });

@@ -13,6 +13,7 @@ import {
 import { cn } from '@/shared/utils/cn';
 import type { ProductImageDTO } from '../application/product-details.types';
 import { type GallerySlide, ProductGalleryLightbox } from './product-gallery-lightbox';
+import { useProductSelection } from './product-selection-context';
 
 const PLACEHOLDER_SLIDES: GallerySlide[] = [
   { id: 'placeholder', url: '/assets/placeholder.svg', altText: null },
@@ -30,7 +31,6 @@ interface HoverZoom {
 
 interface ProductGalleryProps {
   images: ProductImageDTO[];
-  selectedVariantId: string | null;
   title: string;
 }
 
@@ -80,7 +80,9 @@ function Thumbnails({
   );
 }
 
-export function ProductGallery({ images, selectedVariantId, title }: ProductGalleryProps) {
+export function ProductGallery({ images, title }: ProductGalleryProps) {
+  const { view } = useProductSelection();
+  const selectedVariantId = view?.variant.id ?? null;
   const [api, setApi] = useState<CarouselApi>();
   const [index, setIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -115,9 +117,9 @@ export function ProductGallery({ images, selectedVariantId, title }: ProductGall
     };
   }, [api]);
 
-  // Shows the picture the admin assigned to the chosen variant. The server
-  // pre-selects a default variant, so the first sync is skipped to avoid
-  // jumping away from the first image on page load.
+  // Shows the picture the admin assigned to the chosen variant. The provider
+  // resolves a default variant, so the first sync is skipped to avoid jumping
+  // away from the first image on page load.
   const lastSyncedVariant = useRef(selectedVariantId);
 
   useEffect(() => {

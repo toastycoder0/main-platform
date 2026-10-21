@@ -70,8 +70,8 @@ function calculateFormulaPrice(input: PriceInput, formula: string): PriceOutcome
 }
 
 /**
- * Server-only: the formula and the product cost must never reach the client, so
- * only the resulting outcome is ever serialized.
+ * Runs wherever the selection lives: the client uses it for the live preview,
+ * the server for the authoritative price stored on each cart line.
  */
 export function calculatePrice(input: PriceInput): PriceOutcome {
   if (!input.hasSession) {

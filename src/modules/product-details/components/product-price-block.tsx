@@ -11,12 +11,11 @@ import type {
   PriceOutcome,
   ProductTaxDTO,
 } from '../application/product-details.types';
+import { useProductSelection } from './product-selection-context';
 
 const PANEL = 'rounded-lg border border-neutral-200 p-4';
 
 interface ProductPriceBlockProps {
-  outcome: PriceOutcome;
-  quantity: number;
   currency: string;
   unit: string | null;
   tax: ProductTaxDTO | null;
@@ -92,7 +91,7 @@ function PricedBlock({
   unit,
   tax,
   exchange,
-}: ProductPriceBlockProps & { outcome: PricedOutcome }) {
+}: ProductPriceBlockProps & { outcome: PricedOutcome; quantity: number }) {
   const [showQuote, setShowQuote] = useState(false);
   const active = showQuote && exchange ? exchange.quoteCurrency : currency;
   const factor = showQuote && exchange ? exchange.rate : 1;
@@ -171,9 +170,7 @@ function IncompletePrompt({
 }) {
   return (
     <div className={`${PANEL} flex flex-col gap-1 bg-neutral-50`} aria-live='polite'>
-      <p className='text-sm text-neutral-500 italic'>
-        Completa los campos y calcula el precio para continuar
-      </p>
+      <p className='text-sm text-neutral-500 italic'>Completa los campos para ver el precio</p>
       {startsAt !== null ? (
         <p className='text-sm font-medium text-neutral-700'>
           Desde {formatCurrency(startsAt, currency)}
@@ -185,7 +182,14 @@ function IncompletePrompt({
 }
 
 export function ProductPriceBlock(props: ProductPriceBlockProps) {
-  const { outcome, unit, currency } = props;
+  const { view } = useProductSelection();
+  const { unit, currency } = props;
+
+  if (!view) {
+    return null;
+  }
+
+  const { outcome, quantity } = view;
 
   switch (outcome.kind) {
     case 'hidden':
@@ -195,6 +199,6 @@ export function ProductPriceBlock(props: ProductPriceBlockProps) {
     case 'incomplete':
       return <IncompletePrompt startsAt={outcome.startsAt} currency={currency} unit={unit} />;
     case 'priced':
-      return <PricedBlock {...props} outcome={outcome} />;
+      return <PricedBlock {...props} outcome={outcome} quantity={quantity} />;
   }
 }

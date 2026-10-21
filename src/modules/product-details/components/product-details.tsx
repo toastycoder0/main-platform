@@ -4,7 +4,6 @@ import type { RequestContext } from '@/infrastructure/context/types';
 import { PRODUCT_IMAGE_DETAILS_SECTION } from '@/modules/products/application/products.gallery';
 import type { ComplementsMain } from '../application/product-details.complements';
 import type { ProductDetailDTO, ProductImageDTO } from '../application/product-details.types';
-import { buildProductView, type ProductView } from '../application/product-details.view';
 import type { ProductDetailParams } from '../infrastructure/product-details.params';
 import { getProductDetail } from '../infrastructure/product-details.query';
 import { ProductBreadcrumb } from './product-breadcrumb';
@@ -18,7 +17,7 @@ import { ProductPriceBlock } from './product-price-block';
 import { ProductPurchasePanel } from './product-purchase-panel';
 import { ProductRelated } from './product-related';
 import { ProductSections } from './product-sections';
-import { ProductUnavailable } from './product-unavailable';
+import { ProductSelectionProvider } from './product-selection-context';
 
 interface ProductDetailsProps {
   ctx: RequestContext;
@@ -28,23 +27,13 @@ interface ProductDetailsProps {
 
 function toComplementsMain(
   product: ProductDetailDTO,
-  view: ProductView,
-  canBuy: boolean,
   galleryImages: ProductImageDTO[],
 ): ComplementsMain {
-  const { variant, quantity, fields, outcome } = view;
-
   return {
     title: product.title,
     unit: product.unit,
-    imageUrl: variant.imageUrl ?? galleryImages[0]?.url ?? null,
-    variantTitle: variant.title,
+    coverImageUrl: galleryImages[0]?.url ?? null,
     currency: product.currency,
-    totalAmount: outcome.kind === 'priced' ? outcome.totalAmount : null,
-    line:
-      canBuy && outcome.kind !== 'incomplete'
-        ? { productSlug: product.slug, variantId: variant.id, quantity, fields }
-        : null,
   };
 }
 
@@ -57,11 +46,6 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
 
   const { product } = data;
   const canBuy = ctx.session !== null;
-  const view = buildProductView(
-    data,
-    { variantId: params.variant, quantity: params.qty, fields: params.fields },
-    canBuy,
-  );
 
   const galleryImages = product.images.filter(
     (image) => image.section !== PRODUCT_IMAGE_DETAILS_SECTION,
@@ -71,41 +55,32 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
   );
 
   return (
-    <div className='flex flex-col gap-6'>
-      <ProductBreadcrumb crumbs={product.crumbs} title={product.title} />
+    <ProductSelectionProvider
+      variants={product.variants}
+      pricing={data.pricing}
+      canBuy={canBuy}
+      productSlug={product.slug}
+      initialSelection={{ variantId: params.variant, quantity: params.qty, fields: params.fields }}
+    >
+      <div className='flex flex-col gap-6'>
+        <ProductBreadcrumb crumbs={product.crumbs} title={product.title} />
 
-      <div className='grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-10'>
-        <div className='lg:sticky lg:top-6 lg:z-20 lg:self-start'>
-          <ProductGallery
-            key={product.slug}
-            images={galleryImages}
-            selectedVariantId={view?.variant.id ?? null}
-            title={product.title}
-          />
-        </div>
+        <div className='grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-10'>
+          <div className='lg:sticky lg:top-6 lg:z-20 lg:self-start'>
+            <ProductGallery key={product.slug} images={galleryImages} title={product.title} />
+          </div>
 
-        <div className='flex flex-col gap-5'>
-          <ProductHeader
-            title={product.title}
-            subtitle={product.subtitle}
-            brand={product.brand}
-            onDemand={view ? !view.variant.managesInventory : false}
-          />
+          <div className='flex flex-col gap-5'>
+            <ProductHeader
+              title={product.title}
+              subtitle={product.subtitle}
+              brand={product.brand}
+            />
 
-          {view ? (
             <ProductPurchasePanel
-              key={`${view.variant.id}:${view.quantity}:${JSON.stringify(view.fields)}`}
-              productSlug={product.slug}
               unit={product.unit}
-              variants={product.variants}
-              variant={view.variant}
-              quantity={view.quantity}
-              fields={view.fields}
-              canBuy={canBuy}
               priceSlot={
                 <ProductPriceBlock
-                  outcome={view.outcome}
-                  quantity={view.quantity}
                   currency={product.currency}
                   unit={product.unit}
                   tax={product.tax}
@@ -113,38 +88,33 @@ export async function ProductDetails({ ctx, slug, params }: ProductDetailsProps)
                 />
               }
             />
-          ) : (
-            <ProductUnavailable />
-          )}
 
-          {view && view.variant.leadTimeDays > 0 ? (
-            <ProductLeadTime days={view.variant.leadTimeDays} />
-          ) : null}
+            <ProductLeadTime />
 
-          <ProductSections
-            description={product.description}
-            specs={product.specs}
-            documents={product.documents}
-          />
+            <ProductSections
+              description={product.description}
+              specs={product.specs}
+              documents={product.documents}
+            />
 
-          <ProductDescriptionImages images={descriptionImages} />
+            <ProductDescriptionImages images={descriptionImages} />
+          </div>
         </div>
-      </div>
 
-      {view ? (
-        <Suspense key={view.variant.id} fallback={<ProductComplementsSkeleton />}>
-          <ProductComplements
-            ctx={ctx}
-            productId={product.id}
-            selectedVariantId={view.variant.id}
-            main={toComplementsMain(product, view, canBuy, galleryImages)}
-          />
+        {product.variants.length > 0 ? (
+          <Suspense fallback={<ProductComplementsSkeleton />}>
+            <ProductComplements
+              ctx={ctx}
+              productId={product.id}
+              main={toComplementsMain(product, galleryImages)}
+            />
+          </Suspense>
+        ) : null}
+
+        <Suspense fallback={<ProductRelatedSkeleton />}>
+          <ProductRelated ctx={ctx} productId={product.id} />
         </Suspense>
-      ) : null}
-
-      <Suspense fallback={<ProductRelatedSkeleton />}>
-        <ProductRelated ctx={ctx} productId={product.id} />
-      </Suspense>
-    </div>
+      </div>
+    </ProductSelectionProvider>
   );
 }

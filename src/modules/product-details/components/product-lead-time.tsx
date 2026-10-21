@@ -1,10 +1,16 @@
+'use client';
+
 import { CalendarClockIcon } from 'lucide-react';
+import { useProductSelection } from './product-selection-context';
 
-interface ProductLeadTimeProps {
-  days: number;
-}
+export function ProductLeadTime() {
+  const { view } = useProductSelection();
+  const days = view?.variant.leadTimeDays ?? 0;
 
-export function ProductLeadTime({ days }: ProductLeadTimeProps) {
+  if (days <= 0) {
+    return null;
+  }
+
   return (
     <div className='flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 sm:p-4'>
       <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700'>

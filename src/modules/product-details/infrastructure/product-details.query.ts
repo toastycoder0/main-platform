@@ -260,12 +260,17 @@ export async function getProductDetail(
       crumbs,
       exchange,
     },
-    pricing: {
-      baseAmount: amounts.get(row.id) ?? null,
-      cost: row.cost === null ? null : Number(row.cost),
-      formulaByVariant: new Map(
-        items.flatMap((item) => (item.priceFormula ? [[item.id, item.priceFormula] as const] : [])),
-      ),
-    },
+    pricing: ctx.session
+      ? {
+          baseAmount: amounts.get(row.id) ?? null,
+          cost: row.cost === null ? null : Number(row.cost),
+          formulaByVariant: Object.fromEntries(
+            items.flatMap((item) =>
+              item.priceFormula ? [[item.id, item.priceFormula] as const] : [],
+            ),
+          ),
+        }
+      : // Guests never receive pricing inputs; the view resolves their outcome as hidden.
+        { baseAmount: null, cost: null, formulaByVariant: {} },
   };
 }

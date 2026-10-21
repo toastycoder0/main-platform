@@ -15,6 +15,7 @@ import type {
   VisibleComplement,
 } from './product-details.types';
 import type { CartLineSchema } from './product-details.validation';
+import type { ProductView } from './product-details.view';
 
 export interface ComplementItemValues {
   checked: boolean;
@@ -65,6 +66,26 @@ export function pickComplementVariant(
   );
 }
 
+/** Resolves which complements the selected variant offers, with its lock applied. */
+export function resolveProductComplements(
+  links: ComplementLink[],
+  complements: ComplementDTO[],
+  variantId: string | null,
+): ComplementDTO[] {
+  const byProduct = new Map(complements.map((complement) => [complement.productId, complement]));
+
+  return resolveVisibleComplements(links, variantId).flatMap(
+    ({ linkedProductId, lockedVariantId }) => {
+      const complement = byProduct.get(linkedProductId);
+      const lockIsValid =
+        lockedVariantId === null ||
+        Boolean(complement?.variants.some((variant) => variant.id === lockedVariantId));
+
+      return complement && lockIsValid ? [{ ...complement, lockedVariantId }] : [];
+    },
+  );
+}
+
 export function buildComplementDefaults(complements: ComplementDTO[]): ComplementItemValues[] {
   return complements.map((complement) => {
     const variant = pickComplementVariant(complement, null);
@@ -103,12 +124,35 @@ export function sumByCurrency(entries: CurrencyAmount[]): CurrencyAmount[] {
 export interface ComplementsMain {
   title: string;
   unit: string | null;
-  imageUrl: string | null;
-  variantTitle: string;
+  /** General gallery cover used when the selected variant has no image of its own. */
+  coverImageUrl: string | null;
   currency: string;
+}
+
+export interface MainComboState {
   totalAmount: number | null;
   /** Null while the main selection cannot be added yet (e.g. open fields still incomplete). */
   line: CartLineSchema | null;
+}
+
+/** Derives the main product contribution to the combo from the live selection. */
+export function buildMainComboState(
+  productSlug: string,
+  view: ProductView,
+  canBuy: boolean,
+): MainComboState {
+  return {
+    totalAmount: view.outcome.kind === 'priced' ? view.outcome.totalAmount : null,
+    line:
+      canBuy && view.outcome.kind !== 'incomplete'
+        ? {
+            productSlug,
+            variantId: view.variant.id,
+            quantity: view.quantity,
+            fields: view.fields,
+          }
+        : null,
+  };
 }
 
 export interface ComboTotals {
@@ -117,7 +161,7 @@ export interface ComboTotals {
 }
 
 export function computeComboTotals(
-  main: Pick<ComplementsMain, 'currency' | 'totalAmount'>,
+  main: Pick<ComplementsMain, 'currency'> & Pick<MainComboState, 'totalAmount'>,
   complements: ComplementDTO[],
   items: ComplementItemValues[],
 ): ComboTotals {

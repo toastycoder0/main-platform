@@ -12,8 +12,9 @@ const parseAsOpenFields = parseAsJson((value) => {
 });
 
 /**
- * Selection state of the detail page. The server derives price and
- * availability from these values, so every change re-renders on the server.
+ * Initial selection of the detail page. It only seeds the first render (and
+ * deep links): the client mirrors later changes into the URL through the native
+ * History API, because every URL update here would re-render on the server.
  * Out-of-range quantities are snapped by `snapQuantity` rather than rejected.
  */
 export const productDetailParams = {

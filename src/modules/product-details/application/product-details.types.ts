@@ -102,16 +102,20 @@ export interface ProductDetailDTO {
   exchange: ExchangeDTO | null;
 }
 
-/** Server-only inputs for price calculation; never serialized to the client. */
-export interface ProductPricingSource {
+/**
+ * Pricing inputs resolved for the session. They travel to authenticated clients
+ * so the selection can be priced without a roundtrip; every write recomputes
+ * them from trusted data, so a tampered payload never reaches storage.
+ */
+export interface ProductPricingDTO {
   baseAmount: number | null;
   cost: number | null;
-  formulaByVariant: Map<string, string>;
+  formulaByVariant: Record<string, string>;
 }
 
 export interface ProductDetailData {
   product: ProductDetailDTO;
-  pricing: ProductPricingSource;
+  pricing: ProductPricingDTO;
 }
 
 export interface ProductMetadataDTO {

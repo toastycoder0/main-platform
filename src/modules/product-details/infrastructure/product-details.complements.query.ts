@@ -5,7 +5,6 @@ import {
   PUBLIC_DETAIL_STATUSES,
   PUBLIC_LISTING_STATUSES,
 } from '@/modules/products/application/products.status';
-import { resolveVisibleComplements } from '../application/product-details.complements';
 import type { ComplementDTO, ComplementLink } from '../application/product-details.types';
 import { queryCoverImageUrls } from './product-details.files';
 import { toComplementVariant } from './product-details.mapper';
@@ -35,25 +34,27 @@ export function getComplementLinks(
     .orderBy(asc(productLink.sortOrder), asc(productLink.id));
 }
 
+export interface ProductComplementsSource {
+  links: ComplementLink[];
+  complements: ComplementDTO[];
+}
+
 /**
- * Complements offered for the selected variant. Unlisted products are included
- * (that is the point of the status) but flagged so the UI never links to them.
+ * Every complement the product can offer, regardless of the selected variant.
+ * The client resolves which ones apply, so switching variants never refetches.
+ * Unlisted products are included (that is the point of the status) but flagged
+ * so the UI never links to them.
  */
-export async function getComplements(
+export async function getProductComplements(
   ctx: RequestContext,
   productId: string,
-  selectedVariantId: string | null,
-): Promise<ComplementDTO[]> {
-  const visible = resolveVisibleComplements(
-    await getComplementLinks(ctx, productId),
-    selectedVariantId,
-  );
+): Promise<ProductComplementsSource> {
+  const links = await getComplementLinks(ctx, productId);
+  const ids = [...new Set(links.map((link) => link.linkedProductId))];
 
-  if (visible.length === 0) {
-    return [];
+  if (ids.length === 0) {
+    return { links, complements: [] };
   }
-
-  const ids = visible.map((entry) => entry.linkedProductId);
 
   const [rows, items, amounts, covers] = await Promise.all([
     ctx.db
@@ -77,20 +78,17 @@ export async function getComplements(
     queryCoverImageUrls(ctx, ids),
   ]);
 
-  const rowById = new Map(rows.map((row) => [row.id, row]));
   const stock = await getVariantStock(
     ctx,
     items.map((item) => item.id),
   );
 
-  return visible.flatMap(({ linkedProductId, lockedVariantId }) => {
-    const row = rowById.get(linkedProductId);
+  const complements = rows.flatMap((row) => {
     const variants = items
-      .filter((item) => item.productId === linkedProductId)
+      .filter((item) => item.productId === row.id)
       .map((item) => toComplementVariant(item, stock.get(item.id)));
-    const lockIsValid = lockedVariantId === null || variants.some((v) => v.id === lockedVariantId);
 
-    if (!row || variants.length === 0 || !lockIsValid) {
+    if (variants.length === 0) {
       return [];
     }
 
@@ -104,9 +102,12 @@ export async function getComplements(
         currency: row.currency,
         baseAmount: amounts.get(row.id) ?? null,
         canOpen: PUBLIC_LISTING_STATUSES.some((status) => status === row.status),
-        lockedVariantId,
+        // The lock depends on the selected variant, so it is resolved in the client.
+        lockedVariantId: null,
         variants,
       },
     ];
   });
+
+  return { links, complements };
 }
