@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import { formatCurrency } from '@/shared/utils/format-currency';
-import type { AddToCartPreviewDTO, CartLinePreviewDTO } from '../application/product-details.types';
+import type { AddToCartPreviewDTO, CartLinePreviewDTO } from '../application/cart.types';
 
 function describePrice(line: CartLinePreviewDTO): string {
   return line.price.kind === 'priced'

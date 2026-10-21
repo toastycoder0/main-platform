@@ -1,6 +1,7 @@
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import { authManifest } from './auth/manifest';
 import { brandsManifest } from './brands/manifest';
+import { cartManifest } from './cart/manifest';
 import { categoriesManifest } from './categories/manifest';
 import { currenciesManifest } from './currencies/manifest';
 import { documentTypesManifest } from './document-types/manifest';
@@ -24,6 +25,7 @@ import { warehouseManifest } from './warehouse/manifest';
 const manifests: ModuleManifest[] = [
   authManifest,
   brandsManifest,
+  cartManifest,
   categoriesManifest,
   currenciesManifest,
   documentTypesManifest,

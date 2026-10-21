@@ -6,7 +6,7 @@ import { Field, FieldError, FieldLabel } from '@/shared/components/field';
 import { Input } from '@/shared/components/input';
 import { cn } from '@/shared/utils/cn';
 
-interface ProductQuantityStepperProps {
+interface QuantityStepperProps {
   id: string;
   value: number;
   min: number;
@@ -20,7 +20,7 @@ interface ProductQuantityStepperProps {
   onCommit?: ((value: number) => void) | undefined;
 }
 
-export function ProductQuantityStepper({
+export function QuantityStepper({
   id,
   value,
   min,
@@ -32,15 +32,18 @@ export function ProductQuantityStepper({
   hint,
   onChange,
   onCommit,
-}: ProductQuantityStepperProps) {
+}: QuantityStepperProps) {
   const safeValue = Number.isFinite(value) ? value : min;
   const upper = max ?? Number.POSITIVE_INFINITY;
   const displayValue = Number.isFinite(value) ? value : '';
 
   function adjust(direction: 1 | -1) {
-    const next = Math.min(Math.max(min, safeValue + direction * step), upper);
+    const raw = safeValue + direction * step;
+    // Stepping up past the cap must land on the last valid step, not on stock.
+    const next =
+      direction === 1 && raw > upper ? min + Math.floor((upper - min) / step) * step : raw;
 
-    if (next === safeValue) {
+    if (next < min || next > upper || next === safeValue) {
       return;
     }
 
@@ -97,7 +100,7 @@ export function ProductQuantityStepper({
   );
 }
 
-function QuantityMessage({ error, hint }: Pick<ProductQuantityStepperProps, 'error' | 'hint'>) {
+function QuantityMessage({ error, hint }: Pick<QuantityStepperProps, 'error' | 'hint'>) {
   if (error) {
     return <FieldError>{error}</FieldError>;
   }

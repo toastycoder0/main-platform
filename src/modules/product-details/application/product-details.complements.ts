@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CartLineSchema } from '@/modules/cart/application/cart.validation';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import { type CurrencyAmount, sumByCurrency } from '@/shared/pricing/money';
 import {
@@ -15,7 +16,6 @@ import type {
   OpenFieldValues,
   VisibleComplement,
 } from './product-details.types';
-import type { CartLineSchema } from './product-details.validation';
 import type { ProductView } from './product-details.view';
 
 export interface ComplementItemValues {

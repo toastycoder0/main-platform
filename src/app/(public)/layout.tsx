@@ -4,6 +4,7 @@ import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { getSession } from '@/modules/auth/infrastructure/auth.query';
 import { brandsToNavLinks } from '@/modules/brands/application/brands.nav-links';
 import { getActiveBrands } from '@/modules/brands/infrastructure/brands.query';
+import { getCartCount } from '@/modules/cart/infrastructure/cart.query';
 import { categoriesToNavLinks } from '@/modules/categories/application/categories.nav-links';
 import { buildCategoryTree } from '@/modules/categories/application/categories.tree';
 import { getCategoryTree } from '@/modules/categories/infrastructure/categories.query';
@@ -41,6 +42,7 @@ async function PublicNavbar() {
 
   const brandRows = await getActiveBrands(ctx);
   const brandLinks = brandsToNavLinks(brandRows);
+  const cartCount = session ? await getCartCount(ctx) : 0;
 
   const categoryParentLink =
     categoryLinks.length > 0
@@ -73,7 +75,7 @@ async function PublicNavbar() {
           userEmail={session?.user.email}
           className='flex-1 justify-end'
         />
-        {session ? <NavbarCart /> : null}
+        {session ? <NavbarCart count={cartCount} /> : null}
       </NavbarBar>
 
       <NavbarLinksRow>
@@ -81,7 +83,7 @@ async function PublicNavbar() {
       </NavbarLinksRow>
 
       <NavbarMobileMenu
-        actions={session ? <NavbarCart /> : null}
+        actions={session ? <NavbarCart count={cartCount} /> : null}
         footer={
           <NavbarUser
             isAuthenticated={!!session}

@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ShoppingCartIcon } from 'lucide-react';
 import { useMemo, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { showCartToast } from '@/modules/cart/components/cart-toast';
+import { addToCart } from '@/modules/cart/infrastructure/cart.action';
 import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { Spinner } from '@/shared/components/spinner';
@@ -20,8 +22,6 @@ import {
   resolveProductComplements,
 } from '../application/product-details.complements';
 import type { ComplementDTO, ComplementLink } from '../application/product-details.types';
-import { addToCart } from '../infrastructure/product-details.action';
-import { showCartToast } from './product-cart-toast';
 import { ProductComplementRow } from './product-complement-row';
 import { useProductSelection } from './product-selection-context';
 

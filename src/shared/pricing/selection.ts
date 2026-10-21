@@ -5,6 +5,12 @@ import type { OpenFieldDTO, OpenFieldValues } from './types';
 export const MAX_QUANTITY = 1_000_000;
 export const MAX_SHORT_TEXT = 200;
 export const MAX_LONG_TEXT = 1000;
+export const OPEN_FIELD_KEY_PATTERN = /^[a-z][a-z0-9_]{0,49}$/;
+
+export const openFieldValuesSchema = z.record(
+  z.string().regex(OPEN_FIELD_KEY_PATTERN),
+  z.string().max(MAX_LONG_TEXT, FIELD_ERRORS.tooLong),
+);
 
 export interface QuantityRules {
   minOrderQty: number;

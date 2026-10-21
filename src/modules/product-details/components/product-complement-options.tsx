@@ -2,11 +2,11 @@
 
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { FieldGroup } from '@/shared/components/field';
+import { QuantityStepper } from '@/shared/components/quantity-stepper';
 import { describeQuantityRules, isVariantOutOfStock } from '@/shared/pricing/selection';
 import type { ComplementsSchema } from '../application/product-details.complements';
 import type { ComplementDTO, ComplementVariantDTO } from '../application/product-details.types';
 import { ProductOpenField } from './product-open-field';
-import { ProductQuantityStepper } from './product-quantity-stepper';
 import { ProductVariantSelector } from './product-variant-selector';
 
 interface ProductComplementOptionsProps {
@@ -85,7 +85,7 @@ export function ProductComplementOptions({
         name={`items.${index}.quantity`}
         control={form.control}
         render={({ field: control, fieldState }) => (
-          <ProductQuantityStepper
+          <QuantityStepper
             id={`complement-${index}-quantity`}
             value={control.value}
             min={variant.minOrderQty}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Badge } from '@/shared/components/badge';
-import { Button } from '@/shared/components/button';
+import { ExchangeSwitch } from '@/shared/components/exchange-switch';
 import { calculateTax } from '@/shared/pricing/money';
 import { formatCurrency } from '@/shared/utils/format-currency';
 import type {
@@ -24,64 +24,8 @@ interface ProductPriceBlockProps {
 
 type PricedOutcome = Extract<PriceOutcome, { kind: 'priced' }>;
 
-const dateFormatter = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' });
-
 function UnitBadge({ unit }: { unit: string | null }) {
   return unit ? <Badge variant='outline'>/ {unit}</Badge> : null;
-}
-
-interface ExchangeDetailsProps {
-  exchange: ExchangeDTO;
-  currency: string;
-  totalAmount: number;
-  showQuote: boolean;
-  onShowQuote: (value: boolean) => void;
-}
-
-function ExchangeDetails({
-  exchange,
-  currency,
-  totalAmount,
-  showQuote,
-  onShowQuote,
-}: ExchangeDetailsProps) {
-  const secondary = showQuote ? currency : exchange.quoteCurrency;
-  const secondaryFactor = showQuote ? 1 : exchange.rate;
-
-  return (
-    <div className='flex flex-col gap-1 border-t border-neutral-200 pt-3'>
-      <p className='flex items-center gap-2 text-sm text-neutral-700'>
-        <span aria-hidden='true' className='size-2 animate-pulse rounded-full bg-green-500' />
-        Al cambio actual: {formatCurrency(totalAmount * secondaryFactor, secondary)} {secondary}
-      </p>
-      <p className='text-xs text-neutral-500'>
-        1 {currency} = {exchange.rate.toFixed(4)} {exchange.quoteCurrency} · Actualizado:{' '}
-        {dateFormatter.format(exchange.fetchedAt)}
-      </p>
-      <div className='mt-2 grid max-w-40 grid-cols-2 gap-2'>
-        <Button
-          type='button'
-          size='sm'
-          variant={showQuote ? 'outline' : 'default'}
-          aria-pressed={!showQuote}
-          aria-label={`Mostrar precio en ${currency}`}
-          onClick={() => onShowQuote(false)}
-        >
-          {currency}
-        </Button>
-        <Button
-          type='button'
-          size='sm'
-          variant={showQuote ? 'default' : 'outline'}
-          aria-pressed={showQuote}
-          aria-label={`Mostrar precio en ${exchange.quoteCurrency}`}
-          onClick={() => onShowQuote(true)}
-        >
-          {exchange.quoteCurrency}
-        </Button>
-      </div>
-    </div>
-  );
 }
 
 function PricedBlock({
@@ -121,10 +65,10 @@ function PricedBlock({
       ) : null}
 
       {exchange ? (
-        <ExchangeDetails
+        <ExchangeSwitch
           exchange={exchange}
           currency={currency}
-          totalAmount={outcome.totalAmount}
+          amount={outcome.totalAmount}
           showQuote={showQuote}
           onShowQuote={setShowQuote}
         />

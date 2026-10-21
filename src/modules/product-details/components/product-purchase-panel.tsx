@@ -3,6 +3,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type ReactNode, useEffect, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { showCartToast } from '@/modules/cart/components/cart-toast';
+import { addToCart } from '@/modules/cart/infrastructure/cart.action';
 import { submitAction } from '@/shared/actions/submit-action';
 import {
   buildSelectionSchema,
@@ -13,8 +15,6 @@ import {
 import { cn } from '@/shared/utils/cn';
 import type { VariantDTO } from '../application/product-details.types';
 import type { ProductView } from '../application/product-details.view';
-import { addToCart } from '../infrastructure/product-details.action';
-import { showCartToast } from './product-cart-toast';
 import { ProductOpenFieldsSection, ProductQuantitySection } from './product-purchase-sections';
 import { useProductSelection } from './product-selection-context';
 import { ProductUnavailable } from './product-unavailable';

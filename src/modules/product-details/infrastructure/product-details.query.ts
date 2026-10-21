@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { queryExchange } from '@/infrastructure/catalog/catalog.exchange';
 import { resolveBaseAmounts } from '@/infrastructure/catalog/catalog.prices';
 import { getVariantStock } from '@/infrastructure/catalog/catalog.stock.query';
 import type { RequestContext } from '@/infrastructure/context/types';
@@ -6,7 +7,6 @@ import {
   brand,
   category,
   documentType,
-  exchangeRate,
   product,
   productCategory,
   productDetail,
@@ -17,7 +17,6 @@ import {
 } from '@/infrastructure/db/schema';
 import { isUnlisted, PUBLIC_DETAIL_STATUSES } from '@/modules/products/application/products.status';
 import { buildCategoryCrumbs, orderByPath } from '../application/product-details.crumbs';
-import { pickExchange } from '../application/product-details.exchange';
 import type {
   ExchangeDTO,
   ProductCrumbDTO,
@@ -30,8 +29,6 @@ import type {
 } from '../application/product-details.types';
 import { queryBrandLogoUrls, queryDocumentUrls, queryImageUrls } from './product-details.files';
 import { toVariant } from './product-details.mapper';
-
-const EXCHANGE_LOOKUP_LIMIT = 20;
 
 const detailVisibility = (slug: string) =>
   and(
@@ -91,32 +88,12 @@ async function queryCategoryCrumbs(
   return buildCategoryCrumbs(orderByPath(leaf.path, ancestors));
 }
 
-async function queryExchange(ctx: RequestContext, currency: string): Promise<ExchangeDTO | null> {
+function resolveExchange(ctx: RequestContext, currency: string): Promise<ExchangeDTO | null> {
   if (!ctx.session) {
-    return null;
+    return Promise.resolve(null);
   }
 
-  const rows = await ctx.db
-    .select({
-      baseCode: exchangeRate.baseCode,
-      quoteCode: exchangeRate.quoteCode,
-      rate: exchangeRate.rate,
-      fetchedAt: exchangeRate.fetchedAt,
-    })
-    .from(exchangeRate)
-    .where(
-      and(
-        isNull(exchangeRate.deletedAt),
-        or(eq(exchangeRate.baseCode, currency), eq(exchangeRate.quoteCode, currency)),
-      ),
-    )
-    .orderBy(desc(exchangeRate.fetchedAt))
-    .limit(EXCHANGE_LOOKUP_LIMIT);
-
-  return pickExchange(
-    rows.map((row) => ({ ...row, rate: Number(row.rate) })),
-    currency,
-  );
+  return queryExchange(ctx, currency);
 }
 
 async function queryGallery(ctx: RequestContext, productId: string): Promise<ProductImageDTO[]> {
@@ -220,7 +197,7 @@ export async function getProductDetail(
     queryDocuments(ctx, row.id),
     queryCategoryCrumbs(ctx, row.id),
     resolveBaseAmounts(ctx, [row.id]),
-    queryExchange(ctx, row.currency),
+    resolveExchange(ctx, row.currency),
     row.brandId
       ? queryBrandLogoUrls(ctx, [row.brandId])
       : Promise.resolve(new Map<string, string>()),

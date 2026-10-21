@@ -1,5 +1,6 @@
 import { createLoader, createParser, parseAsInteger, parseAsJson } from 'nuqs/server';
-import { MAX_ID_LENGTH, openFieldValuesSchema } from '../application/product-details.validation';
+import { MAX_ID_LENGTH } from '@/shared/constants/validation';
+import { openFieldValuesSchema } from '@/shared/pricing/selection';
 
 const parseAsVariantId = createParser({
   parse: (value) => (value.length > 0 && value.length <= MAX_ID_LENGTH ? value : null),

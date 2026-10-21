@@ -1,6 +1,5 @@
 import { toOpenField } from '@/infrastructure/catalog/catalog.mapper';
 import type { productItem } from '@/infrastructure/db/schema';
-import type { CartVariantSource } from '../application/product-details.cart';
 import type {
   ComplementVariantDTO,
   VariantDTO,
@@ -44,11 +43,4 @@ export function toComplementVariant(
     pricingModel: row.pricingModel,
     openFields: row.options.map(toOpenField),
   };
-}
-
-export function toCartVariant(
-  row: VariantRow,
-  stock: VariantStockDTO | undefined,
-): CartVariantSource {
-  return { ...toVariant(row, null, stock), priceFormula: row.priceFormula };
 }

@@ -1,4 +1,8 @@
-import type { ExchangeDTO } from './product-details.types';
+export interface ExchangeQuote {
+  quoteCurrency: string;
+  rate: number;
+  fetchedAt: Date;
+}
 
 export interface ExchangeRateRow {
   baseCode: string;
@@ -8,10 +12,10 @@ export interface ExchangeRateRow {
 }
 
 /**
- * Expresses the most recent rate involving the product currency as
+ * Expresses the most recent rate involving the currency as
  * "1 <currency> = rate <quote>", inverting rates stored in the opposite direction.
  */
-export function pickExchange(rows: ExchangeRateRow[], currency: string): ExchangeDTO | null {
+export function pickExchange(rows: ExchangeRateRow[], currency: string): ExchangeQuote | null {
   const latest = rows
     .filter((row) => row.rate > 0 && (row.baseCode === currency || row.quoteCode === currency))
     .sort((a, b) => b.fetchedAt.getTime() - a.fetchedAt.getTime())[0];

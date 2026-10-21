@@ -4,6 +4,7 @@ import { ShoppingCartIcon } from 'lucide-react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { Button } from '@/shared/components/button';
 import { FieldGroup } from '@/shared/components/field';
+import { QuantityStepper } from '@/shared/components/quantity-stepper';
 import { Spinner } from '@/shared/components/spinner';
 import {
   describeQuantityRules,
@@ -12,7 +13,6 @@ import {
 } from '@/shared/pricing/selection';
 import type { VariantDTO } from '../application/product-details.types';
 import { ProductOpenField } from './product-open-field';
-import { ProductQuantityStepper } from './product-quantity-stepper';
 
 interface SectionProps {
   form: UseFormReturn<SelectionSchema>;
@@ -68,7 +68,7 @@ export function ProductQuantitySection({
         name='quantity'
         control={form.control}
         render={({ field: control, fieldState }) => (
-          <ProductQuantityStepper
+          <QuantityStepper
             id='product-quantity'
             value={control.value}
             min={variant.minOrderQty}

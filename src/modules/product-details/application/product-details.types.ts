@@ -1,4 +1,5 @@
 import type { ProductCardProduct } from '@/shared/components/product-card.types';
+import type { ExchangeQuote } from '@/shared/pricing/exchange';
 import type { OpenFieldDTO, PricingModel } from '@/shared/pricing/types';
 
 export type {
@@ -66,11 +67,7 @@ export interface ProductCrumbDTO {
   href: string;
 }
 
-export interface ExchangeDTO {
-  quoteCurrency: string;
-  rate: number;
-  fetchedAt: Date;
-}
+export type ExchangeDTO = ExchangeQuote;
 
 export interface ProductTaxDTO {
   name: string;
@@ -152,20 +149,6 @@ export interface ComplementLink {
 export interface VisibleComplement {
   linkedProductId: string;
   lockedVariantId: string | null;
-}
-
-export interface CartLinePreviewDTO {
-  productTitle: string;
-  variantTitle: string;
-  quantity: number;
-  unit: string | null;
-  currency: string;
-  price: { kind: 'priced'; unitAmount: number; totalAmount: number } | { kind: 'quote' };
-  fields: { label: string; value: string }[];
-}
-
-export interface AddToCartPreviewDTO {
-  lines: CartLinePreviewDTO[];
 }
 
 export type RelatedProductDTO = ProductCardProduct;
