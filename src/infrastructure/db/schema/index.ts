@@ -1,5 +1,6 @@
 export * from './auth.schema';
 export * from './brand.schema';
+export * from './cart.schema';
 export * from './category.schema';
 export * from './currency.schema';
 export * from './document-type.schema';
