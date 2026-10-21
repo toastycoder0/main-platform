@@ -14,7 +14,7 @@ export function NavbarCart({ count = 0, className }: NavbarCartProps) {
   return (
     <Link
       href='/cart'
-      className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), className)}
+      className={cn('relative', buttonVariants({ variant: 'ghost', size: 'sm' }), className)}
       aria-label={`Carrito${count > 0 ? `, ${count} producto${count !== 1 ? 's' : ''}` : ''}`}
     >
       <ShoppingCart className='size-5' />

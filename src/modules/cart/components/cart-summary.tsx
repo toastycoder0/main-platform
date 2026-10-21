@@ -1,12 +1,10 @@
-import Link from 'next/link';
-import { Button, buttonVariants } from '@/shared/components/button';
+import { Button } from '@/shared/components/button';
 import type { CartDTO } from '../application/cart.types';
-import { CartClearButton } from './cart-clear-button';
 import { CartTotals } from './cart-totals';
 
 export function CartSummary({ cart }: { cart: CartDTO }) {
   return (
-    <aside className='flex h-fit flex-col gap-4 rounded-lg border border-neutral-200 p-4 lg:sticky lg:top-6'>
+    <aside className='flex h-fit flex-col gap-5 rounded-lg border border-neutral-200 p-5 lg:sticky lg:top-6'>
       <h2 className='text-lg font-semibold text-neutral-900'>Resumen</h2>
 
       <dl className='flex items-center justify-between text-sm'>
@@ -26,13 +24,6 @@ export function CartSummary({ cart }: { cart: CartDTO }) {
       <Button type='button' disabled className='w-full'>
         Continuar con la compra
       </Button>
-
-      <div className='flex items-center justify-between gap-2 border-t border-neutral-100 pt-3'>
-        <Link href='/products' className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          Seguir comprando
-        </Link>
-        <CartClearButton />
-      </div>
     </aside>
   );
 }

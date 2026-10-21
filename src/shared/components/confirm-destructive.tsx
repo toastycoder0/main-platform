@@ -21,6 +21,9 @@ interface DestructiveConfirmProps {
   confirmLabel: string;
   busy?: boolean;
   icon?: LucideIcon;
+  variant?: React.ComponentProps<typeof Button>['variant'];
+  size?: React.ComponentProps<typeof Button>['size'];
+  className?: string;
   onConfirm: () => void;
 }
 
@@ -31,12 +34,15 @@ export function DestructiveConfirm({
   confirmLabel,
   busy = false,
   icon: Icon = Trash2Icon,
+  variant = 'destructive',
+  size = 'default',
+  className,
   onConfirm,
 }: DestructiveConfirmProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button type='button' variant='destructive' disabled={busy}>
+        <Button type='button' variant={variant} size={size} className={className} disabled={busy}>
           <Icon />
           {label}
         </Button>

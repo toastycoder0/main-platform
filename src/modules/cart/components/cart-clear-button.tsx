@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { submitAction } from '@/shared/actions/submit-action';
-import { Button } from '@/shared/components/button';
+import { DestructiveConfirm } from '@/shared/components/confirm-destructive';
 import { clearCart } from '../infrastructure/cart.action';
 
 export function CartClearButton() {
@@ -15,8 +15,15 @@ export function CartClearButton() {
   }
 
   return (
-    <Button type='button' variant='ghost' size='sm' disabled={isPending} onClick={clear}>
-      Vaciar carrito
-    </Button>
+    <DestructiveConfirm
+      label='Vaciar carrito'
+      title='¿Vaciar el carrito?'
+      description='Se quitarán todos los productos del carrito.'
+      confirmLabel='Vaciar'
+      busy={isPending}
+      variant='destructive'
+      size='sm'
+      onConfirm={clear}
+    />
   );
 }
