@@ -21,8 +21,9 @@ export function CartClearButton() {
       description='Se quitarán todos los productos del carrito.'
       confirmLabel='Vaciar'
       busy={isPending}
-      variant='destructive'
+      variant='ghost'
       size='sm'
+      className='text-muted-foreground hover:text-destructive'
       onConfirm={clear}
     />
   );
