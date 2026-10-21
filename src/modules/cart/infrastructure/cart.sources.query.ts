@@ -24,6 +24,8 @@ interface ProductSourceRow {
   currency: string;
   cost: string | null;
   unit: string | null;
+  taxName: string | null;
+  taxRate: string | null;
 }
 
 interface ImageMaps {
@@ -147,6 +149,10 @@ async function querySources(ctx: RequestContext, rows: ProductSourceRow[]): Prom
     baseAmount: amounts.get(row.id) ?? null,
     cost: row.cost === null ? null : Number(row.cost),
     coverImageUrl: images.covers.get(row.id) ?? null,
+    tax:
+      row.taxName && row.taxRate !== null && Number(row.taxRate) > 0
+        ? { name: row.taxName, rate: Number(row.taxRate) }
+        : null,
     variants: items
       .filter((item) => item.productId === row.id)
       .map((item) =>
@@ -178,6 +184,8 @@ export async function getCartSources(
       currency: product.baseCurrency,
       cost: product.cost,
       unit: productUnit.abbreviation,
+      taxName: product.taxName,
+      taxRate: product.taxRate,
     })
     .from(product)
     .leftJoin(productUnit, eq(product.unitId, productUnit.id))
@@ -205,6 +213,8 @@ export async function findCartSources(
       currency: product.baseCurrency,
       cost: product.cost,
       unit: productUnit.abbreviation,
+      taxName: product.taxName,
+      taxRate: product.taxRate,
     })
     .from(product)
     .leftJoin(productUnit, eq(product.unitId, productUnit.id))

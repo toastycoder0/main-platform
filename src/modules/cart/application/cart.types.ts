@@ -39,6 +39,17 @@ export interface CartLineIssue {
   message: string;
 }
 
+export interface CartTax {
+  name: string;
+  rate: number;
+}
+
+export interface CartTaxTotal {
+  name: string;
+  rate: number;
+  amounts: CurrencyAmount[];
+}
+
 export interface CartLineDTO {
   id: string;
   productSlug: string;
@@ -52,12 +63,18 @@ export interface CartLineDTO {
   quantityRules: { min: number; step: number; max: number | null } | null;
   fields: { label: string; value: string }[];
   price: CartLinePrice;
+  tax: CartTax | null;
   issue: CartLineIssue | null;
 }
 
 export interface CartDTO {
   id: string | null;
   lines: CartLineDTO[];
+  /** Sum of priced lines before taxes. */
+  subtotals: CurrencyAmount[];
+  /** Taxes grouped by name and currency. */
+  taxes: CartTaxTotal[];
+  /** Grand total per currency: subtotals plus taxes. */
   totals: CurrencyAmount[];
   /** Latest quote per currency in `totals`, used by the summary switch. */
   exchanges: Record<string, ExchangeQuote>;
@@ -93,5 +110,6 @@ export interface CartSource {
   baseAmount: number | null;
   cost: number | null;
   coverImageUrl: string | null;
+  tax: CartTax | null;
   variants: CartVariantSource[];
 }

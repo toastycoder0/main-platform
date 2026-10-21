@@ -2,14 +2,16 @@ import { asc, eq, sql } from 'drizzle-orm';
 import { queryExchanges } from '@/infrastructure/catalog/catalog.exchange';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { cart, cartItem } from '@/infrastructure/db/schema';
-import { sumByCurrency } from '@/shared/pricing/money';
 import { buildCartItem } from '../application/cart.line';
+import { calculateCartTotals } from '../application/cart.totals';
 import type { CartDTO } from '../application/cart.types';
 import { getCartSources } from './cart.sources.query';
 
 const EMPTY_CART: CartDTO = {
   id: null,
   lines: [],
+  subtotals: [],
+  taxes: [],
   totals: [],
   exchanges: {},
   hasQuote: false,
@@ -54,13 +56,7 @@ export async function getCart(ctx: RequestContext): Promise<CartDTO> {
     return buildCartItem(source, variant, item);
   });
 
-  const totals = sumByCurrency(
-    lines.flatMap((line) =>
-      line.issue === null && line.price.kind === 'priced'
-        ? [{ currency: line.currency, amount: line.price.totalAmount }]
-        : [],
-    ),
-  );
+  const { subtotals, taxes, totals } = calculateCartTotals(lines);
 
   const exchanges = await queryExchanges(
     ctx,
@@ -70,6 +66,8 @@ export async function getCart(ctx: RequestContext): Promise<CartDTO> {
   return {
     id: cartRow.id,
     lines,
+    subtotals,
+    taxes,
     totals,
     exchanges,
     hasQuote: lines.some((line) => line.issue === null && line.price.kind === 'quote'),

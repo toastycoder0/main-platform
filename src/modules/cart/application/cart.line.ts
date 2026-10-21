@@ -206,6 +206,7 @@ export function buildCartItem(
     quantityRules: itemQuantityRules(source, variant),
     fields: variant ? displayFields(variant, fields) : [],
     price: itemPrice(source, variant, item.quantity, fields),
+    tax: source?.tax ?? null,
     issue: itemIssue(source, variant, item.quantity, fields),
   };
 }

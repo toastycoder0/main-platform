@@ -31,6 +31,7 @@ function source(overrides: Partial<CartSource> = {}): CartSource {
     baseAmount: 100,
     cost: 30,
     coverImageUrl: null,
+    tax: null,
     variants: [variant()],
     ...overrides,
   };

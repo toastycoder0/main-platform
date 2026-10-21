@@ -127,6 +127,8 @@ beforeAll(async () => {
         baseCurrency: CURRENCY,
         cost: '10',
         costCurrency: CURRENCY,
+        taxName: 'IVA',
+        taxRate: '16',
       })
       .returning({ id: product.id }),
   );
@@ -218,8 +220,13 @@ describe('addToCart', () => {
     const cart = await getCart(state.ctx as RequestContext);
 
     expect(cart.lines).toHaveLength(2);
+    expect(cart.lines[0]).toMatchObject({ tax: { name: 'IVA', rate: 16 } });
     expect(cart.itemCount).toBe(3);
-    expect(cart.totals).toEqual([{ currency: CURRENCY, amount: 260 }]);
+    expect(cart.subtotals).toEqual([{ currency: CURRENCY, amount: 260 }]);
+    expect(cart.taxes).toEqual([
+      { name: 'IVA', rate: 16, amounts: [{ currency: CURRENCY, amount: 41.6 }] },
+    ]);
+    expect(cart.totals).toEqual([{ currency: CURRENCY, amount: 301.6 }]);
     expect(cart.exchanges[CURRENCY]).toMatchObject({ quoteCurrency: 'USD', rate: 0.05 });
   });
 
