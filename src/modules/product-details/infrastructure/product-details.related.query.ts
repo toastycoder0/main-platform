@@ -1,4 +1,8 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import {
+  queryFormulaProductIds,
+  resolveBaseAmounts,
+} from '@/infrastructure/catalog/catalog.prices';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { brand, product, productLink, productUnit } from '@/infrastructure/db/schema';
 import { PUBLIC_LISTING_STATUSES } from '@/modules/products/application/products.status';
@@ -6,7 +10,6 @@ import { queryCardAvailability } from '@/modules/products/infrastructure/product
 import { type CardPrice, resolveCardPrice } from '../application/product-details.card-price';
 import type { RelatedProductDTO } from '../application/product-details.types';
 import { queryBrandLogoUrls, queryCoverImageUrls } from './product-details.files';
-import { queryFormulaProductIds, resolveBaseAmounts } from './product-details.prices';
 
 const RELATED_LIMIT = 12;
 

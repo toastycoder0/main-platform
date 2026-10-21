@@ -1,5 +1,5 @@
-import { calculatePrice, type PriceInput } from './product-details.pricing';
-import { pickVariant, sanitizeFieldValues, snapQuantity } from './product-details.selection';
+import { calculatePrice, type PriceInput } from '@/shared/pricing/price';
+import { pickVariant, sanitizeFieldValues, snapQuantity } from '@/shared/pricing/selection';
 import type {
   OpenFieldValues,
   PriceOutcome,

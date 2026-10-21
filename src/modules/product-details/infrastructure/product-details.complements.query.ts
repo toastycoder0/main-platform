@@ -1,4 +1,6 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { resolveBaseAmounts } from '@/infrastructure/catalog/catalog.prices';
+import { getVariantStock } from '@/infrastructure/catalog/catalog.stock.query';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { product, productItem, productLink, productUnit } from '@/infrastructure/db/schema';
 import {
@@ -8,8 +10,6 @@ import {
 import type { ComplementDTO, ComplementLink } from '../application/product-details.types';
 import { queryCoverImageUrls } from './product-details.files';
 import { toComplementVariant } from './product-details.mapper';
-import { resolveBaseAmounts } from './product-details.prices';
-import { getVariantStock } from './product-details.stock.query';
 
 export function getComplementLinks(
   ctx: RequestContext,

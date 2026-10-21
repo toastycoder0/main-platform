@@ -2,11 +2,8 @@
 
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { FieldGroup } from '@/shared/components/field';
+import { describeQuantityRules, isVariantOutOfStock } from '@/shared/pricing/selection';
 import type { ComplementsSchema } from '../application/product-details.complements';
-import {
-  describeQuantityRules,
-  isVariantOutOfStock,
-} from '../application/product-details.selection';
 import type { ComplementDTO, ComplementVariantDTO } from '../application/product-details.types';
 import { ProductOpenField } from './product-open-field';
 import { ProductQuantityStepper } from './product-quantity-stepper';

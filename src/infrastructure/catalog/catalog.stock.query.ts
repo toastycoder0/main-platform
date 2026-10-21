@@ -1,7 +1,17 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { cellLot, lot, warehouseCell } from '@/infrastructure/db/schema';
-import type { VariantStockDTO } from '../application/product-details.types';
+
+export interface CatalogVariantLot {
+  id: string;
+  code: string;
+  quantity: number;
+}
+
+export interface CatalogVariantStock {
+  available: number;
+  lots: CatalogVariantLot[];
+}
 
 /**
  * Sellable stock per product item. Mirrors the warehouse rules: inactive lots
@@ -10,7 +20,7 @@ import type { VariantStockDTO } from '../application/product-details.types';
 export async function getVariantStock(
   ctx: RequestContext,
   itemIds: string[],
-): Promise<Map<string, VariantStockDTO>> {
+): Promise<Map<string, CatalogVariantStock>> {
   if (itemIds.length === 0) {
     return new Map();
   }
@@ -31,7 +41,7 @@ export async function getVariantStock(
     .groupBy(lot.itemId, lot.id, lot.code)
     .orderBy(asc(lot.code), asc(lot.id));
 
-  const stock = new Map<string, VariantStockDTO>();
+  const stock = new Map<string, CatalogVariantStock>();
 
   for (const row of rows) {
     const entry = stock.get(row.itemId) ?? { available: 0, lots: [] };

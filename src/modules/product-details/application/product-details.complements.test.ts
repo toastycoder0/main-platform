@@ -9,7 +9,6 @@ import {
   pickComplementVariant,
   resolveProductComplements,
   resolveVisibleComplements,
-  sumByCurrency,
 } from './product-details.complements';
 import type { ComplementDTO, ComplementLink, VariantDTO } from './product-details.types';
 import type { ProductView } from './product-details.view';
@@ -148,19 +147,6 @@ describe('complement helpers', () => {
     expect(complementLineAmount(complement(), flat ?? null, 3)).toBe(150);
     expect(complementLineAmount(complement(), formula ?? null, 3)).toBeNull();
     expect(complementLineAmount(complement({ baseAmount: null }), flat ?? null, 3)).toBeNull();
-  });
-
-  it('sums amounts per currency', () => {
-    expect(
-      sumByCurrency([
-        { currency: 'MXN', amount: 10 },
-        { currency: 'USD', amount: 5 },
-        { currency: 'MXN', amount: 2.5 },
-      ]),
-    ).toEqual([
-      { currency: 'MXN', amount: 12.5 },
-      { currency: 'USD', amount: 5 },
-    ]);
   });
 });
 

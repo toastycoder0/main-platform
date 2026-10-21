@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { calculateTax, roundMoney } from './product-details.money';
-import { calculatePrice, type PriceInput } from './product-details.pricing';
-import type { OpenFieldDTO } from './product-details.types';
+import { calculatePrice, type PriceInput } from './price';
+import type { OpenFieldDTO } from './types';
 
 function numberField(key: string, overrides: Partial<OpenFieldDTO> = {}): OpenFieldDTO {
   return {
@@ -105,17 +104,5 @@ describe('calculatePrice', () => {
     expect(calculatePrice(input({ variant: formulaVariant, formula: null, values }))).toEqual({
       kind: 'quote',
     });
-  });
-});
-
-describe('money helpers', () => {
-  it('rounds to cents', () => {
-    expect(roundMoney(10.005)).toBe(10.01);
-    expect(roundMoney(1 / 3)).toBe(0.33);
-  });
-
-  it('calculates tax from a percentage rate', () => {
-    expect(calculateTax(200, 16)).toBe(32);
-    expect(calculateTax(200, null)).toBe(0);
   });
 });

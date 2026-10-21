@@ -1,19 +1,13 @@
 import type { ProductCardProduct } from '@/shared/components/product-card.types';
+import type { OpenFieldDTO, PricingModel } from '@/shared/pricing/types';
 
-export type OpenFieldType = 'short_text' | 'long_text' | 'number' | 'select';
-
-export type PricingModel = 'flat' | 'formula';
-
-export interface OpenFieldDTO {
-  key: string;
-  label: string;
-  type: OpenFieldType;
-  selectOptions: string[];
-  isRequired: boolean;
-  minValue: number | null;
-  maxValue: number | null;
-  helpText: string | null;
-}
+export type {
+  OpenFieldDTO,
+  OpenFieldType,
+  OpenFieldValues,
+  PriceOutcome,
+  PricingModel,
+} from '@/shared/pricing/types';
 
 export interface VariantLotDTO {
   id: string;
@@ -123,14 +117,6 @@ export interface ProductMetadataDTO {
   description: string | null;
   isUnlisted: boolean;
 }
-
-export type OpenFieldValues = Record<string, string>;
-
-export type PriceOutcome =
-  | { kind: 'hidden' }
-  | { kind: 'quote' }
-  | { kind: 'incomplete'; startsAt: number | null }
-  | { kind: 'priced'; unitAmount: number; totalAmount: number; isFormula: boolean };
 
 export interface ComplementVariantDTO {
   id: string;

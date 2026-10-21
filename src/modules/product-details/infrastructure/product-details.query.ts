@@ -1,4 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { resolveBaseAmounts } from '@/infrastructure/catalog/catalog.prices';
+import { getVariantStock } from '@/infrastructure/catalog/catalog.stock.query';
 import type { RequestContext } from '@/infrastructure/context/types';
 import {
   brand,
@@ -28,8 +30,6 @@ import type {
 } from '../application/product-details.types';
 import { queryBrandLogoUrls, queryDocumentUrls, queryImageUrls } from './product-details.files';
 import { toVariant } from './product-details.mapper';
-import { resolveBaseAmounts } from './product-details.prices';
-import { getVariantStock } from './product-details.stock.query';
 
 const EXCHANGE_LOOKUP_LIMIT = 20;
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
-import { MAX_LONG_TEXT, MAX_QUANTITY } from './product-details.selection';
+import { MAX_LONG_TEXT, MAX_QUANTITY } from '@/shared/pricing/selection';
 
 export const MAX_CART_LINES = 21;
 export const MAX_ID_LENGTH = 100;

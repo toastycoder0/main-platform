@@ -9,7 +9,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { isValidQuantity, pruneEmptyFields } from '../application/product-details.selection';
+import { isValidQuantity, pruneEmptyFields } from '@/shared/pricing/selection';
 import type {
   OpenFieldValues,
   ProductPricingDTO,

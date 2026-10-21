@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateFormula, type FormulaScope } from './product-details.formula';
+import { evaluateFormula, type FormulaScope } from './formula';
 
 const scope: FormulaScope = {
   base_price: 100,

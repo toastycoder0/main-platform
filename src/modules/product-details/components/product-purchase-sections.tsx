@@ -9,7 +9,7 @@ import {
   describeQuantityRules,
   isVariantOutOfStock,
   type SelectionSchema,
-} from '../application/product-details.selection';
+} from '@/shared/pricing/selection';
 import type { VariantDTO } from '../application/product-details.types';
 import { ProductOpenField } from './product-open-field';
 import { ProductQuantityStepper } from './product-quantity-stepper';

@@ -1,14 +1,22 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
-import type { OpenFieldDTO, OpenFieldValues, VariantDTO } from './product-details.types';
+import type { OpenFieldDTO, OpenFieldValues } from './types';
 
 export const MAX_QUANTITY = 1_000_000;
 export const MAX_SHORT_TEXT = 200;
 export const MAX_LONG_TEXT = 1000;
 
-type QuantityRules = Pick<VariantDTO, 'minOrderQty' | 'incrementQty'>;
-type StockRules = Pick<VariantDTO, 'managesInventory' | 'availableStock'>;
-type SelectionVariant = QuantityRules & StockRules & Pick<VariantDTO, 'openFields'>;
+export interface QuantityRules {
+  minOrderQty: number;
+  incrementQty: number;
+}
+
+export interface StockRules {
+  managesInventory: boolean;
+  availableStock: number | null;
+}
+
+export type SelectionVariant = QuantityRules & StockRules & { openFields: OpenFieldDTO[] };
 
 export const STOCK_ERRORS = {
   outOfStock: 'Esta variante está agotada',

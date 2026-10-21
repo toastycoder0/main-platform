@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { type CurrencyAmount, sumByCurrency } from '@/shared/pricing/money';
 import {
   collectSelectionIssues,
   isVariantOutOfStock,
   MAX_LONG_TEXT,
   MAX_QUANTITY,
   pruneEmptyFields,
-} from './product-details.selection';
+} from '@/shared/pricing/selection';
 import type {
   ComplementDTO,
   ComplementLink,
@@ -22,11 +23,6 @@ export interface ComplementItemValues {
   variantId: string;
   quantity: number;
   fields: OpenFieldValues;
-}
-
-export interface CurrencyAmount {
-  currency: string;
-  amount: number;
 }
 
 /**
@@ -109,16 +105,6 @@ export function complementLineAmount(
   }
 
   return complement.baseAmount * quantity;
-}
-
-export function sumByCurrency(entries: CurrencyAmount[]): CurrencyAmount[] {
-  const totals = new Map<string, number>();
-
-  for (const { currency, amount } of entries) {
-    totals.set(currency, (totals.get(currency) ?? 0) + amount);
-  }
-
-  return [...totals.entries()].map(([currency, amount]) => ({ currency, amount }));
 }
 
 export interface ComplementsMain {

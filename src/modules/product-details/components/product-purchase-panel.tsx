@@ -4,13 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type ReactNode, useEffect, useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { submitAction } from '@/shared/actions/submit-action';
-import { cn } from '@/shared/utils/cn';
 import {
   buildSelectionSchema,
   isVariantOutOfStock,
   pruneEmptyFields,
   type SelectionSchema,
-} from '../application/product-details.selection';
+} from '@/shared/pricing/selection';
+import { cn } from '@/shared/utils/cn';
 import type { VariantDTO } from '../application/product-details.types';
 import type { ProductView } from '../application/product-details.view';
 import { addToCart } from '../infrastructure/product-details.action';

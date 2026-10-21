@@ -1,12 +1,15 @@
-import { evaluateFormula, FormulaError } from './product-details.formula';
-import { roundMoney } from './product-details.money';
-import { validateOpenFields } from './product-details.selection';
-import type { OpenFieldValues, PriceOutcome, VariantDTO } from './product-details.types';
+import { evaluateFormula, FormulaError } from './formula';
+import { roundMoney } from './money';
+import { validateOpenFields } from './selection';
+import type { OpenFieldDTO, OpenFieldValues, PriceOutcome, PricingModel } from './types';
 
-type PricedVariant = Pick<
-  VariantDTO,
-  'pricingModel' | 'minOrderQty' | 'incrementQty' | 'leadTimeDays' | 'openFields'
->;
+export interface PricedVariant {
+  pricingModel: PricingModel;
+  minOrderQty: number;
+  incrementQty: number;
+  leadTimeDays: number;
+  openFields: OpenFieldDTO[];
+}
 
 export interface PriceInput {
   hasSession: boolean;

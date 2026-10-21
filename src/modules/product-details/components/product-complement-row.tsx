@@ -3,13 +3,13 @@
 import { ExternalLinkIcon } from 'lucide-react';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 import { Checkbox } from '@/shared/components/checkbox';
+import { isVariantOutOfStock } from '@/shared/pricing/selection';
 import { formatCurrency } from '@/shared/utils/format-currency';
 import {
   type ComplementsSchema,
   complementLineAmount,
   pickComplementVariant,
 } from '../application/product-details.complements';
-import { isVariantOutOfStock } from '../application/product-details.selection';
 import type { ComplementDTO } from '../application/product-details.types';
 import { ProductComplementOptions } from './product-complement-options';
 

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Badge } from '@/shared/components/badge';
 import { Button } from '@/shared/components/button';
+import { calculateTax } from '@/shared/pricing/money';
 import { formatCurrency } from '@/shared/utils/format-currency';
-import { calculateTax } from '../application/product-details.money';
 import type {
   ExchangeDTO,
   PriceOutcome,

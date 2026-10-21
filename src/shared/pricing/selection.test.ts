@@ -10,8 +10,8 @@ import {
   sanitizeFieldValues,
   snapQuantity,
   validateOpenFields,
-} from './product-details.selection';
-import type { OpenFieldDTO } from './product-details.types';
+} from './selection';
+import type { OpenFieldDTO } from './types';
 
 function field(
   overrides: Partial<OpenFieldDTO> & Pick<OpenFieldDTO, 'key' | 'type'>,

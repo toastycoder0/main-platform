@@ -1,11 +1,11 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { resolveBaseAmounts } from '@/infrastructure/catalog/catalog.prices';
+import { getVariantStock } from '@/infrastructure/catalog/catalog.stock.query';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { product, productItem, productUnit } from '@/infrastructure/db/schema';
 import { PUBLIC_DETAIL_STATUSES } from '@/modules/products/application/products.status';
 import type { CartSource } from '../application/product-details.cart';
 import { toCartVariant } from './product-details.mapper';
-import { resolveBaseAmounts } from './product-details.prices';
-import { getVariantStock } from './product-details.stock.query';
 
 /** Trusted, server-side snapshot of every product referenced by the submitted lines. */
 export async function findCartSources(

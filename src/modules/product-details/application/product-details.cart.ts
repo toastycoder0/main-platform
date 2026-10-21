@@ -1,5 +1,5 @@
-import { calculatePrice } from './product-details.pricing';
-import { collectSelectionIssues, sanitizeFieldValues } from './product-details.selection';
+import { calculatePrice } from '@/shared/pricing/price';
+import { collectSelectionIssues, sanitizeFieldValues } from '@/shared/pricing/selection';
 import type { CartLinePreviewDTO, VariantDTO } from './product-details.types';
 import type { CartLineSchema } from './product-details.validation';
 
