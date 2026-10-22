@@ -1,291 +1,82 @@
-# Checkout wizard en `/cart`
+# Checkout por rutas en `/cart`
 
 ## Contexto
 
-`main` ya incluye un carrito persistido con líneas por usuario, cantidades, totales y
-tipos de cambio. Este cambio agrega el wizard de checkout en la misma ruta y
-conserva intacta toda la funcionalidad existente del carrito.
+El wizard anterior vivía en una sola página con el paso en `useState` y un único
+`useForm` para los tres pasos. Eso causaba errores que no se limpiaban al escribir
+(`trigger()` + `mode: 'onTouched'`), problemas de hidratación al recargar y lógica de
+negocio solo en el cliente. Se reemplaza por pasos en rutas con un borrador guardado
+en el servidor, y se agrega la creación real del pedido con apartado de inventario.
 
-## Alcance
-
-Incluido:
-
-- Wizard de 4 pasos en `/cart`, sin query params.
-- IVA real en el carrito y en el resumen.
-- Facturación y propietario.
-- Datos de entrega o recolección.
-- Revisión final.
-- Selector local de PDF del RFC.
-- Payload del pedido y función de confirmación vacía.
-
-Fuera de alcance:
-
-- Crear pedidos en base de datos.
-- Server actions de checkout.
-- Subida real de archivos.
-- Reserva o descuento de inventario.
-- Pagos.
-
-## Navegación
-
-El paso vive en estado local con `CartFlow`:
+## Rutas
 
 ```txt
-cart → billing → order → review
+/cart           → paso 1: productos
+/cart/billing   → paso 2: propietario y facturación
+/cart/delivery  → paso 3: entrega, notas y apartado
+/cart/review    → paso 4: revisión y confirmación
 ```
 
-`CartFlow` es el shell único de la página y contiene:
+- Cada página llama a `loadCheckoutStep(step)`: exige sesión y redirige al paso más
+  lejano alcanzable (`resolveCheckoutStep`) si el pedido no es válido todavía.
+- No hay `layout.tsx` con datos: los layouts no se re-renderizan al navegar, así que
+  cada página renderiza `CheckoutShell` (título, stepper, contenido y resumen).
+- “Atrás” es un `<Link>` y no guarda nada.
 
-- Título “Carrito (N artículos)”.
-- `CartClearButton`, dentro del bloque de productos y solo en el paso 1.
-- Stepper visible desde el paso 1, a todo el ancho.
-- Grid único `max-w-7xl`.
-- Contenido del paso actual.
-- Resumen compartido.
+## Borrador
 
-El carrito y el wizard se mantienen montados. Solo se alterna visibilidad, por lo que
-el formulario sobrevive al volver al carrito. Refrescar vuelve al carrito.
-
-El stepper ocupa todo el ancho debajo del título. Los pasos futuros están
-deshabilitados y los anteriores son clickeables.
-
-## IVA en el carrito
-
-Tipos:
-
-- `CartTax`: nombre y tasa.
-- `CartTaxTotal`: impuesto agrupado por nombre y tasa, con montos por moneda.
-- `CartLineDTO.tax`.
-- `CartDTO.subtotals`, `CartDTO.taxes` y `CartDTO.totals`.
-
-Cálculo:
-
-- El impuesto se calcula por línea con `calculateTax`.
-- Se agrupa por nombre y tasa de impuesto (`IVA 16%`, `ISR 10%`, etc.).
-- Se suman subtotal e impuestos por moneda.
-- Las líneas por cotizar o con incidencias se excluyen.
-- `totals` representa el gran total con impuestos.
-
-UI:
-
-- `CartTotals` muestra subtotal, impuestos con su tasa y total.
-- `ExchangeSwitch` convierte subtotal, impuestos y total de forma consistente.
-- `CartSummary` conserva su ancho y su sticky actual.
-
-## Integración con el carrito
-
-Archivos existentes modificados mínimamente:
-
-- `src/app/(public)/cart/page.tsx`
-- `src/modules/cart/components/cart-lines.tsx`
-- `src/modules/cart/components/cart-flow.tsx`
-- `src/modules/cart/components/cart-checkout.tsx`
-- `src/modules/cart/components/cart-summary.tsx`
-- `src/modules/cart/components/cart-totals.tsx`
-- `src/modules/cart/application/cart.types.ts`
-- `src/modules/cart/application/cart.line.ts`
-- `src/modules/cart/infrastructure/cart.query.ts`
-- `src/modules/cart/infrastructure/cart.sources.query.ts`
-
-Layout inmutable:
-
-```txt
-mx-auto w-full max-w-7xl
-lg:grid-cols-[minmax(0,1fr)_28rem]
-lg:items-start
-lg:gap-8
-```
-
-El resumen es informativo en los 4 pasos y no contiene CTA. El CTA principal vive
-siempre al final del contenido del paso. `CartCheckout` ya no contiene shell, grid,
-resumen ni stepper.
+- `cart.billing` y `cart.delivery` (jsonb, `null` = paso incompleto).
+- Se leen siempre con `checkoutBillingSchema` / `checkoutDeliverySchema`; si ya no son
+  válidos se descartan y el paso vuelve a estar incompleto.
+- `clearCart` y `placeOrder` los dejan en `null`. Cambiar líneas del carrito no los
+  borra: la revisión y `placeOrder` validan contra el carrito actual.
 
 ## Formularios
 
-Estándar de `main-platform`:
+- Un `useForm` por paso, con los modos por defecto (`onSubmit` y luego `onChange`):
+  tras el primer intento cada cambio revalida y los errores se limpian en vivo.
+- `defaultValues` llegan del servidor, por lo que SSR y cliente coinciden.
+- Entrega: el formulario conserva todas las ramas (domicilio, almacén, fletera) para
+  no perder lo escrito al cambiar de tipo. `createDeliveryFormSchema` toma la rama
+  elegida (`toDeliveryInput`) y la valida con el esquema estricto
+  (`checkoutDeliverySchema`, `discriminatedUnion`). Las rutas del formulario y del
+  borrador coinciden, así que los errores caen en el campo correcto sin remapeo.
+- Reglas cruzadas en `checkout.rules.ts` (mínimo de $10,000 MXN para domicilio,
+  facturación de guía “Otro”), compartidas por cliente y server actions.
 
-- React Hook Form.
-- `zodResolver`.
-- `mode: 'onTouched'`.
-- `Controller` para Select, Combobox, Switch, radio cards, fecha y archivos.
-- `useWatch` para UI condicional.
-- `Field`, `FieldLabel`, `FieldError`, `FieldDescription` y `FieldGroup`.
-- `trigger` por paso.
-- `handleSubmit` en el paso final.
-- Solo `step` vive fuera de RHF.
+## Server actions (`checkout.action.ts`)
 
-## Pedidos a nombre de otro usuario
+- `saveCheckoutBilling`: valida propietario (`orders.createForOther`), guarda y redirige.
+- `saveCheckoutDelivery`: valida reglas y permisos de apartado, guarda y redirige.
+- `placeOrder({ version })`: `version` es un hash de lo mostrado en la revisión; si
+  cambió, falla. En una transacción bloquea el carrito, crea `order` y `order_item`,
+  aparta inventario si se pidió, reclama los RFC con `syncFiles`, vacía el carrito y
+  redirige a `/orders/[id]` (404 por ahora).
 
-- Permiso: `orders.createForOther`.
-- Grupo: `orders` (`Pedidos`).
-- Se registra en el seed y se asigna al `super_admin`.
-- El carrito solo consulta usuarios y muestra el selector cuando el permiso existe.
-- El prop `canCreateForOther` reemplaza a `canSelectOwner`.
+## Pedidos
 
-## Archivos RFC
+- `order` (`ord_`): `number` serial, `userId` (propietario), `createdById`, `status`
+  (`pending | paid | completed | cancelled`), `fulfillmentType`, snapshots jsonb de
+  facturación, entrega, subtotales, impuestos y totales, `notes`.
+- `order_item` (`oitem_`): foto de cada línea (títulos, unidad, moneda, cantidad,
+  campos, precio, impuesto). Las líneas por cotizar se conservan sin precio.
 
-- Se usa `ControlledFileUploader` con el registro estándar de archivos.
-- Entidad `order`.
-- Scopes:
-  - `invoiceRfc` → `orders/rfc/invoice`
-  - `senderRfc` → `orders/rfc/sender`
-  - `receiverRfc` → `orders/rfc/receiver`
-- PDF, máximo 10 MB, un archivo por scope.
-- El formulario guarda llaves temporales (`rfcKey`), no objetos `File`.
-- `CheckoutSubmission` usa `fileKeys`.
-- Los archivos temporales quedan huérfanos hasta que exista la creación del pedido;
-  se reclamarán con `syncFiles` en la siguiente fase.
+## Apartado de inventario
 
-## Rendimiento del formulario
+- `stock_reservation` (`rsv_`): cantidad de un lote en una celda con `expiresAt`. No es
+  un movimiento de almacén; `orderId` solo sirve para trazabilidad.
+- Mientras está vigente se descuenta en toda la plataforma: `getVariantStock` (catálogo,
+  carrito, detalle) y el motor del almacén (`checkStock` con `reserved`), que impide
+  sacar o mover cantidades apartadas. La ocupación física de la celda no cambia.
+- Al vencer deja de contar al instante; un cron futuro eliminará los registros vencidos.
+- `reserveStock` bloquea las celdas en orden de id (el mismo bloqueo del motor del
+  almacén), así que ni movimientos ni otros apartados pueden consumir la cantidad a la vez.
+- Solo variantes con `managesInventory`. Duraciones: 1, 4, 8, 12 y 24 horas.
+- Permisos: `orders.reserve` (activar el switch) y `orders.reserveDuration` (elegir una
+  duración distinta de 24 horas).
 
-- `CartCheckout` solo observa `userId`.
-- Los valores completos se leen dentro de `ReviewStep`, que únicamente se monta en
-  el paso 4.
-- Los autocompletados de direcciones y perfiles fiscales hacen un solo `trigger`
-  después de setear los campos.
-- Las opciones de combobox son constantes o memoizadas para no recrearse en cada
-  render.
-- `OrderStep` observa únicamente el error de `type`.
+## Pendiente
 
-## Pasos
-
-### Carrito
-
-Carrito real actual, con IVA en el resumen y CTA principal al final del contenido.
-`Vaciar carrito` queda como acción secundaria dentro del bloque de productos.
-
-### Facturación y propietario
-
-- Propietario, editable solo para administradores.
-- Perfil fiscal guardado.
-- Razón social.
-- RFC.
-- Código postal fiscal.
-- Régimen fiscal.
-- Uso de CFDI.
-- PDF del RFC seleccionable y removible en cliente.
-
-### Datos del pedido
-
-- Domicilio.
-- Almacén.
-- Fletera.
-- Direcciones guardadas.
-- Remitente y destinatario.
-- Notas.
-- Apartado de inventario para administradores.
-- Regla de mínimo de $10,000 MXN sobre el subtotal.
-
-### Revisión
-
-- Facturación y propietario.
-- Entrega.
-- Productos desde `CartLineDTO`.
-- Notas.
-- Apartado.
-- Resumen con IVA y total.
-- Botón **Confirmar pedido**.
-
-## Regla de domicilio
-
-- Aplica solo a `home`.
-- Usa el subtotal en MXN.
-- Convierte otras monedas usando `cart.exchanges`.
-- Si no se puede calcular el subtotal MXN, bloquea la entrega a domicilio.
-- Muestra el aviso y bloquea el avance.
-
-## Payload
-
-```ts
-interface CheckoutSubmission {
-  payload: CheckoutPayload;
-  files: CheckoutFiles;
-}
-```
-
-`CheckoutPayload` incluye:
-
-- Propietario.
-- Facturación.
-- Entrega o recolección.
-- Items del carrito con precio, impuesto e incidencias.
-- Subtotales, impuestos y totales.
-- Notas.
-- Apartado.
-- Fecha de creación.
-
-`CheckoutFiles` separa:
-
-- PDF RFC de facturación.
-- PDF RFC del remitente.
-- PDF RFC del destinatario.
-
-El payload queda listo para que una futura server action suba los archivos y cree el
-pedido. La action deberá revalidar carrito, precios, impuestos y stock.
-
-## Confirmación
-
-```ts
-function onConfirm(_submission: CheckoutSubmission): void {
-  // Wired to the real checkout action in the next phase.
-}
-```
-
-- El botón valida el formulario.
-- Si es válido, construye `CheckoutSubmission` y llama `onConfirm`.
-- `onConfirm` no hace nada.
-- Sin toast, redirección o persistencia.
-
-## Archivos nuevos
-
-```txt
-src/modules/cart/application/
-├── cart.totals.ts
-├── cart.totals.test.ts
-├── checkout.constants.ts
-├── checkout.types.ts
-├── checkout.defaults.ts
-├── checkout.mapping.ts
-├── checkout.payload.ts
-└── checkout.validation.ts
-
-src/modules/cart/components/
-├── cart-checkout.tsx
-├── cart-actions.tsx
-├── cart-flow.tsx
-├── cart-lines.tsx
-├── checkout-actions.tsx
-├── checkout-callout.tsx
-├── checkout-choice-cards.tsx
-├── checkout-fields.tsx
-├── checkout-file-picker.tsx
-├── checkout-line-item.tsx
-├── checkout-mobile-bar.tsx
-├── checkout-step-content.tsx
-├── checkout-stepper.tsx
-├── saved-address-select.tsx
-└── steps/
-    ├── billing-step.tsx
-    ├── order-step.tsx
-    ├── review-step.tsx
-    ├── home-order-fields.tsx
-    ├── warehouse-order-fields.tsx
-    ├── shipping-company-fields.tsx
-    └── shipping-party-fields.tsx
-```
-
-## Validación técnica
-
-```bash
-pnpm lint
-pnpm test
-pnpm build
-```
-
-## Siguiente fase
-
-- Implementar `order` y `order_item`.
-- Crear la server action de checkout.
-- Subir los PDF del RFC.
-- Revalidar carrito, precios, IVA y stock.
-- Conectar `onConfirm` al submit real.
+- Página de detalle del pedido (`/orders/[id]`).
+- Cron de limpieza de apartados vencidos.
+- Reglas de apartado al pagar o completar un pedido.
