@@ -14,9 +14,11 @@ import {
   CardTitle,
 } from '@/shared/components/card';
 import { FieldError } from '@/shared/components/field';
+import { formatCurrency } from '@/shared/utils/format-currency';
 import {
   CHECKOUT_STEP_PATHS,
   DEFAULT_RESERVATION_HOURS,
+  MIN_HOME_DELIVERY_MXN,
   ORDER_TYPE_LABELS,
   ORDER_TYPES,
   RESERVATION_HOURS,
@@ -44,12 +46,18 @@ const ORDER_TYPE_DESCRIPTIONS = {
   'shipping-company': 'Envío mediante una empresa de transporte.',
 } as const;
 
-const ORDER_TYPE_OPTIONS = ORDER_TYPES.map((type) => ({
-  value: type,
-  label: ORDER_TYPE_LABELS[type],
-  description: ORDER_TYPE_DESCRIPTIONS[type],
-  icon: ORDER_TYPE_ICONS[type],
-}));
+function getOrderTypeOptions(canDeliverHome: boolean) {
+  return ORDER_TYPES.map((type) => ({
+    value: type,
+    label: ORDER_TYPE_LABELS[type],
+    description:
+      type === 'home' && !canDeliverHome
+        ? `Requiere un subtotal mínimo de ${formatCurrency(MIN_HOME_DELIVERY_MXN, 'MXN')}.`
+        : ORDER_TYPE_DESCRIPTIONS[type],
+    icon: ORDER_TYPE_ICONS[type],
+    disabled: type === 'home' && !canDeliverHome,
+  }));
+}
 
 const RESERVATION_OPTIONS = RESERVATION_HOURS.map((hours) => ({
   value: String(hours),
@@ -110,7 +118,7 @@ export function DeliveryForm({
             <ChoiceCards
               value={orderType}
               onValueChange={handleOrderTypeChange}
-              options={ORDER_TYPE_OPTIONS}
+              options={getOrderTypeOptions(canDeliverHome)}
               ariaLabel='Tipo de entrega'
             />
 
