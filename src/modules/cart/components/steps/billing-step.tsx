@@ -13,13 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/card';
+import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { MANUAL_OPTION } from '../../application/checkout.constants';
 import { mapTaxProfileToInvoiceDetails } from '../../application/checkout.mapping';
 import type { CheckoutFormValues, CheckoutUser } from '../../application/checkout.types';
 import { CheckoutCallout } from '../checkout-callout';
 import { ChoiceCards } from '../checkout-choice-cards';
 import { CheckoutCombobox, CheckoutInput } from '../checkout-fields';
-import { CheckoutFilePicker } from '../checkout-file-picker';
 
 const FISCAL_REGIME_SELECT_OPTIONS = FISCAL_REGIME_OPTIONS.map((option) => ({
   value: option.value,
@@ -36,7 +36,7 @@ interface BillingStepProps {
   users: CheckoutUser[];
   sessionUser: CheckoutUser;
   taxProfiles: UserTaxProfileDTO[];
-  canSelectOwner: boolean;
+  canCreateForOther: boolean;
 }
 
 export function BillingStep({
@@ -44,7 +44,7 @@ export function BillingStep({
   users,
   sessionUser,
   taxProfiles,
-  canSelectOwner,
+  canCreateForOther,
 }: BillingStepProps) {
   const selectedTaxProfileId = useWatch({
     control: form.control,
@@ -115,14 +115,13 @@ export function BillingStep({
           <CardDescription>Indica a nombre de quién se registra esta compra.</CardDescription>
         </CardHeader>
         <CardContent>
-          {canSelectOwner ? (
+          {canCreateForOther ? (
             <CheckoutCombobox
               control={form.control}
               name='userId'
               label='Usuario responsable'
               placeholder='Busca por nombre o correo'
               options={userOptions}
-              description='Solo administradores pueden crear pedidos a nombre de otro usuario.'
             />
           ) : (
             <div className='flex items-center gap-3 rounded-lg border bg-muted/40 p-3'>
@@ -197,9 +196,14 @@ export function BillingStep({
               placeholder='Selecciona un uso'
               options={CFDI_USE_SELECT_OPTIONS}
             />
-            <CheckoutFilePicker
+          </div>
+
+          <div className='mt-4 border-t pt-4'>
+            <ControlledFileUploader
               control={form.control}
-              name='invoiceDetails.rfcFile'
+              name='invoiceDetails.rfcKey'
+              entity='order'
+              scope='invoiceRfc'
               label='Cédula del RFC (opcional)'
             />
           </div>

@@ -29,7 +29,7 @@ export function mapTaxProfileToInvoiceDetails(profile: UserTaxProfileDTO): Check
     zipCode: profile.taxPostalCode,
     taxRegimen: profile.taxRegime,
     cfdiUse: profile.cfdiUse,
-    rfcFile: null,
+    rfcKey: '',
   };
 }
 

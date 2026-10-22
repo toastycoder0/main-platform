@@ -4,6 +4,7 @@ export const PERMISSION_GROUP_LABELS = {
   'warehouse.lots': 'Lotes',
   'warehouse.map': 'Mapa del almacén',
   'warehouse.stock': 'Stock',
+  orders: 'Pedidos',
   admin: 'Panel de administración',
   'admin.users': 'Usuarios',
   'admin.roles': 'Roles',
@@ -34,6 +35,9 @@ export function getPermissionGroupLabel(slug: string): string {
 export const PERMISSIONS = {
   public: {
     access: 'public.access',
+  },
+  orders: {
+    createForOther: 'orders.createForOther',
   },
   warehouse: {
     access: 'warehouse.access',

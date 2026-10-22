@@ -22,7 +22,7 @@ import {
 } from '@/shared/constants/permissions';
 import { seedWarehouse } from './warehouse.seed';
 
-const { admin, warehouse } = PERMISSIONS;
+const { admin, orders, warehouse } = PERMISSIONS;
 
 function accessPermission(slug: string, group: PermissionGroupKey) {
   return {
@@ -34,6 +34,11 @@ function accessPermission(slug: string, group: PermissionGroupKey) {
 
 const INITIAL_PERMISSIONS = [
   { slug: PERMISSIONS.public.access, name: 'Acceso a la sección pública', type: 'access' as const },
+  {
+    slug: orders.createForOther,
+    name: 'Crear pedidos a nombre de otro usuario',
+    type: 'action' as const,
+  },
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
   accessPermission(warehouse.lots.access, 'warehouse.lots'),
   { slug: warehouse.lots.create, name: 'Crear lotes', type: 'action' as const },

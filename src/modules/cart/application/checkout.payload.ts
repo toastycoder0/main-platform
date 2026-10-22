@@ -1,6 +1,6 @@
 import type { CartDTO } from './cart.types';
 import type {
-  CheckoutFiles,
+  CheckoutFileKeys,
   CheckoutFormValues,
   CheckoutInvoicePayload,
   CheckoutPayload,
@@ -22,7 +22,7 @@ function toInvoicePayload(values: CheckoutFormValues): CheckoutInvoicePayload {
 
 function toShippingInvoicePayload(
   invoice: CheckoutShippingInvoice,
-): Omit<CheckoutShippingInvoice, 'rfcFile'> {
+): Omit<CheckoutShippingInvoice, 'rfcKey'> {
   return {
     businessName: invoice.businessName,
     rfc: invoice.rfc,
@@ -101,11 +101,11 @@ export function buildCheckoutPayload(
   };
 }
 
-export function buildCheckoutFiles(values: CheckoutFormValues): CheckoutFiles {
+export function buildCheckoutFileKeys(values: CheckoutFormValues): CheckoutFileKeys {
   return {
-    invoiceRfc: values.invoiceDetails.rfcFile,
-    senderRfc: values.shippingCompany.sender.invoiceDetails.rfcFile,
-    receiverRfc: values.shippingCompany.receiver.invoiceDetails.rfcFile,
+    invoiceRfc: values.invoiceDetails.rfcKey,
+    senderRfc: values.shippingCompany.sender.invoiceDetails.rfcKey,
+    receiverRfc: values.shippingCompany.receiver.invoiceDetails.rfcKey,
   };
 }
 
@@ -116,6 +116,6 @@ export function buildCheckoutSubmission(
 ): CheckoutSubmission {
   return {
     payload: buildCheckoutPayload(values, cart, owner),
-    files: buildCheckoutFiles(values),
+    fileKeys: buildCheckoutFileKeys(values),
   };
 }

@@ -30,13 +30,13 @@ export default async function CartPage() {
     name: ctx.session.user.name,
     email: ctx.session.user.email,
   };
-  const canSelectOwner = ctx.permissions.has(PERMISSIONS.admin.users.access);
+  const canCreateForOther = ctx.permissions.has(PERMISSIONS.orders.createForOther);
   const canReserve = ctx.permissions.has(PERMISSIONS.admin.access);
 
   const [addresses, taxProfiles, userPage] = await Promise.all([
     listUserAddresses(ctx, sessionUser.id),
     listUserTaxProfiles(ctx, sessionUser.id),
-    canSelectOwner ? listUsers(ctx, { q: null, page: 1, pageSize: 50 }) : Promise.resolve(null),
+    canCreateForOther ? listUsers(ctx, { q: null, page: 1, pageSize: 50 }) : Promise.resolve(null),
   ]);
 
   const ownerOptions: CheckoutUser[] =
@@ -63,11 +63,11 @@ export default async function CartPage() {
       checkoutContent={
         <CartCheckout
           cart={cart}
-          users={canSelectOwner ? ownerOptions : []}
+          users={canCreateForOther ? ownerOptions : []}
           sessionUser={sessionUser}
           addresses={addresses}
           taxProfiles={taxProfiles}
-          canSelectOwner={canSelectOwner}
+          canCreateForOther={canCreateForOther}
           canReserve={canReserve}
         />
       }

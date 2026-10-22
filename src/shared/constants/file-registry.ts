@@ -1,4 +1,10 @@
-export type FileOwnerType = 'product_document' | 'product_image' | 'brand' | 'category' | 'user';
+export type FileOwnerType =
+  | 'product_document'
+  | 'product_image'
+  | 'brand'
+  | 'category'
+  | 'user'
+  | 'order';
 
 export interface ScopeConfig {
   path: string;
@@ -22,6 +28,29 @@ export const FILE_REGISTRY = {
       allowedTypes: DOCUMENT_TYPES,
       maxSize: 10 * MB,
       maxCount: 10,
+    },
+  },
+  order: {
+    invoiceRfc: {
+      path: 'orders/rfc/invoice',
+      ownerType: 'order',
+      allowedTypes: DOCUMENT_TYPES,
+      maxSize: 10 * MB,
+      maxCount: 1,
+    },
+    senderRfc: {
+      path: 'orders/rfc/sender',
+      ownerType: 'order',
+      allowedTypes: DOCUMENT_TYPES,
+      maxSize: 10 * MB,
+      maxCount: 1,
+    },
+    receiverRfc: {
+      path: 'orders/rfc/receiver',
+      ownerType: 'order',
+      allowedTypes: DOCUMENT_TYPES,
+      maxSize: 10 * MB,
+      maxCount: 1,
     },
   },
   category: {

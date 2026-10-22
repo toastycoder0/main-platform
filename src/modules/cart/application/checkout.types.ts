@@ -27,7 +27,7 @@ export interface CheckoutInvoiceDetails {
   zipCode: string;
   taxRegimen: string;
   cfdiUse: string;
-  rfcFile: File | null;
+  rfcKey: string;
 }
 
 export interface CheckoutWarehouseDetails {
@@ -43,7 +43,7 @@ export interface CheckoutShippingInvoice {
   rfc: string;
   zipCode: string;
   taxRegimen: string;
-  rfcFile: File | null;
+  rfcKey: string;
 }
 
 export interface CheckoutShippingParty {
@@ -89,7 +89,7 @@ export interface CheckoutProps {
   sessionUser: CheckoutUser;
   addresses: UserAddressDTO[];
   taxProfiles: UserTaxProfileDTO[];
-  canSelectOwner: boolean;
+  canCreateForOther: boolean;
   canReserve: boolean;
 }
 
@@ -104,7 +104,7 @@ export interface CheckoutInvoicePayload {
 export interface CheckoutShippingPartyPayload {
   name: string;
   direction: CheckoutDirection;
-  invoiceDetails: Omit<CheckoutShippingInvoice, 'rfcFile'>;
+  invoiceDetails: Omit<CheckoutShippingInvoice, 'rfcKey'>;
 }
 
 export interface CheckoutShippingCompanyPayload {
@@ -157,13 +157,13 @@ export interface CheckoutPayload {
   createdAt: string;
 }
 
-export interface CheckoutFiles {
-  invoiceRfc: File | null;
-  senderRfc: File | null;
-  receiverRfc: File | null;
+export interface CheckoutFileKeys {
+  invoiceRfc: string;
+  senderRfc: string;
+  receiverRfc: string;
 }
 
 export interface CheckoutSubmission {
   payload: CheckoutPayload;
-  files: CheckoutFiles;
+  fileKeys: CheckoutFileKeys;
 }

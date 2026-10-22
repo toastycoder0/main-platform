@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { isCfdiUse, isFiscalRegime } from '@/modules/users/application/users.cfdi';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import {
-  CHECKOUT_FILE_MAX_SIZE,
   type CheckoutStep,
   INVOICE_SHIPPING_OPTIONS,
   ORDER_TYPES,
@@ -39,16 +38,7 @@ const taxRegime = z
   .min(1, FIELD_ERRORS.required)
   .refine(isFiscalRegime, 'El régimen fiscal no es válido');
 
-const fileSchema = z
-  .custom<File | null>(
-    (value) => value === null || (typeof File !== 'undefined' && value instanceof File),
-    'El archivo no es válido',
-  )
-  .refine((file) => file === null || file.type === 'application/pdf', 'El archivo debe ser PDF')
-  .refine(
-    (file) => file === null || file.size <= CHECKOUT_FILE_MAX_SIZE,
-    'El archivo excede el tamaño máximo de 10 MB',
-  );
+const rfcKey = z.union([z.literal(''), z.string().startsWith('_temp/'), z.url(FIELD_ERRORS.url)]);
 
 const directionShape = {
   street: z.string(),
@@ -78,7 +68,7 @@ const invoiceSchema = z.object({
   zipCode: postalCode,
   taxRegimen: taxRegime,
   cfdiUse,
-  rfcFile: fileSchema,
+  rfcKey,
 });
 
 const warehouseShape = {
@@ -102,7 +92,7 @@ const shippingInvoiceShape = {
   rfc: z.string(),
   zipCode: z.string(),
   taxRegimen: z.string(),
-  rfcFile: fileSchema,
+  rfcKey,
 };
 
 const shippingInvoiceSchema = z.object({
@@ -110,7 +100,7 @@ const shippingInvoiceSchema = z.object({
   rfc,
   zipCode: postalCode,
   taxRegimen: taxRegime,
-  rfcFile: fileSchema,
+  rfcKey,
 });
 
 const shippingPartyShape = {

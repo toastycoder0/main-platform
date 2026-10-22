@@ -17,7 +17,7 @@ interface CheckoutStepContentProps {
   sessionUser: CheckoutUser;
   addresses: UserAddressDTO[];
   taxProfiles: UserTaxProfileDTO[];
-  canSelectOwner: boolean;
+  canCreateForOther: boolean;
   canReserve: boolean;
   mxnSubtotal: number | null;
   ownerName: string;
@@ -32,7 +32,7 @@ export function CheckoutStepContent({
   sessionUser,
   addresses,
   taxProfiles,
-  canSelectOwner,
+  canCreateForOther,
   canReserve,
   mxnSubtotal,
   ownerName,
@@ -49,7 +49,7 @@ export function CheckoutStepContent({
         users={users}
         sessionUser={sessionUser}
         taxProfiles={taxProfiles}
-        canSelectOwner={canSelectOwner}
+        canCreateForOther={canCreateForOther}
       />
     );
   }

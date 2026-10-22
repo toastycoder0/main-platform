@@ -10,6 +10,24 @@ describe('FILE_REGISTRY', () => {
     });
   });
 
+  it('exposes the order RFC scopes', () => {
+    expect(getScopeConfig('order', 'invoiceRfc')).toMatchObject({
+      path: 'orders/rfc/invoice',
+      ownerType: 'order',
+      maxCount: 1,
+    });
+    expect(getScopeConfig('order', 'senderRfc')).toMatchObject({
+      path: 'orders/rfc/sender',
+      ownerType: 'order',
+      maxCount: 1,
+    });
+    expect(getScopeConfig('order', 'receiverRfc')).toMatchObject({
+      path: 'orders/rfc/receiver',
+      ownerType: 'order',
+      maxCount: 1,
+    });
+  });
+
   it('returns undefined for an unknown entity or scope', () => {
     expect(getScopeConfig('unknown', 'taxDocument')).toBeUndefined();
     expect(getScopeConfig('user', 'unknown')).toBeUndefined();

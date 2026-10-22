@@ -4,11 +4,11 @@ import type { FieldPath, UseFormReturn } from 'react-hook-form';
 import { useWatch } from 'react-hook-form';
 import { FISCAL_REGIME_OPTIONS } from '@/modules/users/application/users.cfdi';
 import type { UserAddressDTO } from '@/modules/users/application/users.types';
+import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { Separator } from '@/shared/components/separator';
 import { mapAddressToDirection } from '../../application/checkout.mapping';
 import type { CheckoutFormValues, ShippingPartyPrefix } from '../../application/checkout.types';
 import { CheckoutCombobox, CheckoutInput } from '../checkout-fields';
-import { CheckoutFilePicker } from '../checkout-file-picker';
 import { SavedAddressSelect } from '../saved-address-select';
 
 const SHIPPING_FISCAL_REGIME_OPTIONS = FISCAL_REGIME_OPTIONS.map((option) => ({
@@ -162,9 +162,16 @@ export function ShippingPartyFields({
           placeholder='Selecciona un régimen'
           options={SHIPPING_FISCAL_REGIME_OPTIONS}
         />
-        <CheckoutFilePicker
+      </div>
+
+      <Separator />
+
+      <div className='pt-4'>
+        <ControlledFileUploader
           control={form.control}
-          name={path('invoiceDetails.rfcFile')}
+          name={path('invoiceDetails.rfcKey')}
+          entity='order'
+          scope={prefix === 'shippingCompany.sender' ? 'senderRfc' : 'receiverRfc'}
           label='Cédula del RFC (opcional)'
         />
       </div>

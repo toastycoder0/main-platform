@@ -33,7 +33,7 @@ export function CartCheckout({
   sessionUser,
   addresses,
   taxProfiles,
-  canSelectOwner,
+  canCreateForOther,
   canReserve,
 }: CheckoutProps) {
   const { step, setStep } = useCartFlow();
@@ -127,7 +127,7 @@ export function CartCheckout({
           sessionUser={sessionUser}
           addresses={addresses}
           taxProfiles={taxProfiles}
-          canSelectOwner={canSelectOwner}
+          canCreateForOther={canCreateForOther}
           canReserve={canReserve}
           mxnSubtotal={mxnSubtotal}
           ownerName={ownerName}

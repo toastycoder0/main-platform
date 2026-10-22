@@ -35,7 +35,3 @@ export const INVOICE_SHIPPING_OPTIONS = ['Remitente', 'Destinatario', 'Otro'] as
 export const MANUAL_OPTION = 'manual';
 
 export const MIN_HOME_DELIVERY_MXN = 10000;
-
-export const CHECKOUT_FILE_MAX_SIZE = 10 * 1024 * 1024;
-
-export const CHECKOUT_FILE_ACCEPT = 'application/pdf,.pdf';

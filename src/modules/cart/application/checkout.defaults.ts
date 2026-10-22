@@ -24,7 +24,7 @@ export const EMPTY_INVOICE_DETAILS: CheckoutInvoiceDetails = {
   zipCode: '',
   taxRegimen: '',
   cfdiUse: '',
-  rfcFile: null,
+  rfcKey: '',
 };
 
 export const EMPTY_WAREHOUSE_DETAILS: CheckoutWarehouseDetails = {
@@ -43,7 +43,7 @@ export const EMPTY_SHIPPING_PARTY: CheckoutShippingParty = {
     rfc: '',
     zipCode: '',
     taxRegimen: '',
-    rfcFile: null,
+    rfcKey: '',
   },
 };
 
