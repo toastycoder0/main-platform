@@ -160,7 +160,7 @@ describe('Cart checkout E2E', () => {
     await page.getByRole('button', { name: 'Confirmar pedido' }).click();
 
     await page.waitForURL(/\/orders\/ord_/);
-    await page.getByRole('heading', { name: 'Página no encontrada' }).waitFor();
+    await page.getByRole('heading', { name: /Pedido #\d+/ }).waitFor();
 
     const orders = await db()`SELECT id FROM "order" WHERE user_id = ${adminId}`;
     const items = await db()`SELECT id FROM cart_item WHERE cart_id = ${CART_ID}`;
