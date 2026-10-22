@@ -9,6 +9,7 @@ import { documentTypesManifest } from './document-types/manifest';
 import { exchangeRatesManifest } from './exchange-rates/manifest';
 import { filesManifest } from './files/manifest';
 import type { ModuleManifest, NavItem, SectionId } from './manifest';
+import { ordersManifest } from './orders/manifest';
 import { priceListsManifest } from './price-lists/manifest';
 import { productDetailsManifest } from './product-details/manifest';
 import { productUnitsManifest } from './product-units/manifest';
@@ -33,6 +34,7 @@ const manifests: ModuleManifest[] = [
   documentTypesManifest,
   exchangeRatesManifest,
   filesManifest,
+  ordersManifest,
   priceListsManifest,
   productDetailsManifest,
   productUnitsManifest,

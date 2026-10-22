@@ -16,6 +16,7 @@ const SECTIONS: { href: string; label: string; exact?: boolean }[] = [
   { href: '/account/security', label: 'Seguridad' },
   { href: '/account/addresses', label: 'Direcciones' },
   { href: '/account/billing', label: 'Facturación' },
+  { href: '/orders', label: 'Mis pedidos' },
 ];
 
 function findActiveHref(pathname: string): string {
