@@ -730,9 +730,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
       { listSlug: 'b', amount: 270 },
     ],
     variants: [
-      { code: 'ESB-BL', title: 'Blanco', managesInventory: false, pricingModel: 'flat' },
-      { code: 'ESB-NG', title: 'Negro', managesInventory: false, pricingModel: 'flat' },
-      { code: 'ESB-RJ', title: 'Rojo óxido', managesInventory: false, pricingModel: 'flat' },
+      { code: 'ESB-BL', title: 'Blanco', managesInventory: true, pricingModel: 'flat' },
+      { code: 'ESB-NG', title: 'Negro', managesInventory: true, pricingModel: 'flat' },
+      { code: 'ESB-RJ', title: 'Rojo óxido', managesInventory: true, pricingModel: 'flat' },
     ],
     images: [{ color: '#EDEDE8', altText: 'Lata de esmalte sintético brillante en tono blanco' }],
     documents: [],
@@ -763,7 +763,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     ],
     prices: [{ listSlug: 'a', amount: 520 }],
     variants: [
-      { code: 'BMP-38', title: 'Galón 3.78 L', managesInventory: false, pricingModel: 'flat' },
+      { code: 'BMP-38', title: 'Galón 3.78 L', managesInventory: true, pricingModel: 'flat' },
     ],
     images: [{ color: '#B5844A', altText: 'Galón de barniz marino premium' }],
     documents: [
@@ -795,9 +795,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     ],
     prices: [{ listSlug: 'a', amount: 95 }],
     variants: [
-      { code: 'TMA-100', title: '1 pulgada', managesInventory: false, pricingModel: 'flat' },
-      { code: 'TMA-200', title: '2 pulgadas', managesInventory: false, pricingModel: 'flat' },
-      { code: 'TMA-300', title: '3 pulgadas', managesInventory: false, pricingModel: 'flat' },
+      { code: 'TMA-100', title: '1 pulgada', managesInventory: true, pricingModel: 'flat' },
+      { code: 'TMA-200', title: '2 pulgadas', managesInventory: true, pricingModel: 'flat' },
+      { code: 'TMA-300', title: '3 pulgadas', managesInventory: true, pricingModel: 'flat' },
     ],
     images: [{ color: '#A9AFB6', altText: 'Caja de tornillos de acero galvanizado para madera' }],
     documents: [],
@@ -827,9 +827,9 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     ],
     prices: [{ listSlug: 'a', amount: 68 }],
     variants: [
-      { code: 'GCR-CH', title: 'Chico', managesInventory: false, pricingModel: 'flat' },
-      { code: 'GCR-MD', title: 'Mediano', managesInventory: false, pricingModel: 'flat' },
-      { code: 'GCR-GR', title: 'Grande', managesInventory: false, pricingModel: 'flat' },
+      { code: 'GCR-CH', title: 'Chico', managesInventory: true, pricingModel: 'flat' },
+      { code: 'GCR-MD', title: 'Mediano', managesInventory: true, pricingModel: 'flat' },
+      { code: 'GCR-GR', title: 'Grande', managesInventory: true, pricingModel: 'flat' },
     ],
     images: [{ color: '#C89A6B', altText: 'Par de guantes de carnaza reforzada' }],
     documents: [],
@@ -859,7 +859,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     ],
     prices: [{ listSlug: 'a', amount: 12 }],
     variants: [
-      { code: 'LAG-320', title: 'Paquete 10 hojas', managesInventory: false, pricingModel: 'flat' },
+      { code: 'LAG-320', title: 'Paquete 10 hojas', managesInventory: true, pricingModel: 'flat' },
     ],
     images: [{ color: '#8E9BA8', altText: 'Paquete de lija al agua grano 320' }],
     documents: [],
@@ -889,7 +889,7 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     ],
     prices: [{ listSlug: 'a', amount: 74 }],
     variants: [
-      { code: 'CHM-25', title: 'Saco 25 kg', managesInventory: false, pricingModel: 'flat' },
+      { code: 'CHM-25', title: 'Saco 25 kg', managesInventory: true, pricingModel: 'flat' },
     ],
     images: [{ color: '#E4E7EA', altText: 'Saco de cal hidratada de mampostería' }],
     documents: [],

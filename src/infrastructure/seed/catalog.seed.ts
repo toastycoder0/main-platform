@@ -467,7 +467,8 @@ function toVariantInsert(
     code: variant.code,
     unitId: resolveOrThrow(refs.unitIdBySlug, variant.unitSlug ?? data.unitSlug, 'unit'),
     isActive: true,
-    // Seed variants are bought on demand so cart and checkout work without lots.
+    // On-demand by default so cart and checkout work without lots; the
+    // dataset can opt a variant into real stock (see stock.seed.ts).
     managesInventory: variant.managesInventory ?? false,
     minOrderQty: variant.minOrderQty ?? 1,
     incrementQty: variant.incrementQty ?? 1,
