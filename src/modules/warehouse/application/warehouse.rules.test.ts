@@ -94,6 +94,29 @@ describe('checkStock', () => {
     expect(errors[0]?.details).toEqual({ available: 60, required: 90 });
   });
 
+  it('does not let reserved quantities leave the cell', () => {
+    const deltas = computeNetDeltas([transfer('lot1', 'A', 'B', 50)]);
+    const context = {
+      ...contextWith(stockOf({ A: { lot1: 60 } })),
+      reserved: stockOf({ A: { lot1: 20 } }),
+    };
+
+    const errors = checkStock(deltas, context);
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.details).toEqual({ available: 40, required: 50 });
+  });
+
+  it('keeps reserved quantities in the capacity of the cell', () => {
+    const deltas = computeNetDeltas([transfer('lot1', null, 'A', 30)]);
+    const context = {
+      ...contextWith(stockOf({ A: { lot1: 80 } })),
+      reserved: stockOf({ A: { lot1: 80 } }),
+    };
+
+    expect(checkStock(deltas, context)).toHaveLength(1);
+  });
+
   it('rejects taking a lot that is not in the cell', () => {
     const deltas = computeNetDeltas([transfer('lot2', 'A', null, 1)]);
 

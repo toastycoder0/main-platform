@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { cellLot, lot, warehouseCell } from '@/infrastructure/db/schema';
+import { activeReservations } from './stock-reservation.query';
 
 export interface CatalogVariantLot {
   id: string;
@@ -15,7 +16,8 @@ export interface CatalogVariantStock {
 
 /**
  * Sellable stock per product item. Mirrors the warehouse rules: inactive lots
- * and cells cannot be moved, so their quantities are not offered to customers.
+ * and cells cannot be moved, so their quantities are not offered to customers,
+ * and quantities held by an active reservation are not available either.
  */
 export async function getVariantStock(
   ctx: RequestContext,
@@ -25,16 +27,19 @@ export async function getVariantStock(
     return new Map();
   }
 
+  const reserved = activeReservations(ctx.db);
+
   const rows = await ctx.db
     .select({
       itemId: lot.itemId,
       lotId: lot.id,
       lotCode: lot.code,
-      quantity: sql<string>`COALESCE(SUM(${cellLot.quantity}), 0)`,
+      quantity: sql<string>`COALESCE(SUM(GREATEST(${cellLot.quantity} - COALESCE(${reserved.quantity}, 0), 0)), 0)`,
     })
     .from(lot)
     .innerJoin(cellLot, eq(cellLot.lotId, lot.id))
     .innerJoin(warehouseCell, eq(warehouseCell.id, cellLot.cellId))
+    .leftJoin(reserved, and(eq(reserved.lotId, cellLot.lotId), eq(reserved.cellId, cellLot.cellId)))
     .where(
       and(inArray(lot.itemId, itemIds), eq(lot.isActive, true), eq(warehouseCell.isActive, true)),
     )

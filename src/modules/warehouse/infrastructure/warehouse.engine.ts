@@ -1,4 +1,5 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { getReservedByCell } from '@/infrastructure/catalog/stock-reservation.query';
 import type { DbLike } from '@/infrastructure/db';
 import { generateId } from '@/infrastructure/db/id';
 import { cellLot, lot, movement, movementEntry, warehouseCell } from '@/infrastructure/db/schema';
@@ -197,7 +198,8 @@ async function applyMovement(
 
   const deltas = computeNetDeltas(entries);
   const stock = await readStock(tx, cellIds);
-  const stockErrors = checkStock(deltas, { cells, lots, stock });
+  const reserved = await getReservedByCell(tx, cellIds);
+  const stockErrors = checkStock(deltas, { cells, lots, stock, reserved });
   if (stockErrors.length > 0) {
     throw new MovementRejectedError(stockErrors);
   }

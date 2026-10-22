@@ -33,6 +33,8 @@ export interface StockContext {
   cells: ReadonlyMap<string, CellState>;
   lots: ReadonlyMap<string, LotState>;
   stock: QuantitiesByCell;
+  /** Quantities held by active reservations: they occupy the cell but cannot leave it. */
+  reserved?: QuantitiesByCell;
 }
 
 function cellProblems(id: string, cell: CellState | undefined): MovementErrorDTO[] {
@@ -75,7 +77,9 @@ function insufficientStock(
   const errors: MovementErrorDTO[] = [];
 
   for (const [lotId, delta] of deltas) {
-    const available = context.stock.get(cellId)?.get(lotId) ?? 0;
+    const physical = context.stock.get(cellId)?.get(lotId) ?? 0;
+    const held = context.reserved?.get(cellId)?.get(lotId) ?? 0;
+    const available = Math.max(physical - held, 0);
     if (delta < 0 && available + delta < 0) {
       const lotCode = context.lots.get(lotId)?.code ?? lotId;
       errors.push({
