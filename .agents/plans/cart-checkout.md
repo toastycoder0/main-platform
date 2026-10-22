@@ -114,6 +114,28 @@ Estándar de `main-platform`:
 - `handleSubmit` en el paso final.
 - Solo `step` vive fuera de RHF.
 
+## Pedidos a nombre de otro usuario
+
+- Permiso: `orders.createForOther`.
+- Grupo: `orders` (`Pedidos`).
+- Se registra en el seed y se asigna al `super_admin`.
+- El carrito solo consulta usuarios y muestra el selector cuando el permiso existe.
+- El prop `canCreateForOther` reemplaza a `canSelectOwner`.
+
+## Archivos RFC
+
+- Se usa `ControlledFileUploader` con el registro estándar de archivos.
+- Entidad `order`.
+- Scopes:
+  - `invoiceRfc` → `orders/rfc/invoice`
+  - `senderRfc` → `orders/rfc/sender`
+  - `receiverRfc` → `orders/rfc/receiver`
+- PDF, máximo 10 MB, un archivo por scope.
+- El formulario guarda llaves temporales (`rfcKey`), no objetos `File`.
+- `CheckoutSubmission` usa `fileKeys`.
+- Los archivos temporales quedan huérfanos hasta que exista la creación del pedido;
+  se reclamarán con `syncFiles` en la siguiente fase.
+
 ## Rendimiento del formulario
 
 - `CartCheckout` solo observa `userId`.
