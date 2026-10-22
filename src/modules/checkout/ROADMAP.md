@@ -9,23 +9,14 @@
 - [x] Tablas `order` y `order_item` con snapshot de facturación, entrega, líneas y totales
 - [x] Apartado de inventario (`stock_reservation`) descontado en catálogo, carrito y motor del almacén
 - [x] Permisos `orders.reserve` y `orders.reserveDuration`
-- [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ❌ (ver pendientes)
+- [x] Listado `/orders` y detalle `/orders/[id]` (timeline, artículos, entrega, facturación, resumen y apartado)
+- [x] E2E de `/cart` estables: 5/5 en `cart.spec.ts` y 144/144 en la suite (los timeouts eran compilación en frío de `next dev`)
+- [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ✅
 
 ## Pendiente ❌
 
-### E2E
-
-- [ ] `e2e/routes/cart.spec.ts`: dos casos superan el timeout de 30 s
-  - *sends a step that is not reachable yet…*: `page.goto('/cart/review')` no termina de cargar
-  - *saves the billing step on the server…*: no navega a `/cart/delivery` tras **Continuar**
-  - Sospecha: compilación inicial de rutas en `next dev`; confirmar que la action no falla
-- [ ] `e2e/routes/roles.spec.ts`: `getByLabel('Nombre')` también encuentra el checkbox del
-  permiso “Crear pedidos a nombre de otro usuario” (introducido en `dddf735`); usar un
-  selector exacto
-
 ### Pedidos
 
-- [ ] Página de detalle `/orders/[id]` (hoy `placeOrder` redirige a un 404)
 - [ ] Reglas del apartado al pasar a `paid` o `completed` (posiblemente desaparece)
 - [ ] Cancelación de pedidos y liberación del apartado
 
