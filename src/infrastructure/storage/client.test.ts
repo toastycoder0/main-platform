@@ -18,7 +18,12 @@ vi.mock('@aws-sdk/client-s3', () => ({
   S3Client: class {
     send = send;
   },
-  PutObjectCommand: class {},
+  PutObjectCommand: class {
+    input: unknown;
+    constructor(input: unknown) {
+      this.input = input;
+    }
+  },
   HeadObjectCommand: class {},
   CopyObjectCommand: class {},
   DeleteObjectCommand: class {},
@@ -46,6 +51,24 @@ describe('storage client', () => {
     const mod1 = await import('./client');
     const mod2 = await import('./client');
     expect(mod1.storageClient).toBe(mod2.storageClient);
+  });
+
+  it('uploads an object with bucket, key, body and content type', async () => {
+    send.mockClear();
+    const { storageClient } = await import('./client');
+    const body = Buffer.from('demo');
+
+    await storageClient.putObject('products/images/demo/seed.png', body, 'image/png');
+
+    const command = send.mock.calls[0]?.[0] as {
+      input: { Bucket: string; Key: string; Body: unknown; ContentType: string };
+    };
+    expect(command.input).toMatchObject({
+      Bucket: 'test-bucket',
+      Key: 'products/images/demo/seed.png',
+      Body: body,
+      ContentType: 'image/png',
+    });
   });
 
   it('batches deletes into groups of 1000 keys', async () => {

@@ -11,6 +11,7 @@ import { env } from '@/config/env';
 
 export interface StorageClient {
   getPresignedUploadUrl(key: string, contentType: string): Promise<string>;
+  putObject(key: string, body: Uint8Array | string, contentType: string): Promise<void>;
   fileExists(key: string): Promise<boolean>;
   copyFile(sourceKey: string, destKey: string): Promise<void>;
   deleteFile(key: string): Promise<void>;
@@ -37,6 +38,16 @@ export function createStorageClient(): StorageClient {
         ContentType: contentType,
       });
       return getSignedUrl(s3, command, { expiresIn: 300 });
+    },
+
+    async putObject(key: string, body: Uint8Array | string, contentType: string): Promise<void> {
+      const command = new PutObjectCommand({
+        Bucket: env.CLOUD_BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      });
+      await s3.send(command);
     },
 
     async fileExists(key: string): Promise<boolean> {

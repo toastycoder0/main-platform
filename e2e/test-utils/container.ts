@@ -46,6 +46,16 @@ class E2EContainer {
 
     await prepareBucket(endpoint);
 
+    // Expose MinIO on the process env so the dev server and `pnpm db:seed`
+    // (invoked by the global setup) both upload assets to the test bucket
+    // instead of the real storage configured in .env.
+    process.env.CLOUD_ENDPOINT = endpoint;
+    process.env.CLOUD_ACCOUNT_ID = 'test';
+    process.env.CLOUD_ACCESS_KEY_ID = MINIO_USER;
+    process.env.CLOUD_SECRET_ACCESS_KEY = MINIO_PASSWORD;
+    process.env.CLOUD_BUCKET = BUCKET;
+    process.env.NEXT_PUBLIC_CLOUD_URL = `${endpoint}/${BUCKET}`;
+
     const { execSync } = await import('node:child_process');
     execSync('pnpm drizzle-kit push', {
       env: { ...process.env, DATABASE_URL: dbUrl },
@@ -57,12 +67,6 @@ class E2EContainer {
       env: {
         ...process.env,
         DATABASE_URL: dbUrl,
-        CLOUD_ENDPOINT: endpoint,
-        CLOUD_ACCOUNT_ID: 'test',
-        CLOUD_ACCESS_KEY_ID: MINIO_USER,
-        CLOUD_SECRET_ACCESS_KEY: MINIO_PASSWORD,
-        CLOUD_BUCKET: BUCKET,
-        NEXT_PUBLIC_CLOUD_URL: `${endpoint}/${BUCKET}`,
         BETTER_AUTH_URL: `http://localhost:${PORT}`,
         BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || 'test-secret-for-e2e',
       },

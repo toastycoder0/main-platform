@@ -20,6 +20,7 @@ import {
   PERMISSIONS,
   type PermissionGroupKey,
 } from '@/shared/constants/permissions';
+import { seedCatalog } from './catalog.seed';
 import { seedWarehouse } from './warehouse.seed';
 
 const { admin, orders, warehouse } = PERMISSIONS;
@@ -256,6 +257,7 @@ async function seed(): Promise<void> {
   await seedProductUnits();
   await seedDocumentTypes();
   await seedPriceLists();
+  await seedCatalog();
   await seedWarehouse();
 }
 
