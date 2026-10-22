@@ -26,7 +26,7 @@ const party = {
 };
 
 function homeForm(): DeliveryFormValues {
-  return { ...toDeliveryFormValues(null), type: 'home', home: direction };
+  return { ...toDeliveryFormValues(null, 'home'), type: 'home', home: direction };
 }
 
 function paths(result: ReturnType<ReturnType<typeof createDeliveryFormSchema>['safeParse']>) {
@@ -69,7 +69,7 @@ describe('createDeliveryFormSchema', () => {
   });
 
   it('drops the receiver when an "ocurre" shipment has none', () => {
-    const values = toDeliveryFormValues(null);
+    const values = toDeliveryFormValues(null, 'home');
     values.type = 'shipping-company';
     values.shippingCompany = {
       ...values.shippingCompany,
@@ -102,6 +102,38 @@ describe('toDeliveryFormValues', () => {
   it('restores a saved draft into the form', () => {
     const draft = checkoutDeliverySchema.parse(toDeliveryInput(homeForm()));
 
-    expect(toDeliveryFormValues(draft)).toEqual(homeForm());
+    expect(toDeliveryFormValues(draft, 'home')).toEqual(homeForm());
+  });
+
+  it('preselects the default type when there is no draft', () => {
+    expect(toDeliveryFormValues(null, 'warehouse').type).toBe('warehouse');
+  });
+
+  it('replaces a home draft when home delivery is no longer allowed', () => {
+    const draft = checkoutDeliverySchema.parse(toDeliveryInput(homeForm()));
+    const values = toDeliveryFormValues(draft, 'warehouse');
+
+    expect(values.type).toBe('warehouse');
+    expect(values.home).toEqual(direction);
+  });
+
+  it('keeps a non-home draft when home delivery is no longer allowed', () => {
+    const draft = checkoutDeliverySchema.parse({
+      type: 'warehouse',
+      notes: '',
+      reservationHours: null,
+      warehouse: {
+        office: 'Tezoyuca',
+        licensePlate: 'ABC-123',
+        vehicle: 'Camioneta 3.5 ton',
+        driver: 'Juan Pérez',
+        dateOfRecolection: '2026-01-01',
+      },
+    });
+
+    const restored = toDeliveryFormValues(draft, 'warehouse');
+
+    expect(restored.type).toBe('warehouse');
+    expect(restored.warehouse.licensePlate).toBe('ABC-123');
   });
 });

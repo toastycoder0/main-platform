@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canDeliverHome,
+  defaultOrderType,
   deliveryRuleIssues,
   getMxnSubtotal,
   HOME_MINIMUM_ERROR,
@@ -37,6 +38,13 @@ describe('canDeliverHome', () => {
     expect(canDeliverHome(10000)).toBe(true);
     expect(canDeliverHome(9999.99)).toBe(false);
     expect(canDeliverHome(null)).toBe(false);
+  });
+});
+
+describe('defaultOrderType', () => {
+  it('falls back to the warehouse when home delivery is not allowed', () => {
+    expect(defaultOrderType(true)).toBe('home');
+    expect(defaultOrderType(false)).toBe('warehouse');
   });
 });
 

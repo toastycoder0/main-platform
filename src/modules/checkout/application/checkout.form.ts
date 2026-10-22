@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DEFAULT_RESERVATION_HOURS, PICKUP_OFFICES } from './checkout.constants';
+import { DEFAULT_RESERVATION_HOURS, type OrderType, PICKUP_OFFICES } from './checkout.constants';
 import { type DeliveryRuleContext, deliveryRuleIssues } from './checkout.rules';
 import {
   type CheckoutBilling,
@@ -51,9 +51,9 @@ export function toBillingFormValues(
   );
 }
 
-function emptyDeliveryForm(): DeliveryFormValues {
+function emptyDeliveryForm(type: OrderType): DeliveryFormValues {
   return {
-    type: 'home',
+    type,
     home: emptyDirection(),
     warehouse: {
       office: PICKUP_OFFICES[0],
@@ -81,15 +81,23 @@ function emptyDeliveryForm(): DeliveryFormValues {
   };
 }
 
-/** Form values for a saved draft; branches that were not chosen start empty. */
-export function toDeliveryFormValues(delivery: CheckoutDelivery | null): DeliveryFormValues {
-  const values = emptyDeliveryForm();
+/**
+ * Form values for a saved draft; branches that were not chosen start empty.
+ * `defaultType` is used when there is no draft, and also when the draft holds
+ * home delivery but that is no longer available (below the minimum subtotal):
+ * the home data is kept in `values.home` so switching back does not lose it.
+ */
+export function toDeliveryFormValues(
+  delivery: CheckoutDelivery | null,
+  defaultType: OrderType,
+): DeliveryFormValues {
+  const values = emptyDeliveryForm(defaultType);
 
   if (!delivery) {
     return values;
   }
 
-  values.type = delivery.type;
+  values.type = delivery.type === 'home' && defaultType !== 'home' ? defaultType : delivery.type;
   values.notes = delivery.notes;
   values.reservationEnabled = delivery.reservationHours !== null;
   values.reservationHours = String(delivery.reservationHours ?? DEFAULT_RESERVATION_HOURS);

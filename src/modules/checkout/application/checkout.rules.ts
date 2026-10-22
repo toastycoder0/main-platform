@@ -45,6 +45,14 @@ export function canDeliverHome(mxnSubtotal: number | null): boolean {
   return mxnSubtotal !== null && mxnSubtotal >= MIN_HOME_DELIVERY_MXN;
 }
 
+/**
+ * Order type preselected when the delivery step loads: home when it is
+ * available, otherwise the warehouse pickup fallback.
+ */
+export function defaultOrderType(homeAllowed: boolean): OrderType {
+  return homeAllowed ? 'home' : 'warehouse';
+}
+
 /** Cart lines can be checked out only when there is at least one and none has an issue. */
 export function canCheckout(cart: Pick<CartDTO, 'lines'>): boolean {
   return cart.lines.length > 0 && cart.lines.every((line) => line.issue === null);
