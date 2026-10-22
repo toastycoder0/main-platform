@@ -81,7 +81,10 @@ export function WarehouseMapCanvas({
         return;
       }
 
-      centerCell(cellId);
+      if (centerCell(cellId)) {
+        setHasCentered(true);
+      }
+
       startTransition(() => {
         setParams({ highlight: cellId });
       });

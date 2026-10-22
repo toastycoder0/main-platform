@@ -180,7 +180,28 @@ describe('Warehouse E2E', () => {
     await page.waitForFunction(
       () => document.querySelector('[data-slot="warehouse-map"] [data-selected="true"]') !== null,
     );
-    await page.waitForTimeout(600);
+    await page.waitForFunction(
+      () => {
+        const map = document.querySelector<HTMLElement>('[data-slot="warehouse-map"]');
+        const selected = document.querySelector<HTMLElement>(
+          '[data-slot="warehouse-map"] [data-selected="true"]',
+        );
+
+        if (!map || !selected) {
+          return false;
+        }
+
+        const mapRect = map.getBoundingClientRect();
+        const cellRect = selected.getBoundingClientRect();
+
+        const x = cellRect.left + cellRect.width / 2 - (mapRect.left + mapRect.width / 2);
+        const y = cellRect.top + cellRect.height / 2 - (mapRect.top + mapRect.height / 2);
+
+        return Math.abs(x) < 8 && Math.abs(y) < 8;
+      },
+      undefined,
+      { timeout: 15_000 },
+    );
 
     const offset = await page.evaluate(() => {
       const map = document.querySelector<HTMLElement>('[data-slot="warehouse-map"]');
