@@ -121,7 +121,7 @@ describe('Roles list E2E', () => {
     await page.waitForURL('**/dashboard/roles/form/**');
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('#role-form');
-    expect(await page.getByLabel('Nombre').inputValue()).toBe(SEEDED_ROLE);
+    expect(await page.locator('#form-role-name').inputValue()).toBe(SEEDED_ROLE);
 
     const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
     expect(await breadcrumb.textContent()).toContain('Roles');
@@ -184,7 +184,7 @@ describe('Roles list E2E', () => {
     const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
     expect(await breadcrumb.textContent()).toContain('Crear rol');
 
-    await page.getByLabel('Nombre').fill(roleName);
+    await page.locator('#form-role-name').fill(roleName);
 
     const firstCheckbox = page.getByRole('checkbox').first();
     await firstCheckbox.click();
