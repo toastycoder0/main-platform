@@ -1,49 +1,43 @@
-'use client';
-
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PencilIcon } from 'lucide-react';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
-import { useWatch } from 'react-hook-form';
+import type { CartLineDTO } from '@/modules/cart/application/cart.types';
 import { CFDI_USE_OPTIONS, FISCAL_REGIME_OPTIONS } from '@/modules/users/application/users.cfdi';
-import { Button } from '@/shared/components/button';
+import { buttonVariants } from '@/shared/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import { Separator } from '@/shared/components/separator';
-import type { CartLineDTO } from '../../application/cart.types';
 import {
-  type CheckoutStep,
+  CHECKOUT_STEP_PATHS,
   ORDER_TYPE_LABELS,
   SHIPPING_TYPE_LABELS,
-} from '../../application/checkout.constants';
-import { formatDirection } from '../../application/checkout.mapping';
-import type { CheckoutFormValues } from '../../application/checkout.types';
-import { CheckoutLineItem } from '../checkout-line-item';
-
-interface ReviewStepProps {
-  form: UseFormReturn<CheckoutFormValues>;
-  lines: CartLineDTO[];
-  ownerName: string;
-  onEdit: (step: CheckoutStep) => void;
-}
+} from '../application/checkout.constants';
+import { formatDirection } from '../application/checkout.mapping';
+import type {
+  CheckoutBilling,
+  CheckoutDelivery,
+  CheckoutShippingCompany,
+} from '../application/checkout.validation';
+import { CheckoutLineItem } from './checkout-line-item';
 
 interface ReviewBlockProps {
   title: string;
-  onEdit?: (() => void) | undefined;
+  editHref?: string | undefined;
   children: ReactNode;
 }
 
-function ReviewBlock({ title, onEdit, children }: ReviewBlockProps) {
+function ReviewBlock({ title, editHref, children }: ReviewBlockProps) {
   return (
     <Card size='sm'>
       <CardHeader>
         <CardTitle className='flex items-center justify-between gap-4'>
           {title}
-          {onEdit ? (
-            <Button type='button' size='sm' variant='ghost' onClick={onEdit}>
+          {editHref ? (
+            <Link href={editHref} className={buttonVariants({ size: 'sm', variant: 'ghost' })}>
               <PencilIcon className='size-3.5' />
               Editar
-            </Button>
+            </Link>
           ) : null}
         </CardTitle>
       </CardHeader>
@@ -66,75 +60,33 @@ function optionLabel(options: readonly { value: string; label: string }[], value
 }
 
 function formatDateValue(value: string): string {
-  if (value.length === 0) {
-    return '—';
-  }
-
   const date = parseISO(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
+  return Number.isNaN(date.getTime())
+    ? value
+    : format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
 }
 
-function BillingReview({
-  values,
-  ownerName,
-  onEdit,
-}: {
-  values: CheckoutFormValues;
-  ownerName: string;
-  onEdit: (step: CheckoutStep) => void;
-}) {
+function BillingReview({ billing, ownerName }: { billing: CheckoutBilling; ownerName: string }) {
+  const { invoice } = billing;
+
   return (
-    <ReviewBlock title='Propietario y facturación' onEdit={() => onEdit('billing')}>
+    <ReviewBlock title='Propietario y facturación' editHref={CHECKOUT_STEP_PATHS.billing}>
       <div className='grid gap-4 sm:grid-cols-2'>
         <DetailRow label='Propietario' value={ownerName} />
-        <DetailRow label='Razón social' value={values.invoiceDetails.businessName} />
-        <DetailRow label='RFC' value={values.invoiceDetails.rfc} />
-        <DetailRow label='Código postal fiscal' value={values.invoiceDetails.zipCode} />
+        <DetailRow label='Razón social' value={invoice.businessName} />
+        <DetailRow label='RFC' value={invoice.rfc} />
+        <DetailRow label='Código postal fiscal' value={invoice.zipCode} />
         <DetailRow
           label='Régimen fiscal'
-          value={optionLabel(FISCAL_REGIME_OPTIONS, values.invoiceDetails.taxRegimen)}
+          value={optionLabel(FISCAL_REGIME_OPTIONS, invoice.taxRegimen)}
         />
-        <DetailRow
-          label='Uso de CFDI'
-          value={optionLabel(CFDI_USE_OPTIONS, values.invoiceDetails.cfdiUse)}
-        />
+        <DetailRow label='Uso de CFDI' value={optionLabel(CFDI_USE_OPTIONS, invoice.cfdiUse)} />
       </div>
     </ReviewBlock>
   );
 }
 
-function HomeDeliveryReview({ values }: { values: CheckoutFormValues }) {
-  return (
-    <div className='grid gap-4 sm:grid-cols-2'>
-      <DetailRow label='Dirección' value={formatDirection(values.home)} />
-      <DetailRow label='Contacto' value={values.home.contact} />
-      <DetailRow label='Teléfono' value={values.home.phone} />
-    </div>
-  );
-}
-
-function WarehouseDeliveryReview({ values }: { values: CheckoutFormValues }) {
-  return (
-    <div className='grid gap-4 sm:grid-cols-2'>
-      <DetailRow label='Oficina' value={values.warehouse.office} />
-      <DetailRow
-        label='Fecha de recolección'
-        value={formatDateValue(values.warehouse.dateOfRecolection)}
-      />
-      <DetailRow label='Vehículo' value={values.warehouse.vehicle} />
-      <DetailRow label='Placas' value={values.warehouse.licensePlate} />
-      <DetailRow label='Chofer' value={values.warehouse.driver} />
-    </div>
-  );
-}
-
-function ShippingDeliveryReview({ values }: { values: CheckoutFormValues }) {
-  const shipping = values.shippingCompany;
+function ShippingReview({ shipping }: { shipping: CheckoutShippingCompany }) {
   const invoiceShipping =
     shipping.invoiceShipping === 'Otro' ? shipping.invoiceShippingCustom : shipping.invoiceShipping;
 
@@ -158,15 +110,15 @@ function ShippingDeliveryReview({ values }: { values: CheckoutFormValues }) {
           label='Dirección del remitente'
           value={formatDirection(shipping.sender.direction)}
         />
-        <DetailRow label='RFC del remitente' value={shipping.sender.invoiceDetails.rfc} />
-        {shipping.hasReceiver ? (
+        <DetailRow label='RFC del remitente' value={shipping.sender.invoice.rfc} />
+        {shipping.receiver ? (
           <>
             <DetailRow label='Destinatario' value={shipping.receiver.name} />
             <DetailRow
               label='Dirección del destinatario'
               value={formatDirection(shipping.receiver.direction)}
             />
-            <DetailRow label='RFC del destinatario' value={shipping.receiver.invoiceDetails.rfc} />
+            <DetailRow label='RFC del destinatario' value={shipping.receiver.invoice.rfc} />
           </>
         ) : null}
       </div>
@@ -181,65 +133,81 @@ function ShippingDeliveryReview({ values }: { values: CheckoutFormValues }) {
   );
 }
 
-function DeliveryReview({
-  values,
-  onEdit,
-}: {
-  values: CheckoutFormValues;
-  onEdit: (step: CheckoutStep) => void;
-}) {
-  return (
-    <ReviewBlock title='Entrega' onEdit={() => onEdit('order')}>
-      <div className='flex flex-col gap-4'>
-        <DetailRow label='Tipo de entrega' value={ORDER_TYPE_LABELS[values.type]} />
-
-        {values.type === 'home' ? <HomeDeliveryReview values={values} /> : null}
-        {values.type === 'warehouse' ? <WarehouseDeliveryReview values={values} /> : null}
-        {values.type === 'shipping-company' ? <ShippingDeliveryReview values={values} /> : null}
+function DeliveryDetails({ delivery }: { delivery: CheckoutDelivery }) {
+  if (delivery.type === 'home') {
+    return (
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <DetailRow label='Dirección' value={formatDirection(delivery.home)} />
+        <DetailRow label='Contacto' value={delivery.home.contact} />
+        <DetailRow label='Teléfono' value={delivery.home.phone} />
       </div>
-    </ReviewBlock>
-  );
+    );
+  }
+
+  if (delivery.type === 'warehouse') {
+    const { warehouse } = delivery;
+
+    return (
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <DetailRow label='Oficina' value={warehouse.office} />
+        <DetailRow
+          label='Fecha de recolección'
+          value={formatDateValue(warehouse.dateOfRecolection)}
+        />
+        <DetailRow label='Vehículo' value={warehouse.vehicle} />
+        <DetailRow label='Placas' value={warehouse.licensePlate} />
+        <DetailRow label='Chofer' value={warehouse.driver} />
+      </div>
+    );
+  }
+
+  return <ShippingReview shipping={delivery.shippingCompany} />;
 }
 
-function ProductsReview({
-  lines,
-  onEdit,
-}: {
+interface ReviewSummaryProps {
+  billing: CheckoutBilling;
+  delivery: CheckoutDelivery;
+  ownerName: string;
   lines: CartLineDTO[];
-  onEdit: (step: CheckoutStep) => void;
-}) {
-  return (
-    <ReviewBlock title='Productos' onEdit={() => onEdit('cart')}>
-      <div className='flex flex-col'>
-        {lines.map((line, index) => (
-          <div key={line.id}>
-            <CheckoutLineItem line={line} />
-            {index < lines.length - 1 ? <Separator /> : null}
-          </div>
-        ))}
-      </div>
-    </ReviewBlock>
-  );
 }
 
-export function ReviewStep({ form, lines, ownerName, onEdit }: ReviewStepProps) {
-  const values = useWatch({ control: form.control }) as CheckoutFormValues;
-
+export function ReviewSummary({ billing, delivery, ownerName, lines }: ReviewSummaryProps) {
   return (
     <div className='flex flex-col gap-4'>
-      <BillingReview values={values} ownerName={ownerName} onEdit={onEdit} />
-      <DeliveryReview values={values} onEdit={onEdit} />
-      <ProductsReview lines={lines} onEdit={onEdit} />
+      <BillingReview billing={billing} ownerName={ownerName} />
 
-      {values.notes.trim().length > 0 ? (
+      <ReviewBlock title='Entrega' editHref={CHECKOUT_STEP_PATHS.delivery}>
+        <div className='flex flex-col gap-4'>
+          <DetailRow label='Tipo de entrega' value={ORDER_TYPE_LABELS[delivery.type]} />
+          <DeliveryDetails delivery={delivery} />
+        </div>
+      </ReviewBlock>
+
+      <ReviewBlock title='Productos' editHref={CHECKOUT_STEP_PATHS.cart}>
+        <div className='flex flex-col'>
+          {lines.map((line, index) => (
+            <div key={line.id}>
+              <CheckoutLineItem line={line} />
+              {index < lines.length - 1 ? <Separator /> : null}
+            </div>
+          ))}
+        </div>
+      </ReviewBlock>
+
+      {delivery.notes.length > 0 ? (
         <ReviewBlock title='Observaciones'>
-          <p className='whitespace-pre-wrap text-sm text-muted-foreground'>{values.notes}</p>
+          <p className='whitespace-pre-wrap text-sm text-muted-foreground'>{delivery.notes}</p>
         </ReviewBlock>
       ) : null}
 
-      {values.reservationEnabled ? (
+      {delivery.reservationHours !== null ? (
         <ReviewBlock title='Apartado de inventario'>
-          <DetailRow label='Duración' value={`${values.reservationHours} horas`} />
+          <DetailRow
+            label='Duración'
+            value={
+              delivery.reservationHours === 1 ? '1 hora' : `${delivery.reservationHours} horas`
+            }
+          />
         </ReviewBlock>
       ) : null}
     </div>

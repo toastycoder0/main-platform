@@ -1,18 +1,19 @@
 'use client';
 
 import { Building2Icon, MapPinIcon } from 'lucide-react';
-import type { UseFormReturn } from 'react-hook-form';
-import { useWatch } from 'react-hook-form';
+import { useState } from 'react';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { CFDI_USE_OPTIONS } from '@/modules/users/application/users.cfdi';
 import type { UserAddressDTO } from '@/modules/users/application/users.types';
 import { Separator } from '@/shared/components/separator';
 import {
   INVOICE_SHIPPING_OPTIONS,
+  MANUAL_OPTION,
   SHIPPING_TYPE_LABELS,
   SHIPPING_TYPES,
 } from '../../application/checkout.constants';
 import { mapAddressToDirection } from '../../application/checkout.mapping';
-import type { CheckoutFormValues } from '../../application/checkout.types';
+import type { CheckoutDelivery, DeliveryFormValues } from '../../application/checkout.validation';
 import { ChoiceCards } from '../checkout-choice-cards';
 import {
   CheckoutCombobox,
@@ -21,6 +22,7 @@ import {
   CheckoutSwitch,
 } from '../checkout-fields';
 import { SavedAddressSelect } from '../saved-address-select';
+import { DirectionFields, useFillDirection } from './direction-fields';
 import { ShippingPartyFields } from './shipping-party-fields';
 
 const SHIPPING_TYPE_OPTIONS = SHIPPING_TYPES.map((type) => ({
@@ -44,21 +46,17 @@ const SHIPPING_CFDI_USE_OPTIONS = CFDI_USE_OPTIONS.map((option) => ({
 }));
 
 interface ShippingCompanyFieldsProps {
-  form: UseFormReturn<CheckoutFormValues>;
   addresses: UserAddressDTO[];
 }
 
-export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFieldsProps) {
-  const shippingType = useWatch({ control: form.control, name: 'shippingCompany.type' });
-  const hasReceiver = useWatch({ control: form.control, name: 'shippingCompany.hasReceiver' });
-  const invoiceShipping = useWatch({
-    control: form.control,
-    name: 'shippingCompany.invoiceShipping',
-  });
-  const selectedShippingAddress = useWatch({
-    control: form.control,
-    name: 'selectedShippingAddressId',
-  });
+export function ShippingCompanyFields({ addresses }: ShippingCompanyFieldsProps) {
+  const { control, setValue } = useFormContext<DeliveryFormValues, unknown, CheckoutDelivery>();
+  const fillAddress = useFillDirection('shippingCompany.address');
+  const [addressId, setAddressId] = useState(MANUAL_OPTION);
+  const shippingType = useWatch({ control, name: 'shippingCompany.type' });
+  const hasReceiver = useWatch({ control, name: 'shippingCompany.hasReceiver' });
+  const invoiceShipping = useWatch({ control, name: 'shippingCompany.invoiceShipping' });
+  const showReceiver = hasReceiver || shippingType === 'home';
 
   function handleShippingTypeChange(value: string): void {
     const next = SHIPPING_TYPES.find((type) => type === value);
@@ -67,40 +65,12 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
       return;
     }
 
-    form.setValue('shippingCompany.type', next, { shouldValidate: true });
+    setValue('shippingCompany.type', next, { shouldDirty: true });
 
+    // Home shipments always need a receiver.
     if (next === 'home') {
-      form.setValue('shippingCompany.hasReceiver', true, { shouldValidate: true });
+      setValue('shippingCompany.hasReceiver', true, { shouldDirty: true });
     }
-  }
-
-  async function handleCompanyAddressSelect(address: UserAddressDTO | null): Promise<void> {
-    if (!address) {
-      return;
-    }
-
-    const direction = mapAddressToDirection(address);
-    form.setValue('shippingCompany.address.street', direction.street, { shouldDirty: true });
-    form.setValue('shippingCompany.address.colony', direction.colony, { shouldDirty: true });
-    form.setValue('shippingCompany.address.municipality', direction.municipality, {
-      shouldDirty: true,
-    });
-    form.setValue('shippingCompany.address.state', direction.state, { shouldDirty: true });
-    form.setValue('shippingCompany.address.postalCode', direction.postalCode, {
-      shouldDirty: true,
-    });
-    form.setValue('shippingCompany.address.contact', direction.contact, { shouldDirty: true });
-    form.setValue('shippingCompany.address.phone', direction.phone, { shouldDirty: true });
-
-    await form.trigger([
-      'shippingCompany.address.street',
-      'shippingCompany.address.colony',
-      'shippingCompany.address.municipality',
-      'shippingCompany.address.state',
-      'shippingCompany.address.postalCode',
-      'shippingCompany.address.contact',
-      'shippingCompany.address.phone',
-    ]);
   }
 
   return (
@@ -115,13 +85,13 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
 
       <div className='grid gap-4 sm:grid-cols-2'>
         <CheckoutInput
-          control={form.control}
+          control={control}
           name='shippingCompany.freighter'
           label='Fletera'
           placeholder='Nombre de la fletera'
         />
         <CheckoutSelect
-          control={form.control}
+          control={control}
           name='shippingCompany.invoiceShipping'
           label='Facturación de la guía'
           placeholder='Selecciona una opción'
@@ -129,14 +99,14 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
         />
         {invoiceShipping === 'Otro' ? (
           <CheckoutInput
-            control={form.control}
+            control={control}
             name='shippingCompany.invoiceShippingCustom'
             label='Especifica la facturación de la guía'
             placeholder='Nombre o referencia'
           />
         ) : null}
         <CheckoutCombobox
-          control={form.control}
+          control={control}
           name='shippingCompany.cfdiUse'
           label='Uso de CFDI'
           placeholder='Selecciona un uso'
@@ -144,7 +114,7 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
         />
         {shippingType === 'happening' ? (
           <CheckoutInput
-            control={form.control}
+            control={control}
             name='shippingCompany.branch'
             label='Sucursal'
             placeholder='Sucursal donde se entrega'
@@ -152,7 +122,7 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
         ) : null}
         <div className='flex items-end'>
           <CheckoutSwitch
-            control={form.control}
+            control={control}
             name='shippingCompany.isSecured'
             label='Envío asegurado'
             description='Marca si la mercancía viaja asegurada.'
@@ -162,17 +132,11 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
 
       <Separator />
 
-      <ShippingPartyFields
-        form={form}
-        prefix='shippingCompany.sender'
-        selectedField='selectedSenderAddressId'
-        title='Remitente'
-        addresses={addresses}
-      />
+      <ShippingPartyFields party='sender' title='Remitente' addresses={addresses} />
 
       <div className='flex flex-col gap-4'>
         <CheckoutSwitch
-          control={form.control}
+          control={control}
           name='shippingCompany.hasReceiver'
           label='Agregar destinatario'
           description={
@@ -183,14 +147,8 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
           disabled={shippingType === 'home'}
         />
 
-        {hasReceiver ? (
-          <ShippingPartyFields
-            form={form}
-            prefix='shippingCompany.receiver'
-            selectedField='selectedReceiverAddressId'
-            title='Destinatario'
-            addresses={addresses}
-          />
+        {showReceiver ? (
+          <ShippingPartyFields party='receiver' title='Destinatario' addresses={addresses} />
         ) : null}
       </div>
 
@@ -202,58 +160,17 @@ export function ShippingCompanyFields({ form, addresses }: ShippingCompanyFields
             {addresses.length > 0 ? (
               <SavedAddressSelect
                 addresses={addresses}
-                value={selectedShippingAddress}
+                value={addressId}
                 label='Usar dirección guardada'
-                onValueChange={(value) =>
-                  form.setValue('selectedShippingAddressId', value, { shouldDirty: true })
-                }
-                onSelectAddress={handleCompanyAddressSelect}
+                onValueChange={setAddressId}
+                onSelectAddress={(address) => {
+                  if (address) {
+                    fillAddress(mapAddressToDirection(address));
+                  }
+                }}
               />
             ) : null}
-            <div className='grid gap-4 sm:grid-cols-2'>
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.street'
-                label='Calle y número'
-                placeholder='Av. Reforma 123'
-              />
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.colony'
-                label='Colonia'
-                placeholder='Centro'
-              />
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.municipality'
-                label='Municipio'
-                placeholder='Cuauhtémoc'
-              />
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.state'
-                label='Estado'
-                placeholder='Ciudad de México'
-              />
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.postalCode'
-                label='Código postal'
-                placeholder='00000'
-              />
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.contact'
-                label='Contacto'
-                placeholder='Nombre del contacto'
-              />
-              <CheckoutInput
-                control={form.control}
-                name='shippingCompany.address.phone'
-                label='Teléfono'
-                placeholder='5512345678'
-              />
-            </div>
+            <DirectionFields prefix='shippingCompany.address' contactLabel='Contacto' />
           </div>
         </>
       ) : null}

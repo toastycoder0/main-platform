@@ -1,62 +1,34 @@
 'use client';
 
-import type { FieldPath, UseFormReturn } from 'react-hook-form';
-import { useWatch } from 'react-hook-form';
+import { useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { FISCAL_REGIME_OPTIONS } from '@/modules/users/application/users.cfdi';
 import type { UserAddressDTO } from '@/modules/users/application/users.types';
 import { ControlledFileUploader } from '@/shared/components/file-uploader';
 import { Separator } from '@/shared/components/separator';
+import { MANUAL_OPTION } from '../../application/checkout.constants';
 import { mapAddressToDirection } from '../../application/checkout.mapping';
-import type { CheckoutFormValues, ShippingPartyPrefix } from '../../application/checkout.types';
+import type { CheckoutDelivery, DeliveryFormValues } from '../../application/checkout.validation';
 import { CheckoutCombobox, CheckoutInput } from '../checkout-fields';
 import { SavedAddressSelect } from '../saved-address-select';
+import { DirectionFields, useFillDirection } from './direction-fields';
 
-const SHIPPING_FISCAL_REGIME_OPTIONS = FISCAL_REGIME_OPTIONS.map((option) => ({
+const FISCAL_REGIME_SELECT_OPTIONS = FISCAL_REGIME_OPTIONS.map((option) => ({
   value: option.value,
   label: option.label,
 }));
 
 interface ShippingPartyFieldsProps {
-  form: UseFormReturn<CheckoutFormValues>;
-  prefix: ShippingPartyPrefix;
-  selectedField: FieldPath<CheckoutFormValues>;
+  party: 'sender' | 'receiver';
   title: string;
   addresses: UserAddressDTO[];
 }
 
-export function ShippingPartyFields({
-  form,
-  prefix,
-  selectedField,
-  title,
-  addresses,
-}: ShippingPartyFieldsProps) {
-  const path = (field: string) => `${prefix}.${field}` as FieldPath<CheckoutFormValues>;
-  const selectedAddress = useWatch({ control: form.control, name: selectedField });
-  const selectedAddressValue = typeof selectedAddress === 'string' ? selectedAddress : '';
-
-  async function handleAddressSelect(address: UserAddressDTO | null): Promise<void> {
-    if (!address) {
-      return;
-    }
-
-    const direction = mapAddressToDirection(address);
-    form.setValue(path('direction.street'), direction.street, { shouldDirty: true });
-    form.setValue(path('direction.colony'), direction.colony, { shouldDirty: true });
-    form.setValue(path('direction.municipality'), direction.municipality, { shouldDirty: true });
-    form.setValue(path('direction.state'), direction.state, { shouldDirty: true });
-    form.setValue(path('direction.postalCode'), direction.postalCode, { shouldDirty: true });
-    form.setValue(path('direction.phone'), direction.phone, { shouldDirty: true });
-
-    await form.trigger([
-      path('direction.street'),
-      path('direction.colony'),
-      path('direction.municipality'),
-      path('direction.state'),
-      path('direction.postalCode'),
-      path('direction.phone'),
-    ]);
-  }
+export function ShippingPartyFields({ party, title, addresses }: ShippingPartyFieldsProps) {
+  const { control } = useFormContext<DeliveryFormValues, unknown, CheckoutDelivery>();
+  const prefix = `shippingCompany.${party}` as const;
+  const fillDirection = useFillDirection(`${prefix}.direction`);
+  const [addressId, setAddressId] = useState(MANUAL_OPTION);
 
   return (
     <div className='flex flex-col gap-4 rounded-lg border p-4'>
@@ -64,8 +36,8 @@ export function ShippingPartyFields({
 
       <div className='grid gap-4 sm:grid-cols-2'>
         <CheckoutInput
-          control={form.control}
-          name={path('name')}
+          control={control}
+          name={`${prefix}.name`}
           label='Nombre o razón social'
           placeholder='Nombre completo'
         />
@@ -74,12 +46,14 @@ export function ShippingPartyFields({
             <div className='w-full'>
               <SavedAddressSelect
                 addresses={addresses}
-                value={selectedAddressValue}
+                value={addressId}
                 label='Usar dirección guardada'
-                onValueChange={(value) =>
-                  form.setValue(selectedField, value, { shouldDirty: true })
-                }
-                onSelectAddress={handleAddressSelect}
+                onValueChange={setAddressId}
+                onSelectAddress={(address) => {
+                  if (address) {
+                    fillDirection(mapAddressToDirection(address));
+                  }
+                }}
               />
             </div>
           </div>
@@ -88,79 +62,36 @@ export function ShippingPartyFields({
 
       <Separator />
 
-      <div className='grid gap-4 sm:grid-cols-2'>
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.street')}
-          label='Calle y número'
-          placeholder='Av. Reforma 123'
-        />
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.colony')}
-          label='Colonia'
-          placeholder='Centro'
-        />
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.municipality')}
-          label='Municipio'
-          placeholder='Cuauhtémoc'
-        />
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.state')}
-          label='Estado'
-          placeholder='Ciudad de México'
-        />
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.postalCode')}
-          label='Código postal'
-          placeholder='00000'
-        />
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.contact')}
-          label='Contacto'
-          placeholder='Nombre del contacto'
-        />
-        <CheckoutInput
-          control={form.control}
-          name={path('direction.phone')}
-          label='Teléfono'
-          placeholder='5512345678'
-        />
-      </div>
+      <DirectionFields prefix={`${prefix}.direction`} contactLabel='Contacto' />
 
       <Separator />
 
       <div className='grid gap-4 sm:grid-cols-2'>
         <CheckoutInput
-          control={form.control}
-          name={path('invoiceDetails.businessName')}
+          control={control}
+          name={`${prefix}.invoice.businessName`}
           label='Razón social fiscal'
           placeholder='Mi empresa S.A. de C.V.'
         />
         <CheckoutInput
-          control={form.control}
-          name={path('invoiceDetails.rfc')}
+          control={control}
+          name={`${prefix}.invoice.rfc`}
           label='RFC'
           placeholder='ABC123456789'
           transform={(value) => value.toUpperCase()}
         />
         <CheckoutInput
-          control={form.control}
-          name={path('invoiceDetails.zipCode')}
+          control={control}
+          name={`${prefix}.invoice.zipCode`}
           label='Código postal fiscal'
           placeholder='00000'
         />
         <CheckoutCombobox
-          control={form.control}
-          name={path('invoiceDetails.taxRegimen')}
+          control={control}
+          name={`${prefix}.invoice.taxRegimen`}
           label='Régimen fiscal'
           placeholder='Selecciona un régimen'
-          options={SHIPPING_FISCAL_REGIME_OPTIONS}
+          options={FISCAL_REGIME_SELECT_OPTIONS}
         />
       </div>
 
@@ -168,10 +99,10 @@ export function ShippingPartyFields({
 
       <div className='pt-4'>
         <ControlledFileUploader
-          control={form.control}
-          name={path('invoiceDetails.rfcKey')}
+          control={control}
+          name={`${prefix}.invoice.rfcKey`}
           entity='order'
-          scope={prefix === 'shippingCompany.sender' ? 'senderRfc' : 'receiverRfc'}
+          scope={party === 'sender' ? 'senderRfc' : 'receiverRfc'}
           label='Cédula del RFC (opcional)'
         />
       </div>

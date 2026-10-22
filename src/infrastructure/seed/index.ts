@@ -39,6 +39,12 @@ const INITIAL_PERMISSIONS = [
     name: 'Crear pedidos a nombre de otro usuario',
     type: 'action' as const,
   },
+  { slug: orders.reserve, name: 'Apartar inventario en pedidos', type: 'action' as const },
+  {
+    slug: orders.reserveDuration,
+    name: 'Definir la duración del apartado',
+    type: 'action' as const,
+  },
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
   accessPermission(warehouse.lots.access, 'warehouse.lots'),
   { slug: warehouse.lots.create, name: 'Crear lotes', type: 'action' as const },

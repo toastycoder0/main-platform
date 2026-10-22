@@ -4,6 +4,7 @@ import {
   brand,
   category,
   file,
+  order,
   productDocument,
   productImage,
   user,
@@ -68,6 +69,15 @@ const OWNER_CHECKERS: Partial<Record<FileOwnerType, OwnerChecker>> = {
       .select({ id: productDocument.id })
       .from(productDocument)
       .where(eq(productDocument.id, ownerId))
+      .limit(1);
+
+    return Boolean(rows[0]);
+  },
+  order: async (db, ownerId) => {
+    const rows = await db
+      .select({ id: order.id })
+      .from(order)
+      .where(eq(order.id, ownerId))
       .limit(1);
 
     return Boolean(rows[0]);

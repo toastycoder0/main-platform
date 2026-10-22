@@ -38,6 +38,8 @@ export const PERMISSIONS = {
   },
   orders: {
     createForOther: 'orders.createForOther',
+    reserve: 'orders.reserve',
+    reserveDuration: 'orders.reserveDuration',
   },
   warehouse: {
     access: 'warehouse.access',

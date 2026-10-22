@@ -1,7 +1,7 @@
 import Link from 'next/link';
+import type { CartLineDTO } from '@/modules/cart/application/cart.types';
 import { Badge } from '@/shared/components/badge';
 import { formatCurrency } from '@/shared/utils/format-currency';
-import type { CartLineDTO } from '../application/cart.types';
 
 const PLACEHOLDER_URL = '/assets/placeholder.svg';
 

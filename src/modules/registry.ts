@@ -3,6 +3,7 @@ import { authManifest } from './auth/manifest';
 import { brandsManifest } from './brands/manifest';
 import { cartManifest } from './cart/manifest';
 import { categoriesManifest } from './categories/manifest';
+import { checkoutManifest } from './checkout/manifest';
 import { currenciesManifest } from './currencies/manifest';
 import { documentTypesManifest } from './document-types/manifest';
 import { exchangeRatesManifest } from './exchange-rates/manifest';
@@ -27,6 +28,7 @@ const manifests: ModuleManifest[] = [
   brandsManifest,
   cartManifest,
   categoriesManifest,
+  checkoutManifest,
   currenciesManifest,
   documentTypesManifest,
   exchangeRatesManifest,

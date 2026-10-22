@@ -41,8 +41,8 @@ interface SelectOption {
   label: string;
 }
 
-interface CheckoutInputProps<T extends FieldValues> {
-  control: Control<T>;
+interface CheckoutInputProps<T extends FieldValues, TTransformed = T> {
+  control: Control<T, unknown, TTransformed>;
   name: FieldPath<T>;
   label: string;
   placeholder?: string | undefined;
@@ -53,7 +53,7 @@ interface CheckoutInputProps<T extends FieldValues> {
   transform?: ((value: string) => string) | undefined;
 }
 
-export function CheckoutInput<T extends FieldValues>({
+export function CheckoutInput<T extends FieldValues, TTransformed = T>({
   control,
   name,
   label,
@@ -63,7 +63,7 @@ export function CheckoutInput<T extends FieldValues>({
   description,
   autoComplete,
   transform,
-}: CheckoutInputProps<T>) {
+}: CheckoutInputProps<T, TTransformed>) {
   const id = String(name).replaceAll('.', '-');
 
   return (
@@ -94,8 +94,8 @@ export function CheckoutInput<T extends FieldValues>({
   );
 }
 
-interface CheckoutTextareaProps<T extends FieldValues> {
-  control: Control<T>;
+interface CheckoutTextareaProps<T extends FieldValues, TTransformed = T> {
+  control: Control<T, unknown, TTransformed>;
   name: FieldPath<T>;
   label: string;
   placeholder?: string | undefined;
@@ -103,14 +103,14 @@ interface CheckoutTextareaProps<T extends FieldValues> {
   description?: string | undefined;
 }
 
-export function CheckoutTextarea<T extends FieldValues>({
+export function CheckoutTextarea<T extends FieldValues, TTransformed = T>({
   control,
   name,
   label,
   placeholder,
   rows = 4,
   description,
-}: CheckoutTextareaProps<T>) {
+}: CheckoutTextareaProps<T, TTransformed>) {
   const id = String(name).replaceAll('.', '-');
 
   return (
@@ -135,8 +135,8 @@ export function CheckoutTextarea<T extends FieldValues>({
   );
 }
 
-interface CheckoutSelectProps<T extends FieldValues> {
-  control: Control<T>;
+interface CheckoutSelectProps<T extends FieldValues, TTransformed = T> {
+  control: Control<T, unknown, TTransformed>;
   name: FieldPath<T>;
   label: string;
   placeholder: string;
@@ -145,7 +145,7 @@ interface CheckoutSelectProps<T extends FieldValues> {
   description?: string | undefined;
 }
 
-export function CheckoutSelect<T extends FieldValues>({
+export function CheckoutSelect<T extends FieldValues, TTransformed = T>({
   control,
   name,
   label,
@@ -153,7 +153,7 @@ export function CheckoutSelect<T extends FieldValues>({
   options,
   disabled = false,
   description,
-}: CheckoutSelectProps<T>) {
+}: CheckoutSelectProps<T, TTransformed>) {
   const id = String(name).replaceAll('.', '-');
 
   return (
@@ -171,7 +171,13 @@ export function CheckoutSelect<T extends FieldValues>({
               onValueChange={field.onChange}
               disabled={disabled}
             >
-              <SelectTrigger id={id} className='w-full' aria-invalid={fieldState.invalid}>
+              <SelectTrigger
+                ref={field.ref}
+                id={id}
+                className='w-full'
+                aria-invalid={fieldState.invalid}
+                onBlur={field.onBlur}
+              >
                 <SelectValue placeholder={placeholder} />
               </SelectTrigger>
               <SelectContent>
@@ -191,8 +197,8 @@ export function CheckoutSelect<T extends FieldValues>({
   );
 }
 
-interface CheckoutComboboxProps<T extends FieldValues> {
-  control: Control<T>;
+interface CheckoutComboboxProps<T extends FieldValues, TTransformed = T> {
+  control: Control<T, unknown, TTransformed>;
   name: FieldPath<T>;
   label: string;
   placeholder: string;
@@ -201,7 +207,7 @@ interface CheckoutComboboxProps<T extends FieldValues> {
   description?: string | undefined;
 }
 
-export function CheckoutCombobox<T extends FieldValues>({
+export function CheckoutCombobox<T extends FieldValues, TTransformed = T>({
   control,
   name,
   label,
@@ -209,7 +215,7 @@ export function CheckoutCombobox<T extends FieldValues>({
   options,
   disabled = false,
   description,
-}: CheckoutComboboxProps<T>) {
+}: CheckoutComboboxProps<T, TTransformed>) {
   const id = String(name).replaceAll('.', '-');
   const optionList = useMemo(() => [...options], [options]);
 
@@ -231,7 +237,9 @@ export function CheckoutCombobox<T extends FieldValues>({
               onValueChange={(next) => field.onChange(next?.value ?? '')}
             >
               <ComboboxInput
+                ref={field.ref}
                 id={id}
+                onBlur={field.onBlur}
                 className='w-full'
                 placeholder={placeholder}
                 disabled={disabled}
@@ -260,21 +268,21 @@ export function CheckoutCombobox<T extends FieldValues>({
   );
 }
 
-interface CheckoutSwitchProps<T extends FieldValues> {
-  control: Control<T>;
+interface CheckoutSwitchProps<T extends FieldValues, TTransformed = T> {
+  control: Control<T, unknown, TTransformed>;
   name: FieldPath<T>;
   label: string;
   description?: string | undefined;
   disabled?: boolean;
 }
 
-export function CheckoutSwitch<T extends FieldValues>({
+export function CheckoutSwitch<T extends FieldValues, TTransformed = T>({
   control,
   name,
   label,
   description,
   disabled = false,
-}: CheckoutSwitchProps<T>) {
+}: CheckoutSwitchProps<T, TTransformed>) {
   const id = String(name).replaceAll('.', '-');
 
   return (
@@ -284,7 +292,9 @@ export function CheckoutSwitch<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <Field orientation='horizontal' data-invalid={fieldState.invalid}>
           <Switch
+            ref={field.ref}
             id={id}
+            onBlur={field.onBlur}
             checked={field.value === true}
             disabled={disabled}
             onCheckedChange={field.onChange}
@@ -315,19 +325,19 @@ function formatDateValue(value: Date): string {
   return format(value, "d 'de' MMMM 'de' yyyy", { locale: es });
 }
 
-interface CheckoutDatePickerProps<T extends FieldValues> {
-  control: Control<T>;
+interface CheckoutDatePickerProps<T extends FieldValues, TTransformed = T> {
+  control: Control<T, unknown, TTransformed>;
   name: FieldPath<T>;
   label: string;
   placeholder?: string | undefined;
 }
 
-export function CheckoutDatePicker<T extends FieldValues>({
+export function CheckoutDatePicker<T extends FieldValues, TTransformed = T>({
   control,
   name,
   label,
   placeholder = 'Selecciona una fecha',
-}: CheckoutDatePickerProps<T>) {
+}: CheckoutDatePickerProps<T, TTransformed>) {
   const id = useId();
 
   return (
@@ -344,9 +354,11 @@ export function CheckoutDatePicker<T extends FieldValues>({
             <Popover>
               <PopoverTrigger asChild>
                 <Button
+                  ref={field.ref}
                   id={id}
                   type='button'
                   variant='outline'
+                  onBlur={field.onBlur}
                   aria-invalid={fieldState.invalid}
                   className='w-full justify-start font-normal'
                 >

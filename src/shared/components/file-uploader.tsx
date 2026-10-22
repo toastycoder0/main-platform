@@ -254,7 +254,7 @@ export function fileIsValid(
   );
 }
 
-export function ControlledFileUploader<T extends FieldValues>({
+export function ControlledFileUploader<T extends FieldValues, TTransformed = T>({
   control,
   name,
   entity,
@@ -262,7 +262,7 @@ export function ControlledFileUploader<T extends FieldValues>({
   label,
   description,
 }: {
-  control: Control<T>;
+  control: Control<T, unknown, TTransformed>;
   name: string;
   entity: FileEntity;
   scope: string;

@@ -185,6 +185,9 @@ export async function clearCart(ctx: RequestContext): Promise<void> {
     .limit(1);
 
   if (cartRow) {
-    await ctx.db.delete(cartItem).where(eq(cartItem.cartId, cartRow.id));
+    await ctx.db.transaction(async (tx) => {
+      await tx.delete(cartItem).where(eq(cartItem.cartId, cartRow.id));
+      await tx.update(cart).set({ billing: null, delivery: null }).where(eq(cart.id, cartRow.id));
+    });
   }
 }
