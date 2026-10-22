@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { check, index, integer, jsonb, snakeCase, text, uniqueIndex } from 'drizzle-orm/pg-core';
 
 import { generateId } from '../id';
+import type { JsonValue } from '../json';
 import { timestamps } from '../time';
 import { product, productItem } from './product.schema';
 import { user } from './user.schema';
@@ -18,6 +19,9 @@ export const cart = snakeCase.table(
     userId: text()
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    // Checkout draft, one column per step; null means the step is incomplete.
+    billing: jsonb().$type<JsonValue>(),
+    delivery: jsonb().$type<JsonValue>(),
     ...timestamps,
   },
   // A single cart per user; checkout clears it. Cart history (status + partial
