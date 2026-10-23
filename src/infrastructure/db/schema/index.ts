@@ -7,6 +7,7 @@ export * from './document-type.schema';
 export * from './exchange-rate.schema';
 export * from './file.schema';
 export * from './order.schema';
+export * from './order-event.schema';
 export * from './permission.schema';
 export * from './product.schema';
 export * from './product-unit.schema';

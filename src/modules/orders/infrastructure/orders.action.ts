@@ -11,9 +11,17 @@ import { buildCartLine, type ResolvedCartLine } from '@/modules/cart/application
 import type { CartSource } from '@/modules/cart/application/cart.types';
 import { addCartLines } from '@/modules/cart/infrastructure/cart.repository';
 import { findCartSources } from '@/modules/cart/infrastructure/cart.sources.query';
+import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
 import type { OpenFieldValues } from '@/shared/pricing/types';
-import { orderLineFieldsSchema, reorderOrderSchema } from '../application/orders.validation';
+import {
+  orderCancellationSchema,
+  orderLineFieldsSchema,
+  orderStatusOverrideSchema,
+  orderTransitionSchema,
+  reorderOrderSchema,
+} from '../application/orders.validation';
+import { applyTransition } from './orders.transition';
 
 type OrderItemRow = typeof orderItem.$inferSelect;
 
@@ -101,3 +109,40 @@ export const reorderOrder = run({ input: reorderOrderSchema }, async (ctx, { ord
   revalidateCart();
   redirect('/cart');
 });
+
+function revalidateOrder(orderId: string): void {
+  revalidatePath('/orders');
+  revalidatePath(`/orders/${orderId}`);
+}
+
+export const markOrderPaid = run(
+  { permission: PERMISSIONS.orders.manage, input: orderTransitionSchema },
+  async (ctx, { orderId }) => {
+    await applyTransition(ctx, { orderId, action: 'markOrderPaid' });
+    revalidateOrder(orderId);
+  },
+);
+
+export const completeOrder = run(
+  { permission: PERMISSIONS.orders.manage, input: orderTransitionSchema },
+  async (ctx, { orderId }) => {
+    await applyTransition(ctx, { orderId, action: 'completeOrder' });
+    revalidateOrder(orderId);
+  },
+);
+
+export const cancelOrder = run(
+  { permission: PERMISSIONS.orders.cancel, input: orderCancellationSchema },
+  async (ctx, { orderId, reason }) => {
+    await applyTransition(ctx, { orderId, action: 'cancelOrder', reason: reason ?? null });
+    revalidateOrder(orderId);
+  },
+);
+
+export const overrideOrderStatus = run(
+  { permission: PERMISSIONS.orders.status.override, input: orderStatusOverrideSchema },
+  async (ctx, { orderId, status, reason }) => {
+    await applyTransition(ctx, { orderId, action: 'overrideOrderStatus', target: status, reason });
+    revalidateOrder(orderId);
+  },
+);

@@ -6,6 +6,16 @@ export type OrderStatus = 'pending' | 'paid' | 'completed' | 'cancelled';
 
 export type OrderType = 'home' | 'warehouse' | 'shipping-company';
 
+/** Named transitions; `order.status` is never written directly. */
+export type OrderAction = 'markOrderPaid' | 'completeOrder' | 'cancelOrder' | 'overrideOrderStatus';
+
+export interface OrderActionOption {
+  action: OrderAction;
+  label: string;
+  /** `null` when the action can run right now. */
+  disabledReason: string | null;
+}
+
 export interface OrderItemDTO {
   id: string;
   productSlug: string;

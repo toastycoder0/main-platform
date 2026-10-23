@@ -110,3 +110,16 @@ export async function reserveStock(tx: DbLike, input: ReserveStockInput): Promis
 
   await tx.insert(stockReservation).values(allocations);
 }
+
+/**
+ * Frees every hold of an order, expired or not. Idempotent, so paying or
+ * cancelling twice (or an override into `paid`/`cancelled`) cannot fail.
+ */
+export async function releaseOrderReservations(tx: DbLike, orderId: string): Promise<number> {
+  const released = await tx
+    .delete(stockReservation)
+    .where(eq(stockReservation.orderId, orderId))
+    .returning({ id: stockReservation.id });
+
+  return released.length;
+}

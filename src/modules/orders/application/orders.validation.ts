@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 
 /** Route params of `/orders/[id]`. */
 export const orderParamsSchema = z.object({
@@ -7,6 +8,26 @@ export const orderParamsSchema = z.object({
 
 export const reorderOrderSchema = z.object({
   orderId: z.string().trim().min(1).max(100),
+});
+
+const orderReferenceSchema = z.object({
+  orderId: z.string().trim().min(1).max(100),
+});
+
+/** Actions without a target: the transition table decides the destination. */
+export const orderTransitionSchema = orderReferenceSchema;
+
+export const orderCancellationSchema = orderReferenceSchema.extend({
+  reason: z.string().trim().max(500, FIELD_ERRORS.tooLong).optional(),
+});
+
+export const orderStatusOverrideSchema = orderReferenceSchema.extend({
+  status: z.enum(['pending', 'paid', 'completed', 'cancelled']),
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'Explica el motivo (mínimo 10 caracteres)')
+    .max(500, FIELD_ERRORS.tooLong),
 });
 
 export const currencyAmountSchema = z.object({
