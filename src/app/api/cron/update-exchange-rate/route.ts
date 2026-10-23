@@ -1,10 +1,10 @@
-import { timingSafeEqual } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { env } from '@/config/env';
 import { db } from '@/infrastructure/db';
 import { exchangeRate } from '@/infrastructure/db/schema';
+import { isCronAuthorized } from '@/infrastructure/services/cron-auth';
 
 const banxicoResponseSchema = z.object({
   bmx: z.object({
@@ -15,19 +15,6 @@ const banxicoResponseSchema = z.object({
     ),
   }),
 });
-
-function isAuthorized(request: NextRequest): boolean {
-  const header = request.headers.get('authorization');
-
-  if (!header?.startsWith('Bearer ')) {
-    return false;
-  }
-
-  const provided = Buffer.from(header.slice('Bearer '.length));
-  const expected = Buffer.from(env.CRON_SECRET);
-
-  return provided.length === expected.length && timingSafeEqual(provided, expected);
-}
 
 async function fetchBanxicoRate(): Promise<number> {
   const res = await fetch(
@@ -83,7 +70,7 @@ async function upsertUsdMxnRate(rate: number): Promise<void> {
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return Response.json({ error: 'No autorizado' }, { status: 401 });
   }
 

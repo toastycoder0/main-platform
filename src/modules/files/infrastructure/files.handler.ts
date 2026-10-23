@@ -1,28 +1,13 @@
-import { timingSafeEqual } from 'node:crypto';
 import type { NextRequest } from 'next/server';
-import { env } from '@/config/env';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
 import { cleanupQuerySchema } from '@/infrastructure/files/validation';
+import { isCronAuthorized } from '@/infrastructure/services/cron-auth';
 import { storageClient } from '@/infrastructure/storage/client';
 import { AppError, isAppError } from '@/shared/errors';
 import { cleanupOrphans } from './files.cleanup.service';
 
-function isAuthorized(request: NextRequest): boolean {
-  const header = request.headers.get('authorization');
-
-  if (!header?.startsWith('Bearer ')) {
-    return false;
-  }
-
-  const provided = Buffer.from(header.slice('Bearer '.length));
-  const expected = Buffer.from(env.CRON_SECRET);
-
-  // Length check first: timingSafeEqual throws on buffers of different length.
-  return provided.length === expected.length && timingSafeEqual(provided, expected);
-}
-
 export async function GET(request: NextRequest): Promise<Response> {
-  if (!isAuthorized(request)) {
+  if (!isCronAuthorized(request)) {
     return Response.json({ error: 'No autorizado' }, { status: 401 });
   }
 
