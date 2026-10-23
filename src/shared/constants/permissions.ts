@@ -5,6 +5,7 @@ export const PERMISSION_GROUP_LABELS = {
   'warehouse.map': 'Mapa del almacén',
   'warehouse.stock': 'Stock',
   orders: 'Pedidos',
+  'orders.status': 'Estados de pedidos',
   admin: 'Panel de administración',
   'admin.users': 'Usuarios',
   'admin.roles': 'Roles',
@@ -40,6 +41,11 @@ export const PERMISSIONS = {
     createForOther: 'orders.createForOther',
     reserve: 'orders.reserve',
     reserveDuration: 'orders.reserveDuration',
+    manage: 'orders.manage',
+    cancel: 'orders.cancel',
+    status: {
+      override: 'orders.status.override',
+    },
   },
   warehouse: {
     access: 'warehouse.access',

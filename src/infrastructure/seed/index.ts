@@ -47,6 +47,13 @@ const INITIAL_PERMISSIONS = [
     name: 'Definir la duración del apartado',
     type: 'action' as const,
   },
+  { slug: orders.manage, name: 'Gestionar pedidos', type: 'action' as const },
+  { slug: orders.cancel, name: 'Cancelar pedidos', type: 'action' as const },
+  {
+    slug: orders.status.override,
+    name: 'Forzar el cambio de estado de un pedido',
+    type: 'action' as const,
+  },
   { slug: warehouse.access, name: 'Acceso al almacén', type: 'access' as const },
   accessPermission(warehouse.lots.access, 'warehouse.lots'),
   { slug: warehouse.lots.create, name: 'Crear lotes', type: 'action' as const },

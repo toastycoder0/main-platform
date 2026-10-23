@@ -35,7 +35,7 @@ function fullName(firstName: AnyColumn, lastName: AnyColumn): SQL<string | null>
 }
 
 /**
- * Owners see their own orders; admins see every order. Without a session the
+ * Owners see their own orders; managers see every order. Without a session the
  * scope denies everything instead of widening.
  */
 function ownerScope(ctx: RequestContext): SQL | undefined {
@@ -45,7 +45,7 @@ function ownerScope(ctx: RequestContext): SQL | undefined {
     return sql`false`;
   }
 
-  if (ctx.permissions.has(PERMISSIONS.admin.access)) {
+  if (ctx.permissions.has(PERMISSIONS.orders.manage)) {
     return undefined;
   }
 
