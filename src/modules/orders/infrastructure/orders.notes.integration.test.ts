@@ -13,6 +13,8 @@ const ids = { manager: '', owner: '', orderId: '' };
 
 const state = vi.hoisted(() => ({ ctx: undefined as RequestContext | undefined }));
 
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+
 vi.mock('@/infrastructure/context/next-factory', () => ({
   createRequestContext: () => {
     if (!state.ctx) {
