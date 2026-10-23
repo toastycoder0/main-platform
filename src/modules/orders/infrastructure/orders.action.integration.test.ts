@@ -118,7 +118,7 @@ describe('reorderOrder ownership guard', () => {
   });
 
   it('rejects a manager, because reordering always fills the caller cart', async () => {
-    state.ctx = testContext(ids.creator, [PERMISSIONS.admin.access]);
+    state.ctx = testContext(ids.creator, [PERMISSIONS.orders.manage]);
 
     const result = await reorderOrder({ orderId: ids.orderId });
 
