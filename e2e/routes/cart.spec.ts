@@ -167,4 +167,28 @@ describe('Cart checkout E2E', () => {
     expect(orders.length).toBeGreaterThan(0);
     expect(items).toHaveLength(0);
   });
+
+  it('lists the order, filters by status and reorders it', async () => {
+    await resetCart({ billing: BILLING, delivery: DELIVERY });
+
+    await page.goto(`${BASE}/cart/review`);
+    await page.getByRole('button', { name: 'Confirmar pedido' }).click();
+    await page.waitForURL(/\/orders\/ord_/);
+
+    await page.goto(`${BASE}/orders`);
+    await page.getByRole('heading', { name: 'Mis pedidos' }).waitFor();
+    await page
+      .getByRole('link', { name: /Pedido #\d+/ })
+      .first()
+      .waitFor();
+
+    await page.getByRole('button', { name: /Estado/ }).click();
+    await page.getByRole('checkbox', { name: 'Pendiente' }).check();
+    await page.getByRole('button', { name: 'Aplicar' }).click();
+    await page.waitForURL(/status=pending/);
+
+    await page.getByRole('button', { name: 'Volver a comprar este pedido' }).first().click();
+    await page.waitForURL(`${BASE}/cart`);
+    await page.getByText('E2E Producto carrito').waitFor();
+  });
 });
