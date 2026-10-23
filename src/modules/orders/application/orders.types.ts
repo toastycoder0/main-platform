@@ -48,6 +48,19 @@ export interface OrderDTO {
   isOwner: boolean;
 }
 
+export interface OrderEvidenceFileDTO {
+  id: string;
+  url: string;
+}
+
+/** Management view of an order: adds the owner, both evidence scopes and its actions. */
+export interface OrderManagementDTO extends OrderDTO {
+  ownerName: string | null;
+  paymentEvidence: OrderEvidenceFileDTO[];
+  managementEvidence: OrderEvidenceFileDTO[];
+  availableActions: OrderActionOption[];
+}
+
 export interface OrderListItemPreviewDTO {
   productTitle: string;
   variantTitle: string;
@@ -67,6 +80,17 @@ export interface OrderListItemDTO {
   totals: CurrencyAmount[];
   ownerName: string | null;
   isOwner: boolean;
+}
+
+export interface OrderActivityDTO {
+  id: string;
+  action: string;
+  label: string;
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus | null;
+  reason: string | null;
+  actorName: string | null;
+  createdAt: Date;
 }
 
 export interface OrderNoteDTO {
