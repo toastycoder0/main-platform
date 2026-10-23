@@ -21,6 +21,7 @@ import type {
 } from '../application/orders.validation';
 import { OrderStatusBadge } from './order-status-badge';
 import { OrderTimeline } from './order-timeline';
+import { ReorderButton } from './reorder-button';
 
 const PLACEHOLDER_URL = '/assets/placeholder.svg';
 
@@ -285,12 +286,15 @@ export function OrderDetail({ order, reservations }: OrderDetailProps) {
 
   return (
     <div className='mx-auto flex w-full max-w-5xl flex-col gap-6'>
-      <Button asChild className='-ml-2 w-fit' size='sm' variant='ghost'>
-        <Link href='/orders'>
-          <ArrowLeftIcon />
-          Volver a pedidos
-        </Link>
-      </Button>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <Button asChild className='-ml-2 w-fit' size='sm' variant='ghost'>
+          <Link href='/orders'>
+            <ArrowLeftIcon />
+            Volver a pedidos
+          </Link>
+        </Button>
+        <ReorderButton orderId={order.id} />
+      </div>
 
       <div className='flex flex-col gap-5'>
         <div className='flex flex-wrap items-start justify-between gap-4'>

@@ -15,7 +15,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const [ctx, rawParams] = await Promise.all([createRequestContext(), params]);
 
   if (!ctx.session) {
-    redirect('/auth/login');
+    redirect(`/auth/login?next=${encodeURIComponent(`/orders/${rawParams.id}`)}`);
   }
 
   const parsed = orderParamsSchema.safeParse(rawParams);

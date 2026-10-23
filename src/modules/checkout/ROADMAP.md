@@ -9,7 +9,9 @@
 - [x] Tablas `order` y `order_item` con snapshot de facturación, entrega, líneas y totales
 - [x] Apartado de inventario (`stock_reservation`) descontado en catálogo, carrito y motor del almacén
 - [x] Permisos `orders.reserve` y `orders.reserveDuration`
-- [x] Listado `/orders` y detalle `/orders/[id]` (timeline, artículos, entrega, facturación, resumen y apartado)
+- [x] Listado `/orders` estilo marketplace: tarjetas con miniaturas, búsqueda por producto, filtro múltiple por estado con chips, orden y paginación
+- [x] Detalle `/orders/[id]` (timeline, artículos, entrega, facturación, resumen y apartado)
+- [x] “Volver a comprar” desde el listado y el detalle, revalidando precio y stock actuales
 - [x] E2E de `/cart` estables: 5/5 en `cart.spec.ts` y 144/144 en la suite (los timeouts eran compilación en frío de `next dev`)
 - [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ✅
 

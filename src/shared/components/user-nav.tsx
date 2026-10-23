@@ -1,6 +1,6 @@
 'use client';
 
-import { HouseIcon, UserPen } from 'lucide-react';
+import { HouseIcon, PackageIcon, UserPen } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/avatar';
 import {
@@ -52,6 +52,12 @@ export function UserNavContent({
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
+      <DropdownMenuItem asChild>
+        <Link href='/orders'>
+          <PackageIcon />
+          Mis pedidos
+        </Link>
+      </DropdownMenuItem>
       <DropdownMenuItem asChild>
         <Link href='/account'>
           <UserPen />

@@ -35,6 +35,13 @@ export interface OrderDTO {
   items: OrderItemDTO[];
 }
 
+export interface OrderListItemPreviewDTO {
+  productTitle: string;
+  variantTitle: string;
+  quantity: number;
+  imageUrl: string | null;
+}
+
 export interface OrderListItemDTO {
   id: string;
   number: number;
@@ -42,6 +49,8 @@ export interface OrderListItemDTO {
   fulfillmentType: OrderType;
   createdAt: Date;
   itemCount: number;
+  previewItems: OrderListItemPreviewDTO[];
+  reservationExpiresAt: Date | null;
   totals: CurrencyAmount[];
 }
 

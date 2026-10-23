@@ -6,7 +6,7 @@ export const ordersManifest: ModuleManifest = {
     public: {
       nav: [],
       routeLabels: {
-        '/orders': 'Pedidos',
+        '/orders': 'Mis pedidos',
         '/orders/[id]': 'Pedido',
       },
     },

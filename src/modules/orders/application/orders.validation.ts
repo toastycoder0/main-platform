@@ -5,6 +5,10 @@ export const orderParamsSchema = z.object({
   id: z.string().trim().min(1).max(100),
 });
 
+export const reorderOrderSchema = z.object({
+  orderId: z.string().trim().min(1).max(100),
+});
+
 export const currencyAmountSchema = z.object({
   currency: z.string().trim().min(1),
   amount: z.number(),

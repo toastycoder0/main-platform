@@ -1,10 +1,9 @@
 import { and, asc, desc, eq, gt, inArray, or, type SQL, sql } from 'drizzle-orm';
 import type { RequestContext } from '@/infrastructure/context/types';
-import { searchILike } from '@/infrastructure/db/list-query';
+import { ilikePattern, searchILike } from '@/infrastructure/db/list-query';
 import { order, orderItem, productImage, stockReservation } from '@/infrastructure/db/schema';
 import { listFilesByOwners } from '@/infrastructure/files/service';
 import { PERMISSIONS } from '@/shared/constants/permissions';
-import type { ListParams } from '@/shared/list/list-params';
 import type { Paginated } from '@/shared/list/paginated';
 import {
   parseBillingSnapshot,
@@ -16,13 +15,16 @@ import type {
   OrderDTO,
   OrderItemDTO,
   OrderListItemDTO,
+  OrderListItemPreviewDTO,
   OrderReservationDTO,
+  OrderStatus,
 } from '../application/orders.types';
 import {
   orderLineFieldsSchema,
   orderLinePriceSchema,
   orderLineTaxSchema,
 } from '../application/orders.validation';
+import type { OrdersParams } from './orders.params';
 
 /**
  * Owners see their own orders; admins see every order. Without a session the
@@ -42,7 +44,11 @@ function ownerScope(ctx: RequestContext): SQL | undefined {
   return or(eq(order.userId, userId), eq(order.createdById, userId));
 }
 
-function buildWhere(ctx: RequestContext, params: ListParams): SQL | undefined {
+function buildWhere(
+  ctx: RequestContext,
+  params: OrdersParams,
+  { includeStatus = true }: { includeStatus?: boolean } = {},
+): SQL | undefined {
   const conditions: SQL[] = [];
   const scope = ownerScope(ctx);
 
@@ -51,21 +57,123 @@ function buildWhere(ctx: RequestContext, params: ListParams): SQL | undefined {
   }
 
   if (params.q) {
-    const search = searchILike([sql`${order.number}::text`, order.notes], params.q);
+    const direct = searchILike([sql`${order.number}::text`, order.notes], params.q);
+    const pattern = ilikePattern(params.q);
+    const itemSearch = sql`exists (select 1 from ${orderItem} where ${orderItem.orderId} = ${order.id} and (${orderItem.productTitle} ilike ${pattern} or ${orderItem.variantTitle} ilike ${pattern}))`;
+    const search = direct ? or(direct, itemSearch) : itemSearch;
 
     if (search) {
       conditions.push(search);
     }
   }
 
+  if (includeStatus && params.status.length > 0) {
+    conditions.push(inArray(order.status, params.status));
+  }
+
   return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+interface OrderItemRow {
+  orderId: string;
+  productId: string | null;
+  productTitle: string;
+  variantTitle: string;
+  quantity: number;
+}
+
+interface OrderItemSummary {
+  counts: Map<string, number>;
+  previews: Map<string, OrderListItemPreviewDTO[]>;
+}
+
+async function queryOrderItems(ctx: RequestContext, orderIds: string[]): Promise<OrderItemSummary> {
+  const summary: OrderItemSummary = { counts: new Map(), previews: new Map() };
+
+  if (orderIds.length === 0) {
+    return summary;
+  }
+
+  const rows: OrderItemRow[] = await ctx.db
+    .select({
+      orderId: orderItem.orderId,
+      productId: orderItem.productId,
+      productTitle: orderItem.productTitle,
+      variantTitle: orderItem.variantTitle,
+      quantity: orderItem.quantity,
+    })
+    .from(orderItem)
+    .where(inArray(orderItem.orderId, orderIds))
+    .orderBy(asc(orderItem.orderId), asc(orderItem.sortOrder), asc(orderItem.id));
+
+  const covers = await queryCoverImages(
+    ctx,
+    rows.flatMap((row) => (row.productId ? [row.productId] : [])),
+  );
+
+  for (const row of rows) {
+    summary.counts.set(row.orderId, (summary.counts.get(row.orderId) ?? 0) + 1);
+
+    const previews = summary.previews.get(row.orderId) ?? [];
+
+    if (previews.length < 3) {
+      previews.push({
+        productTitle: row.productTitle,
+        variantTitle: row.variantTitle,
+        quantity: row.quantity,
+        imageUrl: row.productId ? (covers.get(row.productId) ?? null) : null,
+      });
+      summary.previews.set(row.orderId, previews);
+    }
+  }
+
+  return summary;
+}
+
+async function queryReservationExpiries(
+  ctx: RequestContext,
+  orderIds: string[],
+): Promise<Map<string, Date>> {
+  if (orderIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await ctx.db
+    .select({
+      orderId: stockReservation.orderId,
+      expiresAt: stockReservation.expiresAt,
+    })
+    .from(stockReservation)
+    .where(
+      and(inArray(stockReservation.orderId, orderIds), gt(stockReservation.expiresAt, sql`now()`)),
+    );
+
+  const expiries = new Map<string, Date>();
+
+  for (const row of rows) {
+    if (!row.orderId) {
+      continue;
+    }
+
+    const current = expiries.get(row.orderId);
+
+    if (!current || row.expiresAt > current) {
+      expiries.set(row.orderId, row.expiresAt);
+    }
+  }
+
+  return expiries;
 }
 
 export async function listOrders(
   ctx: RequestContext,
-  params: ListParams,
+  params: OrdersParams,
 ): Promise<Paginated<OrderListItemDTO>> {
   const where = buildWhere(ctx, params);
+  const orderBy =
+    params.sort === 'oldest'
+      ? [asc(order.createdAt), asc(order.id)]
+      : [desc(order.createdAt), desc(order.id)];
 
   const [counted, rows] = await Promise.all([
     ctx.db.select({ total: sql<number>`count(*)::int` }).from(order).where(where),
@@ -80,21 +188,16 @@ export async function listOrders(
       })
       .from(order)
       .where(where)
-      .orderBy(desc(order.createdAt), desc(order.id))
+      .orderBy(...orderBy)
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
   ]);
 
   const ids = rows.map((row) => row.id);
-  const counts =
-    ids.length > 0
-      ? await ctx.db
-          .select({ orderId: orderItem.orderId, total: sql<number>`count(*)::int` })
-          .from(orderItem)
-          .where(inArray(orderItem.orderId, ids))
-          .groupBy(orderItem.orderId)
-      : [];
-  const countsByOrder = new Map(counts.map((row) => [row.orderId, row.total]));
+  const [items, reservationExpiries] = await Promise.all([
+    queryOrderItems(ctx, ids),
+    queryReservationExpiries(ctx, ids),
+  ]);
 
   return {
     items: rows.map((row) => ({
@@ -103,11 +206,39 @@ export async function listOrders(
       status: row.status,
       fulfillmentType: row.fulfillmentType,
       createdAt: row.createdAt,
-      itemCount: countsByOrder.get(row.id) ?? 0,
+      itemCount: items.counts.get(row.id) ?? 0,
+      previewItems: items.previews.get(row.id) ?? [],
+      reservationExpiresAt: reservationExpiries.get(row.id) ?? null,
       totals: parseCurrencyAmounts(row.totals),
     })),
     total: counted[0]?.total ?? 0,
   };
+}
+
+/** Counts per status for the current search, ignoring the status filter itself. */
+export async function countOrdersByStatus(
+  ctx: RequestContext,
+  params: OrdersParams,
+): Promise<Record<OrderStatus, number>> {
+  const where = buildWhere(ctx, params, { includeStatus: false });
+  const rows = await ctx.db
+    .select({ status: order.status, total: sql<number>`count(*)::int` })
+    .from(order)
+    .where(where)
+    .groupBy(order.status);
+
+  const counts: Record<OrderStatus, number> = {
+    pending: 0,
+    paid: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+
+  for (const row of rows) {
+    counts[row.status] = row.total;
+  }
+
+  return counts;
 }
 
 async function queryCoverImages(
