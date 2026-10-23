@@ -1,9 +1,21 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 
+const safeRedirectSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((value) => value.startsWith('/') && !value.startsWith('//'), 'El destino no es válido')
+  .optional();
+
 export const loginSchema = z.object({
   email: z.email(FIELD_ERRORS.email).min(1, FIELD_ERRORS.required),
   password: z.string().min(8, FIELD_ERRORS.password),
+  next: safeRedirectSchema,
+});
+
+export const loginPageSchema = z.object({
+  next: safeRedirectSchema,
 });
 
 export const forgotPasswordSchema = z.object({

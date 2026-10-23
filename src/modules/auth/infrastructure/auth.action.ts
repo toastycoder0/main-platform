@@ -14,7 +14,7 @@ import {
 
 export const login = run(
   { access: 'public', input: loginSchema },
-  async (_ctx, { email, password }) => {
+  async (_ctx, { email, password, next }) => {
     try {
       await auth.api.signInEmail({
         body: { email, password, rememberMe: true },
@@ -32,7 +32,7 @@ export const login = run(
       throw new AppError('internal', 'Error al iniciar sesión');
     }
 
-    redirect('/');
+    redirect(next ?? '/');
   },
 );
 

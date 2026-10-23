@@ -1,13 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { env } from '@/config/env';
+import { loginPageSchema } from '@/modules/auth/application/auth.validation';
 import { LoginForm } from '@/modules/auth/components/login-form';
 
 export const metadata: Metadata = {
   title: 'Iniciar sesión',
 };
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const query = await searchParams;
+  const rawNext = Array.isArray(query.next) ? query.next[0] : query.next;
+  const parsed = loginPageSchema.safeParse({ next: rawNext });
+  const next = parsed.success ? parsed.data.next : undefined;
+
   const whatsappMessage = encodeURIComponent(
     'Hola, mucho gusto. Me gustaría obtener información sobre cómo acceder a la plataforma de https://www.boya.com.mx',
   );
@@ -22,7 +32,7 @@ export default function LoginPage() {
         </p>
       </header>
 
-      <LoginForm />
+      <LoginForm next={next} />
 
       <Link
         href='/auth/forgot-password'

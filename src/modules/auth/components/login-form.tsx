@@ -16,14 +16,18 @@ import {
 import { Input } from '@/shared/components/input';
 import { PasswordInput } from '@/shared/components/password-input';
 
-export function LoginForm() {
+interface LoginFormProps {
+  next?: string | undefined;
+}
+
+export function LoginForm({ next }: LoginFormProps) {
   const {
     handleSubmit,
     control,
     formState: { isSubmitting },
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', next },
   });
 
   async function onSubmit(values: LoginSchema) {
