@@ -7,8 +7,12 @@ import { Button } from '@/shared/components/button';
 import { Spinner } from '@/shared/components/spinner';
 import { reorderOrder } from '../infrastructure/orders.action';
 
-export function ReorderButton({ orderId }: { orderId: string }) {
+export function ReorderButton({ orderId, isOwner }: { orderId: string; isOwner: boolean }) {
   const [isPending, startTransition] = useTransition();
+
+  if (!isOwner) {
+    return null;
+  }
 
   function reorder() {
     startTransition(async () => {

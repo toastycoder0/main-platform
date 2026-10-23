@@ -214,14 +214,21 @@ function DeliveryDetails({ fulfillment }: { fulfillment: OrderFulfillmentSnapsho
   );
 }
 
-function BillingDetails({ billing }: { billing: OrderBillingSnapshot }) {
+function BillingDetails({
+  billing,
+  createdByName,
+}: {
+  billing: OrderBillingSnapshot;
+  createdByName: string | null;
+}) {
   const { owner, invoice } = billing;
 
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-3'>
-        <DetailRow label='Propietario' value={owner.name} />
+        <DetailRow label='Cliente' value={owner.name} />
         <DetailRow label='Correo' value={owner.email} />
+        <DetailRow label='Creado por' value={createdByName} />
       </div>
 
       <Separator />
@@ -293,7 +300,7 @@ export function OrderDetail({ order, reservations }: OrderDetailProps) {
             Volver a pedidos
           </Link>
         </Button>
-        <ReorderButton orderId={order.id} />
+        <ReorderButton orderId={order.id} isOwner={order.isOwner} />
       </div>
 
       <div className='flex flex-col gap-5'>
@@ -349,7 +356,7 @@ export function OrderDetail({ order, reservations }: OrderDetailProps) {
           </SectionCard>
 
           <SectionCard title='Facturación'>
-            <BillingDetails billing={order.billing} />
+            <BillingDetails billing={order.billing} createdByName={order.createdByName} />
           </SectionCard>
 
           {expiresAt ? (

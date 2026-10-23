@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, gt, inArray, or, type SQL, sql } from 'drizzle-orm';
+import { type AnyColumn, and, asc, desc, eq, gt, inArray, or, type SQL, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { ilikePattern, searchILike } from '@/infrastructure/db/list-query';
-import { order, orderItem, productImage, stockReservation } from '@/infrastructure/db/schema';
+import { order, orderItem, productImage, stockReservation, user } from '@/infrastructure/db/schema';
 import { listFilesByOwners } from '@/infrastructure/files/service';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { Paginated } from '@/shared/list/paginated';
@@ -25,6 +26,13 @@ import {
   orderLineTaxSchema,
 } from '../application/orders.validation';
 import type { OrdersParams } from './orders.params';
+
+const ownerUser = alias(user, 'order_owner');
+const creatorUser = alias(user, 'order_creator');
+
+function fullName(firstName: AnyColumn, lastName: AnyColumn): SQL<string | null> {
+  return sql<string | null>`nullif(trim(concat(${firstName}, ' ', ${lastName})), '')`;
+}
 
 /**
  * Owners see their own orders; admins see every order. Without a session the
@@ -181,12 +189,15 @@ export async function listOrders(
       .select({
         id: order.id,
         number: order.number,
+        userId: order.userId,
         status: order.status,
         fulfillmentType: order.fulfillmentType,
         createdAt: order.createdAt,
         totals: order.totals,
+        ownerName: fullName(ownerUser.firstName, ownerUser.lastName),
       })
       .from(order)
+      .leftJoin(ownerUser, eq(ownerUser.id, order.userId))
       .where(where)
       .orderBy(...orderBy)
       .limit(params.pageSize)
@@ -199,6 +210,8 @@ export async function listOrders(
     queryReservationExpiries(ctx, ids),
   ]);
 
+  const viewerId = ctx.session?.user.id;
+
   return {
     items: rows.map((row) => ({
       id: row.id,
@@ -210,6 +223,8 @@ export async function listOrders(
       previewItems: items.previews.get(row.id) ?? [],
       reservationExpiresAt: reservationExpiries.get(row.id) ?? null,
       totals: parseCurrencyAmounts(row.totals),
+      ownerName: row.ownerName,
+      isOwner: row.userId === viewerId,
     })),
     total: counted[0]?.total ?? 0,
   };
@@ -316,8 +331,23 @@ export async function getOrder(ctx: RequestContext, id: string): Promise<OrderDT
   }
 
   const [row] = await ctx.db
-    .select()
+    .select({
+      id: order.id,
+      number: order.number,
+      userId: order.userId,
+      status: order.status,
+      fulfillmentType: order.fulfillmentType,
+      createdAt: order.createdAt,
+      billing: order.billing,
+      fulfillment: order.fulfillment,
+      subtotals: order.subtotals,
+      taxes: order.taxes,
+      totals: order.totals,
+      notes: order.notes,
+      createdByName: fullName(creatorUser.firstName, creatorUser.lastName),
+    })
     .from(order)
+    .leftJoin(creatorUser, eq(creatorUser.id, order.createdById))
     .where(and(...conditions))
     .limit(1);
 
@@ -362,6 +392,8 @@ export async function getOrder(ctx: RequestContext, id: string): Promise<OrderDT
     totals: parseCurrencyAmounts(row.totals),
     notes: row.notes,
     items,
+    createdByName: row.createdByName,
+    isOwner: row.userId === ctx.session?.user.id,
   };
 }
 

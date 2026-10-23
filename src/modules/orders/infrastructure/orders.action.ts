@@ -1,6 +1,6 @@
 'use server';
 
-import { and, asc, eq, or, type SQL } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { RequestContext } from '@/infrastructure/context/types';
@@ -11,7 +11,6 @@ import { buildCartLine, type ResolvedCartLine } from '@/modules/cart/application
 import type { CartSource } from '@/modules/cart/application/cart.types';
 import { addCartLines } from '@/modules/cart/infrastructure/cart.repository';
 import { findCartSources } from '@/modules/cart/infrastructure/cart.sources.query';
-import { PERMISSIONS } from '@/shared/constants/permissions';
 import { AppError } from '@/shared/errors';
 import type { OpenFieldValues } from '@/shared/pricing/types';
 import { orderLineFieldsSchema, reorderOrderSchema } from '../application/orders.validation';
@@ -23,34 +22,23 @@ function revalidateCart(): void {
   revalidatePath('/', 'layout');
 }
 
-function ownerConditions(ctx: AuthenticatedContext, orderId: string): SQL[] {
-  const conditions: SQL[] = [eq(order.id, orderId)];
-
-  if (ctx.permissions.has(PERMISSIONS.admin.access)) {
-    return conditions;
-  }
-
-  const scope = or(
-    eq(order.userId, ctx.session.user.id),
-    eq(order.createdById, ctx.session.user.id),
-  );
-
-  if (scope) {
-    conditions.push(scope);
-  }
-
-  return conditions;
-}
-
-async function requireOwnedOrder(ctx: AuthenticatedContext, orderId: string): Promise<void> {
+/*
+ * Reordering always fills the caller's cart, so it is restricted to the owner:
+ * neither a manager nor a creator who bought on behalf of someone else can use it.
+ */
+async function requireOrderOwner(ctx: AuthenticatedContext, orderId: string): Promise<void> {
   const [row] = await ctx.db
-    .select({ id: order.id })
+    .select({ ownerId: order.userId })
     .from(order)
-    .where(and(...ownerConditions(ctx, orderId)))
+    .where(eq(order.id, orderId))
     .limit(1);
 
   if (!row) {
     throw new AppError('not_found', 'El pedido no existe');
+  }
+
+  if (row.ownerId !== ctx.session.user.id) {
+    throw new AppError('forbidden', 'Solo el propietario puede repetir este pedido');
   }
 }
 
@@ -103,7 +91,7 @@ function resolveReorderLine(source: CartSource | undefined, item: OrderItemRow):
 }
 
 export const reorderOrder = run({ input: reorderOrderSchema }, async (ctx, { orderId }) => {
-  await requireOwnedOrder(ctx, orderId);
+  await requireOrderOwner(ctx, orderId);
 
   const items = await loadOrderItems(ctx, orderId);
   const sources = await findCartSources(ctx, [...new Set(items.map((item) => item.productSlug))]);

@@ -33,6 +33,9 @@ export interface OrderDTO {
   totals: CurrencyAmount[];
   notes: string;
   items: OrderItemDTO[];
+  // Live user name (not the billing snapshot) so the record shows who placed it.
+  createdByName: string | null;
+  isOwner: boolean;
 }
 
 export interface OrderListItemPreviewDTO {
@@ -52,6 +55,8 @@ export interface OrderListItemDTO {
   previewItems: OrderListItemPreviewDTO[];
   reservationExpiresAt: Date | null;
   totals: CurrencyAmount[];
+  ownerName: string | null;
+  isOwner: boolean;
 }
 
 export interface OrderReservationDTO {

@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Clock3Icon } from 'lucide-react';
+import { Clock3Icon, UserRoundIcon } from 'lucide-react';
 import Link from 'next/link';
 import { ORDER_TYPE_LABELS } from '@/modules/checkout/application/checkout.constants';
 import { Badge } from '@/shared/components/badge';
@@ -46,6 +46,14 @@ export function OrderCard({ order }: { order: OrderListItemDTO }) {
             </Link>
           </h2>
           <p className='text-xs text-neutral-500'>{formatDate(order.createdAt)}</p>
+          {!order.isOwner && order.ownerName ? (
+            <Badge
+              variant='outline'
+              className='mt-1 border-neutral-200 bg-neutral-50 text-neutral-600'
+            >
+              <UserRoundIcon />A nombre de {order.ownerName}
+            </Badge>
+          ) : null}
         </div>
         <OrderStatusBadge status={order.status} />
       </header>
@@ -100,7 +108,7 @@ export function OrderCard({ order }: { order: OrderListItemDTO }) {
           <Button asChild variant='outline' size='sm'>
             <Link href={`/orders/${order.id}`}>Ver detalle</Link>
           </Button>
-          <ReorderButton orderId={order.id} />
+          <ReorderButton orderId={order.id} isOwner={order.isOwner} />
         </div>
       </footer>
     </article>
