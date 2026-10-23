@@ -11,7 +11,7 @@ import { lot, warehouseCell } from './warehouse.schema';
  * Time-boxed hold over the quantity of a lot in a cell. It is not a warehouse
  * movement: stock stays where it is, but while `expiresAt` is in the future the
  * quantity no longer counts as available anywhere in the platform. Expired rows
- * are inert and will be purged by a cron in a later phase.
+ * are inert and purged by the reservations cron.
  */
 export const stockReservation = snakeCase.table(
   'stock_reservation',
