@@ -3,9 +3,10 @@ import { alias } from 'drizzle-orm/pg-core';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { ilikePattern, searchILike } from '@/infrastructure/db/list-query';
 import { order, orderItem, productImage, stockReservation, user } from '@/infrastructure/db/schema';
-import { listFilesByOwners } from '@/infrastructure/files/service';
+import { listFilesByOwners, listOwnerFiles } from '@/infrastructure/files/service';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { Paginated } from '@/shared/list/paginated';
+import { availableActions } from '../application/orders.available-actions';
 import {
   parseBillingSnapshot,
   parseCurrencyAmounts,
@@ -14,9 +15,11 @@ import {
 } from '../application/orders.mapping';
 import type {
   OrderDTO,
+  OrderEvidenceFileDTO,
   OrderItemDTO,
   OrderListItemDTO,
   OrderListItemPreviewDTO,
+  OrderManagementDTO,
   OrderReservationDTO,
   OrderStatus,
 } from '../application/orders.types';
@@ -26,6 +29,7 @@ import {
   orderLineTaxSchema,
 } from '../application/orders.validation';
 import type { OrdersParams } from './orders.params';
+import { getReservationSummary } from './orders.reservations';
 
 const ownerUser = alias(user, 'order_owner');
 const creatorUser = alias(user, 'order_creator');
@@ -394,6 +398,53 @@ export async function getOrder(ctx: RequestContext, id: string): Promise<OrderDT
     items,
     createdByName: row.createdByName,
     isOwner: row.userId === ctx.session?.user.id,
+  };
+}
+
+function toEvidenceFile(file: { id: string; url: string }): OrderEvidenceFileDTO {
+  return { id: file.id, url: file.url };
+}
+
+/**
+ * Management view: requires `orders.manage` and adds the owner, both evidence
+ * scopes and the actions this actor may run.
+ */
+export async function getOrderManagement(
+  ctx: RequestContext,
+  id: string,
+): Promise<OrderManagementDTO | null> {
+  if (!ctx.permissions.has(PERMISSIONS.orders.manage)) {
+    return null;
+  }
+
+  const orderDto = await getOrder(ctx, id);
+
+  if (!orderDto) {
+    return null;
+  }
+
+  const [owner, payment, management, reservation] = await Promise.all([
+    ctx.db
+      .select({ ownerName: fullName(ownerUser.firstName, ownerUser.lastName) })
+      .from(order)
+      .leftJoin(ownerUser, eq(ownerUser.id, order.userId))
+      .where(eq(order.id, id))
+      .limit(1),
+    listOwnerFiles(ctx.db, { entity: 'order', scope: 'paymentEvidence', ownerId: id }),
+    listOwnerFiles(ctx.db, { entity: 'order', scope: 'managementEvidence', ownerId: id }),
+    getReservationSummary(ctx.db, id),
+  ]);
+
+  return {
+    ...orderDto,
+    ownerName: owner[0]?.ownerName ?? null,
+    paymentEvidence: payment.map(toEvidenceFile),
+    managementEvidence: management.map(toEvidenceFile),
+    availableActions: availableActions({
+      status: orderDto.status,
+      permissions: ctx.permissions,
+      reservation,
+    }),
   };
 }
 

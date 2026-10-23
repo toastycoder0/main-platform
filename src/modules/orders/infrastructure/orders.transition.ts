@@ -1,10 +1,9 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { releaseOrderReservations } from '@/infrastructure/catalog/stock-reservation.repository';
 import type { DbLike } from '@/infrastructure/db';
-import { order, orderEvent, stockReservation } from '@/infrastructure/db/schema';
+import { order, orderEvent } from '@/infrastructure/db/schema';
 import type { AuthenticatedContext } from '@/infrastructure/services/action';
 import { AppError } from '@/shared/errors';
-import type { ReservationSummary } from '../application/orders.guards';
 import {
   isTransitionAllowed,
   ORDER_TRANSITIONS,
@@ -12,6 +11,7 @@ import {
   resolvesTo,
 } from '../application/orders.transitions';
 import type { OrderAction, OrderStatus } from '../application/orders.types';
+import { getReservationSummary } from './orders.reservations';
 
 export interface ApplyTransitionInput {
   orderId: string;
@@ -24,18 +24,6 @@ export interface ApplyTransitionInput {
 const STATE_CHANGED =
   'El pedido cambió mientras lo revisabas. Recarga la página e inténtalo de nuevo.';
 const SAME_STATE = 'El pedido ya está en ese estado.';
-
-async function reservationSummary(tx: DbLike, orderId: string): Promise<ReservationSummary> {
-  const [row] = await tx
-    .select({
-      total: sql<number>`count(*)::int`,
-      active: sql<number>`coalesce(count(*) filter (where ${stockReservation.expiresAt} > now()), 0)::int`,
-    })
-    .from(stockReservation)
-    .where(eq(stockReservation.orderId, orderId));
-
-  return { total: row?.total ?? 0, active: row?.active ?? 0 };
-}
 
 async function lockOrder(tx: DbLike, orderId: string): Promise<OrderStatus> {
   const [row] = await tx
@@ -84,7 +72,7 @@ export function applyTransition(
 
     const disabledReason = transition.guard?.({
       status: current,
-      reservation: await reservationSummary(tx, input.orderId),
+      reservation: await getReservationSummary(tx, input.orderId),
     });
 
     if (disabledReason) {

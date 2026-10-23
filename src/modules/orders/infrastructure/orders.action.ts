@@ -113,6 +113,7 @@ export const reorderOrder = run({ input: reorderOrderSchema }, async (ctx, { ord
 function revalidateOrder(orderId: string): void {
   revalidatePath('/orders');
   revalidatePath(`/orders/${orderId}`);
+  revalidatePath(`/dashboard/orders/${orderId}`);
 }
 
 export const markOrderPaid = run(

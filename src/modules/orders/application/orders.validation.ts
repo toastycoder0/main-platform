@@ -35,6 +35,10 @@ export const addOrderNoteSchema = orderReferenceSchema.extend({
   body: z.string().trim().min(1, FIELD_ERRORS.required).max(NOTE_BODY_MAX, FIELD_ERRORS.tooLong),
 });
 
+export type OrderCancellationInput = z.infer<typeof orderCancellationSchema>;
+
+export type OrderStatusOverrideInput = z.infer<typeof orderStatusOverrideSchema>;
+
 export const orderNoteMetadataSchema = z.object({
   body: z.string().min(1),
   visibility: z.literal('internal'),

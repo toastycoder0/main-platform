@@ -1,6 +1,7 @@
 'use server';
 
 import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { order } from '@/infrastructure/db/schema';
 import { run } from '@/infrastructure/services/next-action';
 import { PERMISSIONS } from '@/shared/constants/permissions';
@@ -22,6 +23,6 @@ export const addOrderNote = run(
     }
 
     await insertOrderNote(ctx.db, { orderId, body, actorId: ctx.session.user.id });
-    // No revalidation yet: the management surface that renders notes is a later phase.
+    revalidatePath(`/dashboard/orders/${orderId}`);
   },
 );

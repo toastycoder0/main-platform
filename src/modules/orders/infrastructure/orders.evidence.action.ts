@@ -38,5 +38,6 @@ export const attachOrderEvidence = run(
     );
 
     revalidatePath(`/orders/${orderId}`);
+    revalidatePath(`/dashboard/orders/${orderId}`);
   },
 );

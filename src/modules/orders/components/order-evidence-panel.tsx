@@ -7,24 +7,33 @@ import { submitAction } from '@/shared/actions/submit-action';
 import { Button } from '@/shared/components/button';
 import { ControlledMultiFileUploader } from '@/shared/components/file-uploader';
 import { Spinner } from '@/shared/components/spinner';
+import type { EvidenceScope } from '../application/orders.evidence';
 import { attachOrderEvidence } from '../infrastructure/orders.evidence.action';
 
 interface OrderEvidencePanelProps {
   orderId: string;
-  /** Persisted URLs of the payment evidence. */
+  /** Persisted URLs of the evidence scope. */
   files: string[];
   canManage: boolean;
+  scope?: EvidenceScope;
+  description?: string;
 }
 
-export function OrderEvidencePanel({ orderId, files, canManage }: OrderEvidencePanelProps) {
+export function OrderEvidencePanel({
+  orderId,
+  files,
+  canManage,
+  scope = 'paymentEvidence',
+  description,
+}: OrderEvidencePanelProps) {
   const [isPending, startTransition] = useTransition();
   const form = useForm<{ refs: string[] }>({ defaultValues: { refs: files } });
 
   function onSubmit({ refs }: { refs: string[] }) {
     startTransition(async () => {
       const result = await submitAction(
-        () => attachOrderEvidence({ orderId, scope: 'paymentEvidence', refs }),
-        'Comprobantes guardados',
+        () => attachOrderEvidence({ orderId, scope, refs }),
+        'Evidencia guardada',
       );
 
       if (result.success) {
@@ -43,9 +52,9 @@ export function OrderEvidencePanel({ orderId, files, canManage }: OrderEvidenceP
         control={form.control}
         name='refs'
         entity='order'
-        scope='paymentEvidence'
+        scope={scope}
         readOnly={!canManage}
-        description={canManage ? 'PDF o imágenes, hasta 5 archivos.' : undefined}
+        description={canManage ? (description ?? 'PDF o imágenes, hasta 5 archivos.') : undefined}
       />
 
       {canManage ? (
@@ -56,7 +65,7 @@ export function OrderEvidencePanel({ orderId, files, canManage }: OrderEvidenceP
           disabled={isPending || !form.formState.isDirty}
         >
           {isPending ? <Spinner /> : <SaveIcon />}
-          Guardar comprobantes
+          Guardar evidencia
         </Button>
       ) : null}
     </form>
