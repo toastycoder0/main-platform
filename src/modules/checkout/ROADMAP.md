@@ -13,6 +13,7 @@
 - [x] Detalle `/orders/[id]` (timeline, artículos, entrega, facturación, resumen y apartado)
 - [x] “Volver a comprar” desde el listado y el detalle, revalidando precio y stock actuales
 - [x] E2E de `/cart` estables: 5/5 en `cart.spec.ts` y 144/144 en la suite (los timeouts eran compilación en frío de `next dev`)
+- [x] Cron `/api/cron/reservations` que elimina los apartados vencidos
 - [x] Validación: `build` ✅ `lint` ✅ `test` ✅ `test:integration` ✅ `test:e2e` ✅
 
 ## Pendiente ❌
@@ -24,7 +25,6 @@
 
 ### Apartado de inventario
 
-- [ ] Cron que elimine los registros vencidos de `stock_reservation`
 - [ ] Mostrar cantidades apartadas en el mapa del almacén (hoy muestra solo la ocupación física)
 
 ### UX

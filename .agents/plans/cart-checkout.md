@@ -68,7 +68,8 @@ en el servidor, y se agrega la creación real del pedido con apartado de inventa
 - Mientras está vigente se descuenta en toda la plataforma: `getVariantStock` (catálogo,
   carrito, detalle) y el motor del almacén (`checkStock` con `reserved`), que impide
   sacar o mover cantidades apartadas. La ocupación física de la celda no cambia.
-- Al vencer deja de contar al instante; un cron futuro eliminará los registros vencidos.
+- Al vencer deja de contar al instante; el cron `/api/cron/reservations` elimina a diario
+  los registros vencidos.
 - `reserveStock` bloquea las celdas en orden de id (el mismo bloqueo del motor del
   almacén), así que ni movimientos ni otros apartados pueden consumir la cantidad a la vez.
 - Solo variantes con `managesInventory`. Duraciones: 1, 4, 8, 12 y 24 horas.
@@ -77,6 +78,6 @@ en el servidor, y se agrega la creación real del pedido con apartado de inventa
 
 ## Pendiente
 
-- Página de detalle del pedido (`/orders/[id]`).
-- Cron de limpieza de apartados vencidos.
 - Reglas de apartado al pagar o completar un pedido.
+- Cancelación de pedidos y liberación del apartado.
+- Mostrar cantidades apartadas en el mapa del almacén.
