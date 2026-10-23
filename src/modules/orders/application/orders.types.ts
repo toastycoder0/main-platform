@@ -69,6 +69,13 @@ export interface OrderListItemDTO {
   isOwner: boolean;
 }
 
+export interface OrderNoteDTO {
+  id: string;
+  body: string;
+  authorName: string | null;
+  createdAt: Date;
+}
+
 export interface OrderReservationDTO {
   expiresAt: Date;
   quantity: number;

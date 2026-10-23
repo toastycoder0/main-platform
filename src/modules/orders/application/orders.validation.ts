@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
 import { EVIDENCE_SCOPES } from './orders.evidence';
+import { NOTE_BODY_MAX } from './orders.notes';
 
 /** Route params of `/orders/[id]`. */
 export const orderParamsSchema = z.object({
@@ -28,6 +29,15 @@ const evidenceScopeSchema = z.enum(EVIDENCE_SCOPES);
 export const attachOrderEvidenceSchema = orderReferenceSchema.extend({
   scope: evidenceScopeSchema,
   refs: z.array(z.string().trim().min(1).max(1000)).max(5),
+});
+
+export const addOrderNoteSchema = orderReferenceSchema.extend({
+  body: z.string().trim().min(1, FIELD_ERRORS.required).max(NOTE_BODY_MAX, FIELD_ERRORS.tooLong),
+});
+
+export const orderNoteMetadataSchema = z.object({
+  body: z.string().min(1),
+  visibility: z.literal('internal'),
 });
 
 export const orderStatusOverrideSchema = orderReferenceSchema.extend({
