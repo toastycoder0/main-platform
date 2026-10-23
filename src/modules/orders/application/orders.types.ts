@@ -100,6 +100,21 @@ export interface OrderNoteDTO {
   createdAt: Date;
 }
 
+export interface OrderManagementListItemDTO {
+  id: string;
+  code: string;
+  status: OrderStatus;
+  fulfillmentType: OrderType;
+  createdAt: Date;
+  itemCount: number;
+  previewItems: OrderListItemPreviewDTO[];
+  totals: CurrencyAmount[];
+  ownerName: string | null;
+  createdByName: string | null;
+  hasPaymentEvidence: boolean;
+  reservationExpiresAt: Date | null;
+}
+
 export interface OrderReservationDTO {
   expiresAt: Date;
   quantity: number;

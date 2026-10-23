@@ -2,7 +2,14 @@ import { type AnyColumn, and, asc, desc, eq, gt, inArray, or, type SQL, sql } fr
 import { alias } from 'drizzle-orm/pg-core';
 import type { RequestContext } from '@/infrastructure/context/types';
 import { ilikePattern, searchILike } from '@/infrastructure/db/list-query';
-import { order, orderItem, productImage, stockReservation, user } from '@/infrastructure/db/schema';
+import {
+  file,
+  order,
+  orderItem,
+  productImage,
+  stockReservation,
+  user,
+} from '@/infrastructure/db/schema';
 import { listFilesByOwners, listOwnerFiles } from '@/infrastructure/files/service';
 import { PERMISSIONS } from '@/shared/constants/permissions';
 import type { Paginated } from '@/shared/list/paginated';
@@ -20,6 +27,7 @@ import type {
   OrderListItemDTO,
   OrderListItemPreviewDTO,
   OrderManagementDTO,
+  OrderManagementListItemDTO,
   OrderReservationDTO,
   OrderStatus,
 } from '../application/orders.types';
@@ -28,8 +36,14 @@ import {
   orderLinePriceSchema,
   orderLineTaxSchema,
 } from '../application/orders.validation';
-import type { OrdersParams } from './orders.params';
+import type { ManagementOrdersParams, ManagementTray, OrdersParams } from './orders.params';
 import { getReservationSummary } from './orders.reservations';
+
+const TRAY_STATUS: Record<'prepare' | 'completed' | 'cancelled', OrderStatus> = {
+  prepare: 'paid',
+  completed: 'completed',
+  cancelled: 'cancelled',
+};
 
 const ownerUser = alias(user, 'order_owner');
 const creatorUser = alias(user, 'order_creator');
@@ -258,6 +272,156 @@ export async function countOrdersByStatus(
   }
 
   return counts;
+}
+
+function paymentEvidenceExists(): SQL {
+  return sql`exists (select 1 from ${file} where ${file.entity} = 'order' and ${file.scope} = 'paymentEvidence' and ${file.ownerId} = ${order.id})`;
+}
+
+function managementTrayCondition(tray: ManagementTray): SQL | undefined {
+  if (tray === 'all') {
+    return undefined;
+  }
+
+  if (tray === 'review') {
+    return sql`${order.status} = 'pending' and ${paymentEvidenceExists()}`;
+  }
+
+  return eq(order.status, TRAY_STATUS[tray]);
+}
+
+function managementSearch(q: string): SQL | undefined {
+  const direct = searchILike([order.code, order.notes], q);
+  const pattern = ilikePattern(q);
+  const ownerName = sql`concat(${ownerUser.firstName}, ' ', ${ownerUser.lastName}) ilike ${pattern}`;
+  const itemSearch = sql`exists (select 1 from ${orderItem} where ${orderItem.orderId} = ${order.id} and (${orderItem.productTitle} ilike ${pattern} or ${orderItem.variantTitle} ilike ${pattern}))`;
+
+  return or(direct, ownerName, itemSearch);
+}
+
+function buildManagementWhere(
+  ctx: RequestContext,
+  params: ManagementOrdersParams,
+  { includeTray = true }: { includeTray?: boolean } = {},
+): SQL | undefined {
+  if (!ctx.permissions.has(PERMISSIONS.orders.manage)) {
+    return sql`false`;
+  }
+
+  const conditions: SQL[] = [];
+  const tray = includeTray ? managementTrayCondition(params.tray) : undefined;
+
+  if (tray) {
+    conditions.push(tray);
+  }
+
+  if (params.q) {
+    const search = managementSearch(params.q);
+
+    if (search) {
+      conditions.push(search);
+    }
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+export async function listManagementOrders(
+  ctx: RequestContext,
+  params: ManagementOrdersParams,
+): Promise<Paginated<OrderManagementListItemDTO>> {
+  if (!ctx.permissions.has(PERMISSIONS.orders.manage)) {
+    return { items: [], total: 0 };
+  }
+
+  const where = buildManagementWhere(ctx, params);
+  const orderBy =
+    params.sort === 'oldest'
+      ? [asc(order.createdAt), asc(order.id)]
+      : [desc(order.createdAt), desc(order.id)];
+
+  const [counted, rows] = await Promise.all([
+    ctx.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(order)
+      .leftJoin(ownerUser, eq(ownerUser.id, order.userId))
+      .where(where),
+    ctx.db
+      .select({
+        id: order.id,
+        code: order.code,
+        status: order.status,
+        fulfillmentType: order.fulfillmentType,
+        createdAt: order.createdAt,
+        totals: order.totals,
+        ownerName: fullName(ownerUser.firstName, ownerUser.lastName),
+        createdByName: fullName(creatorUser.firstName, creatorUser.lastName),
+      })
+      .from(order)
+      .leftJoin(ownerUser, eq(ownerUser.id, order.userId))
+      .leftJoin(creatorUser, eq(creatorUser.id, order.createdById))
+      .where(where)
+      .orderBy(...orderBy)
+      .limit(params.pageSize)
+      .offset((params.page - 1) * params.pageSize),
+  ]);
+
+  const ids = rows.map((row) => row.id);
+  const [items, reservationExpiries, evidence] = await Promise.all([
+    queryOrderItems(ctx, ids),
+    queryReservationExpiries(ctx, ids),
+    listFilesByOwners(ctx.db, { entity: 'order', scope: 'paymentEvidence' }, ids),
+  ]);
+
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      status: row.status,
+      fulfillmentType: row.fulfillmentType,
+      createdAt: row.createdAt,
+      itemCount: items.counts.get(row.id) ?? 0,
+      previewItems: items.previews.get(row.id) ?? [],
+      totals: parseCurrencyAmounts(row.totals),
+      ownerName: row.ownerName,
+      createdByName: row.createdByName,
+      hasPaymentEvidence: (evidence.get(row.id)?.length ?? 0) > 0,
+      reservationExpiresAt: reservationExpiries.get(row.id) ?? null,
+    })),
+    total: counted[0]?.total ?? 0,
+  };
+}
+
+export async function countManagementOrdersByTray(
+  ctx: RequestContext,
+  params: ManagementOrdersParams,
+): Promise<Record<ManagementTray, number>> {
+  const empty: Record<ManagementTray, number> = {
+    review: 0,
+    prepare: 0,
+    completed: 0,
+    cancelled: 0,
+    all: 0,
+  };
+
+  if (!ctx.permissions.has(PERMISSIONS.orders.manage)) {
+    return empty;
+  }
+
+  const where = buildManagementWhere(ctx, params, { includeTray: false });
+  const [row] = await ctx.db
+    .select({
+      all: sql<number>`count(*)::int`,
+      review: sql<number>`count(*) filter (where ${order.status} = 'pending' and ${paymentEvidenceExists()})::int`,
+      prepare: sql<number>`count(*) filter (where ${order.status} = 'paid')::int`,
+      completed: sql<number>`count(*) filter (where ${order.status} = 'completed')::int`,
+      cancelled: sql<number>`count(*) filter (where ${order.status} = 'cancelled')::int`,
+    })
+    .from(order)
+    .leftJoin(ownerUser, eq(ownerUser.id, order.userId))
+    .where(where);
+
+  return row ? { ...empty, ...row } : empty;
 }
 
 async function queryCoverImages(
