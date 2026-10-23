@@ -54,6 +54,7 @@ beforeAll(async () => {
   const [row] = await db
     .insert(order)
     .values({
+      code: 'PED-20261022-8K3M9QAB',
       userId: ids.owner,
       createdById: ids.creator,
       fulfillmentType: 'warehouse',
@@ -98,6 +99,7 @@ describe('order ownership on the buyer surface', () => {
 
     expect(item?.ownerName).toBe('Owner Test');
     expect(item?.isOwner).toBe(false);
+    expect(item?.code).toBe('PED-20261022-8K3M9QAB');
   });
 
   it('marks the order as owned when the viewer placed it for themselves', async () => {

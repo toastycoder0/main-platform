@@ -307,7 +307,7 @@ export function OrderDetail({ order, reservations }: OrderDetailProps) {
         <div className='flex flex-wrap items-start justify-between gap-4'>
           <div className='flex flex-col gap-1'>
             <div className='flex items-center gap-3'>
-              <h1 className='text-2xl font-semibold'>Pedido #{order.number}</h1>
+              <h1 className='text-2xl font-semibold'>Pedido {order.code}</h1>
               <OrderStatusBadge status={order.status} />
             </div>
             <p className='text-sm text-muted-foreground'>

@@ -22,7 +22,7 @@ export interface OrderItemDTO {
 
 export interface OrderDTO {
   id: string;
-  number: number;
+  code: string;
   status: OrderStatus;
   fulfillmentType: OrderType;
   createdAt: Date;
@@ -47,7 +47,7 @@ export interface OrderListItemPreviewDTO {
 
 export interface OrderListItemDTO {
   id: string;
-  number: number;
+  code: string;
   status: OrderStatus;
   fulfillmentType: OrderType;
   createdAt: Date;

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, index, integer, jsonb, pgEnum, serial, snakeCase, text } from 'drizzle-orm/pg-core';
+import { check, index, integer, jsonb, pgEnum, snakeCase, text } from 'drizzle-orm/pg-core';
 
 import { generateId } from '../id';
 import type { JsonValue } from '../json';
@@ -27,7 +27,7 @@ export const order = snakeCase.table(
     id: text()
       .primaryKey()
       .$defaultFn(() => generateId('ord')),
-    number: serial().notNull().unique(),
+    code: text().notNull().unique('order_code_unique'),
     userId: text()
       .notNull()
       .references(() => user.id),
@@ -48,6 +48,7 @@ export const order = snakeCase.table(
   (table) => [
     index('order_user_idx').on(table.userId, table.createdAt),
     index('order_status_idx').on(table.status),
+    check('order_code_format', sql`${table.code} ~ '^PED-[0-9]{8}-[0-9A-HJKMNP-TV-Z]{8}$'`),
   ],
 );
 

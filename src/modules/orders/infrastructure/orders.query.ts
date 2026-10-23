@@ -65,7 +65,7 @@ function buildWhere(
   }
 
   if (params.q) {
-    const direct = searchILike([sql`${order.number}::text`, order.notes], params.q);
+    const direct = searchILike([order.code, order.notes], params.q);
     const pattern = ilikePattern(params.q);
     const itemSearch = sql`exists (select 1 from ${orderItem} where ${orderItem.orderId} = ${order.id} and (${orderItem.productTitle} ilike ${pattern} or ${orderItem.variantTitle} ilike ${pattern}))`;
     const search = direct ? or(direct, itemSearch) : itemSearch;
@@ -188,7 +188,7 @@ export async function listOrders(
     ctx.db
       .select({
         id: order.id,
-        number: order.number,
+        code: order.code,
         userId: order.userId,
         status: order.status,
         fulfillmentType: order.fulfillmentType,
@@ -215,7 +215,7 @@ export async function listOrders(
   return {
     items: rows.map((row) => ({
       id: row.id,
-      number: row.number,
+      code: row.code,
       status: row.status,
       fulfillmentType: row.fulfillmentType,
       createdAt: row.createdAt,
@@ -333,7 +333,7 @@ export async function getOrder(ctx: RequestContext, id: string): Promise<OrderDT
   const [row] = await ctx.db
     .select({
       id: order.id,
-      number: order.number,
+      code: order.code,
       userId: order.userId,
       status: order.status,
       fulfillmentType: order.fulfillmentType,
@@ -381,7 +381,7 @@ export async function getOrder(ctx: RequestContext, id: string): Promise<OrderDT
 
   return {
     id: row.id,
-    number: row.number,
+    code: row.code,
     status: row.status,
     fulfillmentType: row.fulfillmentType,
     createdAt: row.createdAt,

@@ -343,6 +343,7 @@ describe('placeOrder', () => {
 
     const [created] = await db.select().from(order).where(eq(order.userId, ids.buyer));
     expect(created?.status).toBe('pending');
+    expect(created?.code).toMatch(/^PED-\d{8}-[0-9A-HJKMNP-TV-Z]{8}$/);
     expect(created?.fulfillmentType).toBe('warehouse');
     expect(created?.notes).toBe('Llamar antes');
 

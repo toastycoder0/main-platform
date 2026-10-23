@@ -42,7 +42,7 @@ export function OrderCard({ order }: { order: OrderListItemDTO }) {
         <div className='flex min-w-0 flex-col gap-1'>
           <h2 id={`order-${order.id}-title`} className='text-base font-semibold text-neutral-900'>
             <Link href={`/orders/${order.id}`} className='hover:underline'>
-              Pedido #{order.number}
+              Pedido {order.code}
             </Link>
           </h2>
           <p className='text-xs text-neutral-500'>{formatDate(order.createdAt)}</p>

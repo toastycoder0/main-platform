@@ -5,6 +5,8 @@ import type { DbLike } from '@/infrastructure/db';
 import { toJson } from '@/infrastructure/db/json';
 import { cart, cartItem, order, orderItem, productItem } from '@/infrastructure/db/schema';
 import { syncFiles } from '@/infrastructure/files/service';
+import { ORDER_CODE_UNIQUE_CONSTRAINT } from '@/modules/orders/application/orders.code';
+import { generateOrderCode } from '@/modules/orders/infrastructure/orders.code';
 import { AppError } from '@/shared/errors';
 import { buildOrderSnapshot, collectFileKeys } from '../application/checkout.snapshot';
 import type { CheckoutStateDTO, CheckoutUser } from '../application/checkout.types';
@@ -89,22 +91,43 @@ async function reserveOrderStock(
   });
 }
 
-/**
- * Turns the cart into an order in one transaction: snapshot, items, optional
- * stock reservation and RFC files. The cart row is locked first, so a double
- * submit finds the cart already emptied and fails instead of duplicating.
- */
-export async function createOrderFromCart(
-  ctx: RequestContext,
-  input: CreateOrderInput,
-): Promise<string> {
-  const cartId = input.state.cart.id;
+const MAX_ORDER_CODE_ATTEMPTS = 5;
 
-  if (!cartId) {
-    throw new AppError('invalid_input', CART_CHANGED);
+/**
+ * Postgres aborts the transaction on a unique violation, so callers retry the
+ * whole transaction. Drizzle may wrap the driver error, hence the cause walk.
+ */
+function isUniqueViolation(error: unknown, constraint: string): boolean {
+  let current: unknown = error;
+
+  for (let depth = 0; depth < 5; depth++) {
+    if (typeof current !== 'object' || current === null) {
+      return false;
+    }
+
+    if (
+      'code' in current &&
+      current.code === '23505' &&
+      'constraint' in current &&
+      current.constraint === constraint
+    ) {
+      return true;
+    }
+
+    current = 'cause' in current ? current.cause : undefined;
   }
 
-  const orderId = await ctx.db.transaction(async (tx) => {
+  return false;
+}
+
+function createOrderTransaction(
+  ctx: RequestContext,
+  input: CreateOrderInput,
+  cartId: string,
+): Promise<string> {
+  const code = generateOrderCode();
+
+  return ctx.db.transaction(async (tx) => {
     await tx.select({ id: cart.id }).from(cart).where(eq(cart.id, cartId)).for('update');
 
     const items = await tx
@@ -132,6 +155,7 @@ export async function createOrderFromCart(
     const [created] = await tx
       .insert(order)
       .values({
+        code,
         userId: input.owner.id,
         createdById: input.actorId,
         fulfillmentType: snapshot.fulfillmentType,
@@ -175,6 +199,32 @@ export async function createOrderFromCart(
 
     return created.id;
   });
+}
 
-  return orderId;
+/**
+ * Turns the cart into an order in one transaction: snapshot, items, optional
+ * stock reservation and RFC files. The cart row is locked first, so a double
+ * submit finds the cart already emptied and fails instead of duplicating.
+ */
+export async function createOrderFromCart(
+  ctx: RequestContext,
+  input: CreateOrderInput,
+): Promise<string> {
+  const cartId = input.state.cart.id;
+
+  if (!cartId) {
+    throw new AppError('invalid_input', CART_CHANGED);
+  }
+
+  for (let attempt = 0; attempt < MAX_ORDER_CODE_ATTEMPTS; attempt++) {
+    try {
+      return await createOrderTransaction(ctx, input, cartId);
+    } catch (error) {
+      if (!isUniqueViolation(error, ORDER_CODE_UNIQUE_CONSTRAINT)) {
+        throw error;
+      }
+    }
+  }
+
+  throw new AppError('internal', 'No se pudo generar el código del pedido');
 }

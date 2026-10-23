@@ -160,7 +160,7 @@ describe('Cart checkout E2E', () => {
     await page.getByRole('button', { name: 'Confirmar pedido' }).click();
 
     await page.waitForURL(/\/orders\/ord_/);
-    await page.getByRole('heading', { name: /Pedido #\d+/ }).waitFor();
+    await page.getByRole('heading', { name: /Pedido PED-\d{8}-[0-9A-Z]{8}/ }).waitFor();
 
     const orders = await db()`SELECT id FROM "order" WHERE user_id = ${adminId}`;
     const items = await db()`SELECT id FROM cart_item WHERE cart_id = ${CART_ID}`;
@@ -178,7 +178,7 @@ describe('Cart checkout E2E', () => {
     await page.goto(`${BASE}/orders`);
     await page.getByRole('heading', { name: 'Mis pedidos' }).waitFor();
     await page
-      .getByRole('link', { name: /Pedido #\d+/ })
+      .getByRole('link', { name: /Pedido PED-\d{8}-[0-9A-Z]{8}/ })
       .first()
       .waitFor();
 

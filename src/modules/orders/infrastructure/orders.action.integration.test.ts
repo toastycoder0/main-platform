@@ -66,6 +66,7 @@ beforeAll(async () => {
   const [row] = await db
     .insert(order)
     .values({
+      code: 'PED-20261022-8K3M9QCD',
       userId: ids.owner,
       createdById: ids.creator,
       fulfillmentType: 'warehouse',
