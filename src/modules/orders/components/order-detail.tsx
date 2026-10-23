@@ -8,6 +8,7 @@ import {
   SHIPPING_TYPE_LABELS,
 } from '@/modules/checkout/application/checkout.constants';
 import { CFDI_USE_OPTIONS, FISCAL_REGIME_OPTIONS } from '@/modules/users/application/users.cfdi';
+import { Badge } from '@/shared/components/badge';
 import { Button } from '@/shared/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/card';
 import { Separator } from '@/shared/components/separator';
@@ -19,6 +20,7 @@ import type {
   OrderBillingSnapshot,
   OrderFulfillmentSnapshot,
 } from '../application/orders.validation';
+import { OrderEvidencePanel } from './order-evidence-panel';
 import { OrderStatusBadge } from './order-status-badge';
 import { OrderTimeline } from './order-timeline';
 import { ReorderButton } from './reorder-button';
@@ -282,9 +284,17 @@ function SummaryDetails({ order }: { order: OrderDTO }) {
 interface OrderDetailProps {
   order: OrderDTO;
   reservations: OrderReservationDTO[];
+  /** Persisted URLs of the payment evidence; management evidence never reaches the buyer. */
+  evidence: string[];
+  canManageEvidence: boolean;
 }
 
-export function OrderDetail({ order, reservations }: OrderDetailProps) {
+export function OrderDetail({
+  order,
+  reservations,
+  evidence,
+  canManageEvidence,
+}: OrderDetailProps) {
   const reservedQuantity = reservations.reduce((sum, item) => sum + item.quantity, 0);
   const expiresAt = reservations.reduce<Date | null>(
     (latest, item) => (!latest || item.expiresAt > latest ? item.expiresAt : latest),
@@ -353,6 +363,26 @@ export function OrderDetail({ order, reservations }: OrderDetailProps) {
         <div className='flex flex-col gap-6 lg:sticky lg:top-6'>
           <SectionCard title='Resumen'>
             <SummaryDetails order={order} />
+          </SectionCard>
+
+          <SectionCard title='Pago'>
+            <div className='flex flex-col gap-3'>
+              {order.status === 'pending' && evidence.length > 0 ? (
+                <Badge
+                  variant='outline'
+                  className='w-fit border-amber-200 bg-amber-50 text-amber-700'
+                >
+                  Pago en revisión
+                </Badge>
+              ) : null}
+
+              <OrderEvidencePanel
+                key={evidence.join('|')}
+                orderId={order.id}
+                files={evidence}
+                canManage={canManageEvidence}
+              />
+            </div>
           </SectionCard>
 
           <SectionCard title='Facturación'>

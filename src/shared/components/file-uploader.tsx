@@ -2,7 +2,8 @@
 
 import { FileTextIcon, UploadIcon, XIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
-import type { Control, FieldValues, Path } from 'react-hook-form';
+import type { Control, FieldValues, Path, FieldError as RHFFieldError } from 'react-hook-form';
+
 import { Controller } from 'react-hook-form';
 import { confirmUpload, deleteTempUpload, requestUploadUrl } from '@/infrastructure/files/actions';
 import { extractExtension, isTempKey } from '@/infrastructure/storage/keys';
@@ -47,9 +48,9 @@ export function FileUploader({
   accept?: string;
   maxCount?: number;
   maxSize?: number;
-  onSelect?: (files: FileList) => void;
-  onRemove?: (item: FileItem) => void;
-  fileInputRef?: { current: HTMLInputElement | null };
+  onSelect?: ((files: FileList) => void) | undefined;
+  onRemove?: ((item: FileItem) => void) | undefined;
+  fileInputRef?: { current: HTMLInputElement | null } | undefined;
   existingUrl?: string;
   existingFileName?: string;
   inputId?: string;
@@ -160,6 +161,24 @@ function buildExistingFile(formValue: string, allowedTypes: string[]): FileItem 
   };
 }
 
+function RemoveAttachmentAction({
+  item,
+  onRemove,
+}: {
+  item: FileItem;
+  onRemove?: ((item: FileItem) => void) | undefined;
+}) {
+  if (!onRemove) {
+    return null;
+  }
+
+  return (
+    <AttachmentAction aria-label={`Eliminar ${item.fileName}`} onClick={() => onRemove(item)}>
+      <XIcon />
+    </AttachmentAction>
+  );
+}
+
 function FileAttachment({
   item,
   onRemove,
@@ -198,9 +217,7 @@ function FileAttachment({
             <UploadIcon />
           </AttachmentAction>
         )}
-        <AttachmentAction aria-label={`Eliminar ${item.fileName}`} onClick={() => onRemove?.(item)}>
-          <XIcon />
-        </AttachmentAction>
+        <RemoveAttachmentAction item={item} onRemove={onRemove} />
       </AttachmentActions>
       {href && (
         <AttachmentTrigger asChild>
@@ -251,6 +268,202 @@ export function fileIsValid(
     file !== null &&
     (allowedTypes.length === 0 || allowedTypes.includes(file.type)) &&
     file.size <= maxSize
+  );
+}
+
+function buildMultiEntries(
+  values: string[],
+  items: FileItem[],
+  allowedTypes: string[],
+): FileItem[] {
+  const persisted = values.filter((value) => !isTempKey(value));
+
+  return [...persisted.map((url) => buildExistingFile(url, allowedTypes)), ...items];
+}
+
+interface MultiFileFieldProps {
+  label?: string | undefined;
+  description?: string | undefined;
+  entries: FileItem[];
+  accept: string;
+  inputId: string;
+  fileInputRef: { current: HTMLInputElement | null };
+  maxCount: number;
+  maxSize: number;
+  onSelect: (files: FileList) => void;
+  onRemove: (item: FileItem) => void;
+  readOnly: boolean;
+  invalid: boolean;
+  error: RHFFieldError | undefined;
+}
+
+function MultiFileField({
+  label,
+  description,
+  entries,
+  accept,
+  inputId,
+  fileInputRef,
+  maxCount,
+  maxSize,
+  onSelect,
+  onRemove,
+  readOnly,
+  invalid,
+  error,
+}: MultiFileFieldProps) {
+  return (
+    <Field orientation='vertical' data-invalid={invalid}>
+      {label ? <FieldLabel>{label}</FieldLabel> : null}
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
+
+      <FileUploader
+        accept={accept}
+        maxCount={maxCount}
+        maxSize={maxSize}
+        fileInputRef={readOnly ? undefined : fileInputRef}
+        inputId={inputId}
+        items={entries}
+        onSelect={readOnly ? undefined : onSelect}
+        onRemove={readOnly ? undefined : onRemove}
+      />
+
+      {readOnly ? null : (
+        <input
+          accept={accept}
+          className='hidden'
+          id={inputId}
+          multiple
+          ref={fileInputRef}
+          type='file'
+          onChange={(e) => {
+            if (e.target.files) {
+              onSelect(e.target.files);
+            }
+            e.target.value = '';
+          }}
+        />
+      )}
+
+      {invalid ? <FieldError errors={[error]} /> : null}
+    </Field>
+  );
+}
+
+/**
+ * Array counterpart of `ControlledFileUploader`: the field value is the list of
+ * refs (persisted URLs and pending temp keys), and the whole list is what the
+ * owning action syncs.
+ */
+export function ControlledMultiFileUploader<T extends FieldValues, TTransformed = T>({
+  control,
+  name,
+  entity,
+  scope,
+  label,
+  description,
+  readOnly = false,
+}: {
+  control: Control<T, unknown, TTransformed>;
+  name: string;
+  entity: FileEntity;
+  scope: string;
+  label?: string | undefined;
+  description?: string | undefined;
+  readOnly?: boolean;
+}) {
+  const config = getScopeConfig(entity, scope);
+
+  if (!config) {
+    throw new Error(`Unknown file scope: ${entity}.${scope}`);
+  }
+
+  const { allowedTypes, maxCount, maxSize } = config;
+
+  const inputId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [items, setItems] = useState<FileItem[]>([]);
+  const onChangeRef = useRef<(value: string[]) => void>(() => undefined);
+  const valuesRef = useRef<string[]>([]);
+
+  async function addFile(file: File): Promise<void> {
+    const id = crypto.randomUUID();
+    const previewUrl = URL.createObjectURL(file);
+    setItems((cur) => [
+      ...cur,
+      {
+        state: 'uploading',
+        fileName: file.name,
+        fileSize: file.size,
+        tempKey: id,
+        fileType: file.type,
+        previewUrl,
+      },
+    ]);
+
+    const tempKey = await uploadTempFile(entity, scope, file);
+    if (tempKey) {
+      setItems((cur) =>
+        cur.map((it) => (it.tempKey === id ? { ...it, state: 'done', tempKey } : it)),
+      );
+      onChangeRef.current([...valuesRef.current, tempKey]);
+      return;
+    }
+
+    setItems((cur) => cur.map((it) => (it.tempKey === id ? { ...it, state: 'error' } : it)));
+  }
+
+  async function handleSelect(files: FileList): Promise<void> {
+    const busy = items.filter((item) => isBusy(item.state)).length;
+    const room = Math.max(maxCount - valuesRef.current.length - busy, 0);
+    const selected = Array.from(files)
+      .filter((file) => fileIsValid(file, allowedTypes, maxSize))
+      .slice(0, room);
+
+    for (const file of selected) {
+      await addFile(file);
+    }
+  }
+
+  function handleRemove(item: FileItem): void {
+    if (item.previewUrl) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
+    if (isTempKey(item.tempKey)) {
+      deleteTempUpload({ fileKey: item.tempKey }).catch(() => undefined);
+    }
+    setItems((cur) => cur.filter((it) => it.tempKey !== item.tempKey));
+    onChangeRef.current(valuesRef.current.filter((value) => value !== item.tempKey));
+  }
+
+  return (
+    <Controller
+      name={name as Path<T>}
+      control={control}
+      render={({ field, fieldState }) => {
+        onChangeRef.current = field.onChange;
+        const values: string[] = field.value ?? [];
+        valuesRef.current = values;
+
+        return (
+          <MultiFileField
+            label={label}
+            description={description}
+            entries={buildMultiEntries(values, items, allowedTypes)}
+            accept={allowedTypes.join(',')}
+            inputId={inputId}
+            fileInputRef={fileInputRef}
+            maxCount={maxCount}
+            maxSize={maxSize}
+            onSelect={handleSelect}
+            onRemove={handleRemove}
+            readOnly={readOnly}
+            invalid={fieldState.invalid}
+            error={fieldState.error}
+          />
+        );
+      }}
+    />
   );
 }
 

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { createRequestContext } from '@/infrastructure/context/next-factory';
+import { listOwnerFiles } from '@/infrastructure/files/service';
+import { canManageEvidence } from '@/modules/orders/application/orders.evidence';
 import { orderParamsSchema } from '@/modules/orders/application/orders.validation';
 import { OrderDetail } from '@/modules/orders/components/order-detail';
 import { getOrder, listOrderReservations } from '@/modules/orders/infrastructure/orders.query';
@@ -30,7 +32,24 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     notFound();
   }
 
-  const reservations = await listOrderReservations(ctx, order.id);
+  const [reservations, evidence] = await Promise.all([
+    listOrderReservations(ctx, order.id),
+    listOwnerFiles(ctx.db, { entity: 'order', scope: 'paymentEvidence', ownerId: order.id }),
+  ]);
 
-  return <OrderDetail order={order} reservations={reservations} />;
+  const canManagePaymentEvidence = canManageEvidence({
+    scope: 'paymentEvidence',
+    status: order.status,
+    isOwner: order.isOwner,
+    permissions: ctx.permissions,
+  });
+
+  return (
+    <OrderDetail
+      order={order}
+      reservations={reservations}
+      evidence={evidence.map((file) => file.url)}
+      canManageEvidence={canManagePaymentEvidence}
+    />
+  );
 }
