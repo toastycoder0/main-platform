@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FIELD_ERRORS } from '@/shared/constants/error-messages';
+import { EVIDENCE_SCOPES } from './orders.evidence';
 
 /** Route params of `/orders/[id]`. */
 export const orderParamsSchema = z.object({
@@ -19,6 +20,14 @@ export const orderTransitionSchema = orderReferenceSchema;
 
 export const orderCancellationSchema = orderReferenceSchema.extend({
   reason: z.string().trim().max(500, FIELD_ERRORS.tooLong).optional(),
+});
+
+const evidenceScopeSchema = z.enum(EVIDENCE_SCOPES);
+
+/** The whole collection is replaced, so an empty list clears the scope. */
+export const attachOrderEvidenceSchema = orderReferenceSchema.extend({
+  scope: evidenceScopeSchema,
+  refs: z.array(z.string().trim().min(1).max(1000)).max(5),
 });
 
 export const orderStatusOverrideSchema = orderReferenceSchema.extend({

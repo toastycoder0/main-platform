@@ -52,6 +52,20 @@ export const FILE_REGISTRY = {
       maxSize: 10 * MB,
       maxCount: 1,
     },
+    paymentEvidence: {
+      path: 'orders/evidence/payment',
+      ownerType: 'order',
+      allowedTypes: [...DOCUMENT_TYPES, 'image/jpeg', 'image/png'],
+      maxSize: 10 * MB,
+      maxCount: 5,
+    },
+    managementEvidence: {
+      path: 'orders/evidence/management',
+      ownerType: 'order',
+      allowedTypes: [...DOCUMENT_TYPES, 'image/jpeg', 'image/png'],
+      maxSize: 10 * MB,
+      maxCount: 5,
+    },
   },
   category: {
     image: {
